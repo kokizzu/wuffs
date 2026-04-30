@@ -18,10 +18,13 @@ import (
 	"errors"
 	"flag"
 	"image"
+	"image/draw"
 	"image/png"
+	"io"
 	"os"
 
 	"github.com/google/wuffs/lib/handsum"
+	"github.com/google/wuffs/lib/parsecolor"
 
 	_ "image/gif"
 	_ "image/jpeg"
@@ -36,6 +39,7 @@ var (
 	encodeFlag    = flag.Bool("encode", false, "whether to encode the input")
 	roundtripFlag = flag.Bool("roundtrip", false, "whether to encode-and-decode the input")
 
+	bFlag = flag.String("b", "gray", "encoding background color: e.g. red, white, 9c27b0 or #ff8")
 	cFlag = flag.String("c", "rgb", "encoding color: gray or rgb [default]")
 	qFlag = flag.Int("q", 3, "encoding quality: 0, 1, 2 or 3 [default]")
 )
@@ -57,9 +61,22 @@ Encode inputs BMP, GIF, JPEG, PNG, TIFF or WEBP and outputs Handsum.
 Roundtrip is equivalent to encode (to an ephemeral file) and then decode.
 
 For encode or roundtrip, the default color and quality is -c=rgb -q=3 (best
-quality; 147 bytes per file) but you can choose a lower setting. For example:
+quality; 147 bytes per file) but you can choose a lower setting. The -b flag
+sets a background color (in case the input has transparency). For example:
 
-handsum -encode -c=gray -q=2 foo.png > foo.handsum
+handsum -encode -b=darkblue -c=gray -q=2 foo.png > foo.handsum
+
+----
+
+Flags:
+
+  -decode
+  -encode
+  -roundtrip
+
+  -b    encoding background color: e.g. red, white, 9c27b0 or #ff8
+  -c    encoding color: gray or rgb [default]
+  -q    encoding quality: 0, 1, 2 or 3 [default]
 `
 
 func main() {
@@ -99,7 +116,7 @@ func main1() error {
 		return decode(inFile)
 	}
 	if !*decodeFlag && *encodeFlag && !*roundtripFlag {
-		return encode(inFile, color, quality)
+		return encode(os.Stdout, inFile, color, quality)
 	}
 	if !*decodeFlag && !*encodeFlag && *roundtripFlag {
 		return roundtrip(inFile, color, quality)
@@ -115,27 +132,25 @@ func decode(inFile *os.File) error {
 	return png.Encode(os.Stdout, src)
 }
 
-func encode(inFile *os.File, color handsum.Color, quality handsum.Quality) error {
+func encode(w io.Writer, inFile *os.File, color handsum.Color, quality handsum.Quality) error {
 	src, _, err := image.Decode(inFile)
 	if err != nil {
 		return err
 	}
-	return handsum.Encode(os.Stdout, src, &handsum.EncodeOptions{
+
+	if o, ok := src.(interface{ Opaque() bool }); ok && !o.Opaque() {
+		src = applyBackgroundColor(src)
+	}
+
+	return handsum.Encode(w, src, &handsum.EncodeOptions{
 		Color:   handsum.MakeOptionColor(color),
 		Quality: handsum.MakeOptionQuality(quality),
 	})
 }
 
 func roundtrip(inFile *os.File, color handsum.Color, quality handsum.Quality) error {
-	src, _, err := image.Decode(inFile)
-	if err != nil {
-		return err
-	}
 	buf := &bytes.Buffer{}
-	err = handsum.Encode(buf, src, &handsum.EncodeOptions{
-		Color:   handsum.MakeOptionColor(color),
-		Quality: handsum.MakeOptionQuality(quality),
-	})
+	err := encode(buf, inFile, color, quality)
 	if err != nil {
 		return err
 	}
@@ -144,4 +159,25 @@ func roundtrip(inFile *os.File, color handsum.Color, quality handsum.Quality) er
 		return err
 	}
 	return png.Encode(os.Stdout, dst)
+}
+
+func applyBackgroundColor(src image.Image) image.Image {
+	backgroundColor, _ := parsecolor.Parse(*bFlag)
+	r16, g16, b16, _ := backgroundColor.RGBA()
+	r8, g8, b8 := uint8(r16>>8), uint8(g16>>8), uint8(b16>>8)
+
+	bounds := src.Bounds()
+	ret := image.NewRGBA(bounds)
+	pix := ret.Pix
+	n4 := len(pix) / 4
+	for i4 := range n4 {
+		i := i4 * 4
+		pix[i+0] = r8
+		pix[i+1] = g8
+		pix[i+2] = b8
+		pix[i+3] = 0xff
+	}
+
+	draw.Draw(ret, bounds, src, bounds.Min, draw.Over)
+	return ret
 }

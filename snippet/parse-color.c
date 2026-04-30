@@ -21,6 +21,8 @@
 // make these functions have static storage. This can help the compiler ignore
 // or discard unused code, which can produce faster compiles and smaller
 // binaries.
+//
+// It is a C port of the github.com/google/wuffs/lib/parsecolor library.
 
 #ifndef PARSE_COLOR_INCLUDE_GUARD
 #define PARSE_COLOR_INCLUDE_GUARD
