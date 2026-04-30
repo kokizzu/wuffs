@@ -133,7 +133,10 @@ var offsets = [...]uint32{
 	0x43FF9800, // orange
 	0x48795548, // brown
 	0x4C9E9E9E, // gray
+
+	// Ad-hoc synonyms for some of the official Material Design names.
 	0x509E9E9E, // grey
+	0x579C27B0, // magenta
 }
 
-const names = "blackwhiteredpinkpurpleindigobluecyantealgreenlimeyellowamberorangebrowngraygrey"
+const names = "blackwhiteredpinkpurpleindigobluecyantealgreenlimeyellowamberorangebrowngraygreymagenta"

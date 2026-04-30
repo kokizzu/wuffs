@@ -95,8 +95,8 @@ parse_color(const char* s_ptr, size_t s_len) {
       b_len -= 5;
     }
 
-    static const int num_offsets = 18;
-    static const uint32_t offsets[18] = {
+    static const int num_offsets = 19;
+    static const uint32_t offsets[19] = {
         0x00000000u,  //
         0x05000000u,  // black
         0x0AFFFFFFu,  // white
@@ -114,12 +114,15 @@ parse_color(const char* s_ptr, size_t s_len) {
         0x43FF9800u,  // orange
         0x48795548u,  // brown
         0x4C9E9E9Eu,  // gray
+
+        // Ad-hoc synonyms for some of the official Material Design names.
         0x509E9E9Eu,  // grey
+        0x579C27B0u,  // magenta
     };
 
     static const char names[] =
         "blackwhiteredpinkpurpleindigobluecyantealgreenlimeyellowamberorangebro"
-        "wngraygrey";
+        "wngraygreymagenta";
 
     for (int i = 1; i < num_offsets; i++) {
       size_t name_len = (offsets[i] >> 24) - (offsets[i - 1] >> 24);
