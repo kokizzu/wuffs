@@ -73,7 +73,7 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
         return "#bad header"
     }
     this.color = (c32 >> 7) & 3
-    if (this.color & 1) == 1 {
+    if this.color == 1 {
         return "#bad header"
     }
     this.quality = (c32 >> 5) & 3
@@ -88,8 +88,10 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
 
     if args.dst <> nullptr {
         pixfmt = base.PIXEL_FORMAT__Y
-        if this.color <> 0 {
+        if this.color == 2 {
             pixfmt = base.PIXEL_FORMAT__BGRX
+        } else if this.color > 2 {
+            pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL
         }
 
         args.dst.set!(
@@ -178,8 +180,10 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
     }
 
     pixfmt = base.PIXEL_FORMAT__Y
-    if this.color <> 0 {
+    if this.color == 2 {
         pixfmt = base.PIXEL_FORMAT__BGRX
+    } else if this.color > 2 {
+        pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL
     }
 
     status = this.swizzler.prepare!(
@@ -239,12 +243,18 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
         }
     }
 
+    if this.color < 3 {
+        this.set_block_0xff!(which: 1, y_offset: 0, x_offset: 3)
+    } else {
+        this.decode_block_q3!(which: 1, y_offset: 0, x_offset: 3)
+    }
+
     this.smooth_seams_16x16!()
 
     if this.color <> 0 {
         this.scale_and_bias_chroma_down!()
         this.upsample_chroma!()
-        this.convert_yccx_to_bgrx!()
+        this.convert_ycca_to_bgra!()
     }
 
     which = 0
@@ -607,6 +617,24 @@ pri func decoder.decode_block_q3!(which: base.u32[..= 1], y_offset: base.u32[..=
     }
 }
 
+pri func decoder.set_block_0xff!(which: base.u32[..= 1], y_offset: base.u32[..= 8], x_offset: base.u32[..= 32]) {
+    var y : base.u32
+    var x : base.u32
+
+    y = 0
+    while y < 7 {
+        x = 0
+        while x < 7,
+                inv y < 7,
+        {
+            this.buffers[args.which][args.y_offset + y][args.x_offset + (4 * x)] = 0xFF
+
+            x += 1
+        }
+        y += 1
+    }
+}
+
 pri func decoder.smooth_seams_16x16!() {
     var i  : base.u32
     var p0 : base.u8
@@ -793,6 +821,12 @@ pri func decoder.upsample_chroma!() {
                     ((this.buffers[1][y1][(4 * x0) + 2] as base.u32) * 3) +
                     (this.buffers[1][y1][(4 * x1) + 2] as base.u32) + 8) / 16) as base.u8
 
+            this.buffers[0][y][(4 * x) + 3] = ((
+                    ((this.buffers[1][y0][(4 * x0) + 3] as base.u32) * 9) +
+                    ((this.buffers[1][y0][(4 * x1) + 3] as base.u32) * 3) +
+                    ((this.buffers[1][y1][(4 * x0) + 3] as base.u32) * 3) +
+                    (this.buffers[1][y1][(4 * x1) + 3] as base.u32) + 8) / 16) as base.u8
+
             x += 1
         }
         y += 1
@@ -817,7 +851,7 @@ pri func decoder.convert_yxxx_to_y!(which: base.u32[..= 1]) {
     }
 }
 
-pri func decoder.convert_yccx_to_bgrx!() {
+pri func decoder.convert_ycca_to_bgra!() {
     var y   : base.u32
     var x   : base.u32
     var yy1 : base.u32
@@ -878,9 +912,11 @@ pri func decoder.scale_horizontal!() {
     var acc0      : base.u32
     var acc1      : base.u32
     var acc2      : base.u32
+    var acc3      : base.u32
     var s0        : base.u32[..= 0xFF]
     var s1        : base.u32[..= 0xFF]
     var s2        : base.u32[..= 0xFF]
+    var s3        : base.u32[..= 0xFF]
     var remainder : base.u32[..= 16]
     var partial   : base.u32[..= 16]
 
@@ -891,6 +927,7 @@ pri func decoder.scale_horizontal!() {
         acc0 = 0
         acc1 = 0
         acc2 = 0
+        acc3 = 0
         remainder = 16
         while srcx < 16,
                 inv y < 16,
@@ -898,12 +935,14 @@ pri func decoder.scale_horizontal!() {
             s0 = this.buffers[0][y][(4 * srcx) + 0] as base.u32
             s1 = this.buffers[0][y][(4 * srcx) + 1] as base.u32
             s2 = this.buffers[0][y][(4 * srcx) + 2] as base.u32
+            s3 = this.buffers[0][y][(4 * srcx) + 3] as base.u32
 
             if remainder > this.width {
                 remainder -= this.width
                 acc0 ~mod+= this.width * s0
                 acc1 ~mod+= this.width * s1
                 acc2 ~mod+= this.width * s2
+                acc3 ~mod+= this.width * s3
 
             } else {
                 assert this.width >= remainder via "a >= b: b <= a"()
@@ -911,11 +950,12 @@ pri func decoder.scale_horizontal!() {
                 acc0 ~mod+= remainder * s0
                 acc1 ~mod+= remainder * s1
                 acc2 ~mod+= remainder * s2
+                acc3 ~mod+= remainder * s3
 
                 this.buffers[1][y][(4 * dstx) + 0] = (((acc0 ~mod+ 8) / 16) & 0xFF) as base.u8
                 this.buffers[1][y][(4 * dstx) + 1] = (((acc1 ~mod+ 8) / 16) & 0xFF) as base.u8
                 this.buffers[1][y][(4 * dstx) + 2] = (((acc2 ~mod+ 8) / 16) & 0xFF) as base.u8
-                this.buffers[1][y][(4 * dstx) + 3] = 0xFF
+                this.buffers[1][y][(4 * dstx) + 3] = (((acc3 ~mod+ 8) / 16) & 0xFF) as base.u8
                 dstx = (dstx + 1) & 15
 
                 partial = this.width - remainder
@@ -923,6 +963,7 @@ pri func decoder.scale_horizontal!() {
                 acc0 = partial * s0
                 acc1 = partial * s1
                 acc2 = partial * s2
+                acc3 = partial * s3
 
                 remainder = 16 - partial
             }
@@ -940,9 +981,11 @@ pri func decoder.scale_vertical!() {
     var acc0      : base.u32
     var acc1      : base.u32
     var acc2      : base.u32
+    var acc3      : base.u32
     var s0        : base.u32[..= 0xFF]
     var s1        : base.u32[..= 0xFF]
     var s2        : base.u32[..= 0xFF]
+    var s3        : base.u32[..= 0xFF]
     var remainder : base.u32[..= 16]
     var partial   : base.u32[..= 16]
 
@@ -953,6 +996,7 @@ pri func decoder.scale_vertical!() {
         acc0 = 0
         acc1 = 0
         acc2 = 0
+        acc3 = 0
         remainder = 16
         while srcy < 16,
                 inv x < 16,
@@ -960,12 +1004,14 @@ pri func decoder.scale_vertical!() {
             s0 = this.buffers[0][srcy][(4 * x) + 0] as base.u32
             s1 = this.buffers[0][srcy][(4 * x) + 1] as base.u32
             s2 = this.buffers[0][srcy][(4 * x) + 2] as base.u32
+            s3 = this.buffers[0][srcy][(4 * x) + 3] as base.u32
 
             if remainder > this.height {
                 remainder -= this.height
                 acc0 ~mod+= this.height * s0
                 acc1 ~mod+= this.height * s1
                 acc2 ~mod+= this.height * s2
+                acc3 ~mod+= this.height * s3
 
             } else {
                 assert this.height >= remainder via "a >= b: b <= a"()
@@ -973,11 +1019,12 @@ pri func decoder.scale_vertical!() {
                 acc0 ~mod+= remainder * s0
                 acc1 ~mod+= remainder * s1
                 acc2 ~mod+= remainder * s2
+                acc3 ~mod+= remainder * s3
 
                 this.buffers[1][dsty][(4 * x) + 0] = (((acc0 ~mod+ 8) / 16) & 0xFF) as base.u8
                 this.buffers[1][dsty][(4 * x) + 1] = (((acc1 ~mod+ 8) / 16) & 0xFF) as base.u8
                 this.buffers[1][dsty][(4 * x) + 2] = (((acc2 ~mod+ 8) / 16) & 0xFF) as base.u8
-                this.buffers[1][dsty][(4 * x) + 3] = 0xFF
+                this.buffers[1][dsty][(4 * x) + 3] = (((acc3 ~mod+ 8) / 16) & 0xFF) as base.u8
                 dsty = (dsty + 1) & 15
 
                 partial = this.height - remainder
@@ -985,6 +1032,7 @@ pri func decoder.scale_vertical!() {
                 acc0 = partial * s0
                 acc1 = partial * s1
                 acc2 = partial * s2
+                acc3 = partial * s3
 
                 remainder = 16 - partial
             }

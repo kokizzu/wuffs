@@ -165,7 +165,7 @@ var (
 
 const (
 	fileSizeHeader = 3
-	fileSizeMax    = 147
+	fileSizeMax    = 171
 )
 
 func fileSize(c Color, q Quality) int {
@@ -294,9 +294,8 @@ func Encode(w io.Writer, src image.Image, options *EncodeOptions) error {
 		aspectRatio = byte(a-1) | 0x10
 	}
 
-	dst := image.NewRGBA(image.Rectangle{Max: image.Point{X: 16, Y: 16}})
-	draw.BiLinear.Scale(dst, dst.Bounds(), src, src.Bounds(), draw.Src, nil)
-
+	alphasQuadBlock := lowleveljpeg.QuadBlockU8{}
+	dst := scaleSrc(src, &alphasQuadBlock)
 	dstU8s := lowleveljpeg.Array6BlockU8{}
 	dstU8s.ExtractFrom(dst, 0, 0)
 
@@ -319,8 +318,42 @@ func Encode(w io.Writer, src image.Image, options *EncodeOptions) error {
 		bitOffset = encodeBlock(&buf, bitOffset, &dstU8s[i], q.numberOfCoefficients())
 	}
 
+	if c >= ColorRGBA {
+		alphasBlock := lowleveljpeg.BlockU8{}
+		alphasBlock.DownsampleFrom(&alphasQuadBlock)
+		bitOffset = encodeBlockQ3(&buf, bitOffset, &alphasBlock, QualityBest.numberOfCoefficients())
+	}
+
 	_, err := w.Write(buf[:bitOffset/8])
 	return err
+}
+
+func scaleSrc(src image.Image, alphasQuadBlock *lowleveljpeg.QuadBlockU8) image.Image {
+	if o, ok := src.(interface{ Opaque() bool }); ok && o.Opaque() {
+		for i := range alphasQuadBlock {
+			alphasQuadBlock[i] = 0xFF
+		}
+		dst := image.NewRGBA(image.Rectangle{Max: image.Point{X: 16, Y: 16}})
+		draw.BiLinear.Scale(dst, dst.Bounds(), src, src.Bounds(), draw.Src, nil)
+		return dst
+	}
+
+	dst := image.NewNRGBA(image.Rectangle{Max: image.Point{X: 16, Y: 16}})
+	draw.BiLinear.Scale(dst, dst.Bounds(), src, src.Bounds(), draw.Src, nil)
+
+	// Extract alphasQuadBlock (as a side effect of calling this function) and
+	// set dst's alpha values to 0xFF.
+	for i := range alphasQuadBlock {
+		v := dst.Pix[(4*i)+3]
+		dst.Pix[(4*i)+3] = 0xFF
+		alphasQuadBlock[i] = v
+	}
+
+	return &image.RGBA{ // Re-interpret NRGBA as RGBA.
+		Pix:    dst.Pix,
+		Stride: dst.Stride,
+		Rect:   dst.Rect,
+	}
 }
 
 type encodeBlockFunc func(buf *[fileSizeMax]byte, bitOffset int, src *lowleveljpeg.BlockU8, nCoeffs int) int
@@ -421,8 +454,10 @@ func DecodeConfig(r io.Reader) (image.Config, error) {
 	}
 
 	cm := color.GrayModel
-	if c > ColorGray {
+	if c == ColorRGB {
 		cm = color.RGBAModel
+	} else if c == ColorRGBA {
+		cm = color.NRGBAModel
 	}
 
 	w, h := decodeWidthAndHeight(buf[2])
@@ -440,7 +475,7 @@ func decodeColorSetting(buf1 byte, buf2 byte) (Color, bool) {
 	case 2:
 		return ColorRGB, true
 	case 3:
-		// TODO: return ColorRGBA, true
+		return ColorRGBA, true
 	}
 	return 0, false
 }
@@ -473,8 +508,12 @@ func Decode(r io.Reader) (image.Image, error) {
 
 	cbQuadBlockU8 := lowleveljpeg.QuadBlockU8{}
 	crQuadBlockU8 := lowleveljpeg.QuadBlockU8{}
+	aaQuadBlockU8 := lowleveljpeg.QuadBlockU8{}
+	for i := range aaQuadBlockU8 {
+		aaQuadBlockU8[i] = 0xFF
+	}
 
-	if c > ColorGray {
+	if c >= ColorRGB {
 		cbBlockU8 := lowleveljpeg.BlockU8{}
 		crBlockU8 := lowleveljpeg.BlockU8{}
 
@@ -485,10 +524,16 @@ func Decode(r io.Reader) (image.Image, error) {
 
 		cbQuadBlockU8.UpsampleFrom(&cbBlockU8)
 		crQuadBlockU8.UpsampleFrom(&crBlockU8)
+
+		if c >= ColorRGBA {
+			aaBlockU8 := lowleveljpeg.BlockU8{}
+			bitOffset = decodeBlockQ3(aaBlockU8[:], 8, &buf, bitOffset, QualityBest.numberOfCoefficients())
+			aaQuadBlockU8.UpsampleFrom(&aaBlockU8)
+		}
 	}
 
 	dstW, dstH := decodeWidthAndHeight(buf[2])
-	return finishDecode(dstW, dstH, c == ColorGray, &lumaQuadBlockU8, &cbQuadBlockU8, &crQuadBlockU8), nil
+	return finishDecode(dstW, dstH, c, &lumaQuadBlockU8, &cbQuadBlockU8, &crQuadBlockU8, &aaQuadBlockU8), nil
 }
 
 func decodeWidthAndHeight(buf2 byte) (w int, h int) {
@@ -613,10 +658,17 @@ func decodeBlockQ3(dst []byte, stride int, buf *[fileSizeMax]byte, bitOffset int
 	return bitOffset
 }
 
-func finishDecode(w int, h int, gray bool, yy *lowleveljpeg.QuadBlockU8, cb *lowleveljpeg.QuadBlockU8, cr *lowleveljpeg.QuadBlockU8) image.Image {
+func finishDecode(w int,
+	h int,
+	c Color,
+	yy *lowleveljpeg.QuadBlockU8,
+	cb *lowleveljpeg.QuadBlockU8,
+	cr *lowleveljpeg.QuadBlockU8,
+	aa *lowleveljpeg.QuadBlockU8) image.Image {
+
 	tmp := [1024]byte{}
 
-	if gray {
+	if c == ColorGray {
 		for i := range 256 {
 			tmp[(4 * i)] = yy[i]
 		}
@@ -624,7 +676,7 @@ func finishDecode(w int, h int, gray bool, yy *lowleveljpeg.QuadBlockU8, cb *low
 		for i := range 256 {
 			tmp[(4*i)+0], tmp[(4*i)+1], tmp[(4*i)+2] =
 				color.YCbCrToRGB(yy[i], cb[i], cr[i])
-			tmp[(4*i)+3] = 0xFF
+			tmp[(4*i)+3] = aa[i]
 		}
 	}
 
@@ -635,15 +687,22 @@ func finishDecode(w int, h int, gray bool, yy *lowleveljpeg.QuadBlockU8, cb *low
 		pix = scaleVertical(&tmp, uint32(h))
 	}
 
-	if gray {
+	if c == ColorGray {
 		return &image.Gray{
 			Pix:    convertYxxxToY(pix),
 			Stride: w,
 			Rect:   image.Rect(0, 0, w, h),
 		}
+
+	} else if c == ColorRGB {
+		return &image.RGBA{
+			Pix:    pix,
+			Stride: 4 * w,
+			Rect:   image.Rect(0, 0, w, h),
+		}
 	}
 
-	return &image.RGBA{
+	return &image.NRGBA{
 		Pix:    pix,
 		Stride: 4 * w,
 		Rect:   image.Rect(0, 0, w, h),
@@ -658,29 +717,33 @@ func scaleHorizontal(src *[1024]byte, w uint32) []byte {
 		acc0 := uint32(0)
 		acc1 := uint32(0)
 		acc2 := uint32(0)
+		acc3 := uint32(0)
 		remainder := uint32(16)
 		for srcx := range 16 {
 			si := (64 * y) + (4 * srcx)
 			s0 := uint32(src[si+0])
 			s1 := uint32(src[si+1])
 			s2 := uint32(src[si+2])
+			s3 := uint32(src[si+3])
 
 			if remainder > w {
 				remainder -= w
 				acc0 += w * s0
 				acc1 += w * s1
 				acc2 += w * s2
+				acc3 += w * s3
 
 			} else {
 				acc0 += remainder * s0
 				acc1 += remainder * s1
 				acc2 += remainder * s2
+				acc3 += remainder * s3
 
 				di := (4 * int(w) * y) + (4 * dstx)
 				dst[di+0] = uint8((acc0 + 8) / 16)
 				dst[di+1] = uint8((acc1 + 8) / 16)
 				dst[di+2] = uint8((acc2 + 8) / 16)
-				dst[di+3] = 0xFF
+				dst[di+3] = uint8((acc3 + 8) / 16)
 				dstx++
 
 				partial := w - remainder
@@ -688,6 +751,7 @@ func scaleHorizontal(src *[1024]byte, w uint32) []byte {
 				acc0 = partial * s0
 				acc1 = partial * s1
 				acc2 = partial * s2
+				acc3 = partial * s3
 
 				remainder = 16 - partial
 			}
@@ -705,29 +769,33 @@ func scaleVertical(src *[1024]byte, h uint32) []byte {
 		acc0 := uint32(0)
 		acc1 := uint32(0)
 		acc2 := uint32(0)
+		acc3 := uint32(0)
 		remainder := uint32(16)
 		for srcy := range 16 {
 			si := (64 * srcy) + (4 * x)
 			s0 := uint32(src[si+0])
 			s1 := uint32(src[si+1])
 			s2 := uint32(src[si+2])
+			s3 := uint32(src[si+3])
 
 			if remainder > h {
 				remainder -= h
 				acc0 += h * s0
 				acc1 += h * s1
 				acc2 += h * s2
+				acc3 += h * s3
 
 			} else {
 				acc0 += remainder * s0
 				acc1 += remainder * s1
 				acc2 += remainder * s2
+				acc3 += remainder * s3
 
 				di := (64 * dsty) + (4 * x)
 				dst[di+0] = uint8((acc0 + 8) / 16)
 				dst[di+1] = uint8((acc1 + 8) / 16)
 				dst[di+2] = uint8((acc2 + 8) / 16)
-				dst[di+3] = 0xFF
+				dst[di+3] = uint8((acc3 + 8) / 16)
 				dsty++
 
 				partial := h - remainder
@@ -735,6 +803,7 @@ func scaleVertical(src *[1024]byte, h uint32) []byte {
 				acc0 = partial * s0
 				acc1 = partial * s1
 				acc2 = partial * s2
+				acc3 = partial * s3
 
 				remainder = 16 - partial
 			}

@@ -28,7 +28,7 @@ func testRoundTrip(tt *testing.T, src image.Image, pixelValue uint8, justCheckTh
 	colors := []Color{
 		ColorGray,
 		ColorRGB,
-		// TODO: ColorRGBA,
+		ColorRGBA,
 	}
 
 	for _, c := range colors {

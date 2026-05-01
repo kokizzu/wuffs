@@ -35,13 +35,13 @@ import (
 )
 
 var (
-	decodeFlag    = flag.Bool("decode", false, "whether to decode the input")
-	encodeFlag    = flag.Bool("encode", false, "whether to encode the input")
-	roundtripFlag = flag.Bool("roundtrip", false, "whether to encode-and-decode the input")
+	decodeFlag    = flag.Bool("decode", false, "")
+	encodeFlag    = flag.Bool("encode", false, "")
+	roundtripFlag = flag.Bool("roundtrip", false, "")
 
-	bFlag = flag.String("b", "gray", "encoding background color: e.g. red, white, 9c27b0 or #ff8")
-	cFlag = flag.String("c", "rgb", "encoding color: gray (1), rgb (3, default) or rgba (4)")
-	qFlag = flag.Int("q", 3, "encoding quality: 0, 1, 2 or 3 (default)")
+	bFlag = flag.String("b", "", "")
+	cFlag = flag.String("c", "rgb", "")
+	qFlag = flag.Int("q", 3, "")
 )
 
 const usageStr = `handsum decodes and encodes the Handsum lossy image file format.
@@ -64,19 +64,20 @@ For encode or roundtrip, the default color and quality is -c=rgb -q=3 (best
 quality; 147 bytes per file) but you can choose a lower setting. The -b flag
 sets a background color (in case the input has transparency). For example:
 
-handsum -encode -b=darkblue -c=gray -q=2 foo.png > foo.handsum
+handsum -encode -b=darkblue -c=rgb -q=2 foo.png > foo.handsum
 
 ----
 
 Flags:
 
-  -decode
-  -encode
-  -roundtrip
+  -decode     Whether to decode the input.
+  -encode     Whether to encode the input.
+  -roundtrip  Whether to encode-and-decode the input.
 
-  -b    encoding background color: e.g. red, white, 9c27b0 or #ff8
-  -c    encoding color: gray (1), rgb (3, default) or rgba (4)
-  -q    encoding quality: 0, 1, 2 or 3 (default)
+  -b  Encoding background color: e.g. red, white, 9c27b0 or #ff8.
+      The default is ff9e9e9e (for -c=1 or -c=3) or 00000000 (for -c=4).
+  -c  Encoding color: gray (1), rgb (3, default) or rgba (4).
+  -q  Encoding quality: 0, 1, 2 or 3 (default).
 `
 
 func main() {
@@ -98,6 +99,10 @@ func main1() error {
 		color = handsum.ColorRGBA
 	}
 	quality := handsum.Quality(max(0, min(3, *qFlag)))
+
+	if (color <= handsum.ColorRGB) && (*bFlag == "") {
+		*bFlag = "ff9e9e9e"
+	}
 
 	inFile := os.Stdin
 	switch flag.NArg() {
@@ -140,7 +145,7 @@ func encode(w io.Writer, inFile *os.File, color handsum.Color, quality handsum.Q
 		return err
 	}
 
-	if o, ok := src.(interface{ Opaque() bool }); ok && !o.Opaque() {
+	if o, ok := src.(interface{ Opaque() bool }); !ok || !o.Opaque() {
 		src = applyBackgroundColor(src)
 	}
 
@@ -165,7 +170,10 @@ func roundtrip(inFile *os.File, color handsum.Color, quality handsum.Quality) er
 
 func applyBackgroundColor(src image.Image) image.Image {
 	backgroundColor, _ := parsecolor.Parse(*bFlag)
-	r16, g16, b16, _ := backgroundColor.RGBA()
+	r16, g16, b16, a16 := backgroundColor.RGBA()
+	if (r16 == 0) && (g16 == 0) && (b16 == 0) && (a16 == 0) {
+		return src
+	}
 	r8, g8, b8 := uint8(r16>>8), uint8(g16>>8), uint8(b16>>8)
 
 	bounds := src.Bounds()
