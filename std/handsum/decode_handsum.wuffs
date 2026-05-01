@@ -22,7 +22,7 @@ pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
 pub struct decoder? implements base.image_decoder(
         width   : base.u32[..= 16],
         height  : base.u32[..= 16],
-        color   : base.u32[..= 1],
+        color   : base.u32[..= 3],  // 0=gray, 2=rgb, 3=rgba.
         quality : base.u32[..= 3],
 
         // The call sequence state machine is discussed in
@@ -68,12 +68,14 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
         return base."#bad call sequence"
     }
 
-    c32 = args.src.read_u16le_as_u32?()
-    if c32 <> '\xFE\xD7'le {
+    c32 = args.src.read_u24be_as_u32?()
+    if (c32 >> 9) <> 0x7F6B {
         return "#bad header"
     }
-    c32 = args.src.read_u8_as_u32?()
-    this.color = c32 >> 7
+    this.color = (c32 >> 7) & 3
+    if (this.color & 1) == 1 {
+        return "#bad header"
+    }
     this.quality = (c32 >> 5) & 3
 
     if (c32 & 0x10) == 0x00 {  // Landscape.
@@ -161,10 +163,11 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 }
 
 pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
-    var pixfmt   : base.u32
-    var status   : base.status
-    var num_read : base.u32
-    var which    : base.u32[..= 1]
+    var pixfmt       : base.u32
+    var status       : base.status
+    var num_read     : base.u32
+    var payload_size : base.u32[..= 171]
+    var which        : base.u32[..= 1]
 
     if this.call_sequence == 0x40 {
         // No-op.
@@ -189,13 +192,17 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
         return status
     }
 
-    while num_read < PAYLOAD_SIZES[this.color][this.quality] {
-        assert num_read < 256 via "a < b: a < c; c <= b"(c: PAYLOAD_SIZES[this.color][this.quality])
-        assert PAYLOAD_SIZES[this.color][this.quality] > num_read via "a > b: b < a"()
+    while true {
+        payload_size = PAYLOAD_SIZES[this.color][this.quality] as base.u32
+        if num_read >= payload_size {
+            break
+        }
+        assert num_read < 256 via "a < b: a < c; c <= b"(c: payload_size)
+        assert payload_size > num_read via "a > b: b < a"()
         num_read ~mod+= args.src.limited_copy_u32_to_slice!(
-                up_to: PAYLOAD_SIZES[this.color][this.quality] - num_read,
+                up_to: payload_size - num_read,
                 s: this.bits[num_read ..])
-        if num_read < PAYLOAD_SIZES[this.color][this.quality] {
+        if num_read < payload_size {
             yield? base."$short read"
         }
     }
@@ -1084,10 +1091,14 @@ pub func decoder.workbuf_len() base.range_ii_u64 {
     return this.util.make_range_ii_u64(min_incl: 0, max_incl: 0)
 }
 
-pri const PAYLOAD_SIZES : roarray[2] roarray[4] base.u32[..= 144] = [[
+pri const PAYLOAD_SIZES : roarray[4] roarray[4] base.u8[..= 171] = [[
         30, 48, 80, 96,
 ],[
+        0, 0, 0, 0,
+],[
         45, 72, 120, 144,
+],[
+        69, 96, 144, 168,
 ]]
 
 pri const NUM_COEFFS : roarray[4] base.u32[..= 15] = [

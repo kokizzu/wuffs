@@ -40,8 +40,8 @@ var (
 	roundtripFlag = flag.Bool("roundtrip", false, "whether to encode-and-decode the input")
 
 	bFlag = flag.String("b", "gray", "encoding background color: e.g. red, white, 9c27b0 or #ff8")
-	cFlag = flag.String("c", "rgb", "encoding color: gray or rgb [default]")
-	qFlag = flag.Int("q", 3, "encoding quality: 0, 1, 2 or 3 [default]")
+	cFlag = flag.String("c", "rgb", "encoding color: gray (1), rgb (3, default) or rgba (4)")
+	qFlag = flag.Int("q", 3, "encoding quality: 0, 1, 2 or 3 (default)")
 )
 
 const usageStr = `handsum decodes and encodes the Handsum lossy image file format.
@@ -75,8 +75,8 @@ Flags:
   -roundtrip
 
   -b    encoding background color: e.g. red, white, 9c27b0 or #ff8
-  -c    encoding color: gray or rgb [default]
-  -q    encoding quality: 0, 1, 2 or 3 [default]
+  -c    encoding color: gray (1), rgb (3, default) or rgba (4)
+  -q    encoding quality: 0, 1, 2 or 3 (default)
 `
 
 func main() {
@@ -92,8 +92,10 @@ func main1() error {
 
 	color := handsum.ColorRGB
 	switch *cFlag {
-	case "0", "GRAY", "Gray", "gray":
+	case "1", "GRAY", "Gray", "gray":
 		color = handsum.ColorGray
+	case "4", "RGBA", "Rgba", "rgba":
+		color = handsum.ColorRGBA
 	}
 	quality := handsum.Quality(max(0, min(3, *qFlag)))
 

@@ -25,7 +25,13 @@ func makePlainColorImage(grayValue uint8) image.Image {
 }
 
 func testRoundTrip(tt *testing.T, src image.Image, pixelValue uint8, justCheckThatItsGray bool) {
-	for c := Color(0); c < 2; c++ {
+	colors := []Color{
+		ColorGray,
+		ColorRGB,
+		// TODO: ColorRGBA,
+	}
+
+	for _, c := range colors {
 		for q := Quality(0); q < 4; q++ {
 			buf := &bytes.Buffer{}
 			err := Encode(buf, src, &EncodeOptions{

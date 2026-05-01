@@ -15,9 +15,9 @@
 // This is a very lossy format for very small thumbnails. Very small in terms
 // of image dimensions, up to 16×16 pixels, but also in terms of file size.
 //
-// The file format has two color settings (Gray and RGB) and four quality
-// settings. For any given color-and-quality combination, every Handsum image
-// file with those settings is a fixed number of bytes. For color=Gray:
+// The file format has three color settings (Gray, RGB and RGBA) and four
+// quality settings. For any given color-and-quality combination, every Handsum
+// image file with those settings is a fixed number of bytes. For color=Gray:
 //
 //   - A quality=0 file is  33 bytes long.
 //   - A quality=1 file is  51 bytes long.
@@ -31,6 +31,13 @@
 //   - A quality=2 file is 123 bytes long.
 //   - A quality=3 file is 147 bytes long.
 //
+// For color=RGBA:
+//
+//   - A quality=0 file is  72 bytes long.
+//   - A quality=1 file is  99 bytes long.
+//   - A quality=2 file is 147 bytes long.
+//   - A quality=3 file is 171 bytes long.
+//
 // Every Gray/q0 image file is exactly 48 bytes (384 bits) long. For a 16×16
 // pixel image, this uses 1.5 bits (0.1875 bytes) per pixel.
 //
@@ -38,10 +45,10 @@
 // 4.59375 bits per pixel for a 16×16 pixel image (a 1:1 aspect ratio), or
 // 6.125 bits per pixel for a 16×12 pixel image (a 4:3 aspect ratio).
 //
-// A Handsum file's starts with a 3 byte header: a 16-bit magic signature, a
-// 1-bit color, a 2-bit quality and a 5-bit aspect ratio. An image's longest
-// dimension (width or height) is 16 pixels and the aspect ratio gives the
-// shorter dimension.
+// A Handsum file's starts with a 3 byte header: a 15-bit magic signature, a
+// 2-bit color (Gray, RGB or RGBA), a 2-bit quality and a 5-bit aspect ratio.
+// An image's longest dimension (width or height) is 16 pixels and the aspect
+// ratio gives the shorter dimension.
 //
 // The color=RGB payload, after the header, holds a scaled 16×16 pixel YCbCr
 // 4:2:0 JPEG MCU (Minimum Coded Unit), 4 Luma and 2 Chroma blocks. Each block
@@ -136,13 +143,19 @@ import (
 // that is no greater than 16.
 const MaxDimension = 16
 
-// Magic is the byte string prefix of every Handsum image file.
+// MagicEtc is the byte string prefix of every Handsum image file. A Gray image
+// starts with Magic0. An RGB or RGBA image starts with Magic1. The two 16-bit
+// strings only differ in their final bit.
 //
 // It's like how every JPEG image file starts with "\xFF\xD8".
-const Magic = "\xFE\xD7"
+const (
+	Magic0 = "\xFE\xD6"
+	Magic1 = "\xFE\xD7"
+)
 
 func init() {
-	image.RegisterFormat("handsum", Magic, Decode, DecodeConfig)
+	image.RegisterFormat("handsum", Magic0, Decode, DecodeConfig)
+	image.RegisterFormat("handsum", Magic1, Decode, DecodeConfig)
 }
 
 var (
@@ -156,20 +169,32 @@ const (
 )
 
 func fileSize(c Color, q Quality) int {
-	// 33, 51, 83, 99.   48, 75, 123, 147.
-	return int("\x21\x33\x53\x63\x30\x4B\x7B\x93"[(int(c&1)<<2)|int(q&3)])
+	// 33, 51,  83,  99.
+	//  0,  0,   0,   0.
+	// 48, 75, 123, 147.
+	// 72, 99, 147, 171.
+	return int(("" +
+		"\x21\x33\x53\x63" +
+		"\x00\x00\x00\x00" +
+		"\x30\x4B\x7B\x93" +
+		"\x48\x63\x93\xAB")[(int((c-1)&3)<<2)|int(q&3)])
 }
 
-// Color is a Handsum image's color setting, either 0 (Gray) or 1 (RGB).
+// Color is a Handsum image's color setting, either 1 (Gray), 3 (RGB) or 4
+// (RGBA).
 type Color uint8
 
 const (
-	ColorGray = Color(0)
-	ColorRGB  = Color(1)
+	ColorGray = Color(1)
+	ColorRGB  = Color(3)
+	ColorRGBA = Color(4)
 )
 
 func (c Color) numberOfBlocks() int {
-	return int("\x04\x06"[c&1])
+	if c == ColorGray {
+		return 4
+	}
+	return 6
 }
 
 // OptionColor is an option type, what Rust would call an Option<Color>.
@@ -180,7 +205,10 @@ type OptionColor struct {
 // MakeOptionColor returns an option value that is Some(c), instead of the
 // OptionColor zero-value, which is None.
 func MakeOptionColor(c Color) OptionColor {
-	return OptionColor{representation: 0x80 | uint8(c)}
+	if (c == ColorGray) || (c == ColorRGB) || (c == ColorRGBA) {
+		return OptionColor{representation: 0x80 | uint8(c)}
+	}
+	return OptionColor{}
 }
 
 // Quality is a Handsum image's quality setting, from 0 (worst) to 3 (best).
@@ -206,7 +234,10 @@ type OptionQuality struct {
 // MakeOptionQuality returns an option value that is Some(q), instead of the
 // OptionQuality zero-value, which is None.
 func MakeOptionQuality(q Quality) OptionQuality {
-	return OptionQuality{representation: 0x80 | uint8(q)}
+	if (0 <= q) && (q <= 3) {
+		return OptionQuality{representation: 0x80 | uint8(q)}
+	}
+	return OptionQuality{}
 }
 
 // EncodeOptions are optional arguments to Encode. The zero value is valid and
@@ -223,14 +254,14 @@ type EncodeOptions struct {
 
 func (o *EncodeOptions) color() Color {
 	if (o != nil) && ((o.Color.representation & 0x80) != 0) {
-		return Color(o.Color.representation & 0x01)
+		return Color(o.Color.representation & 0x7F)
 	}
 	return ColorRGB
 }
 
 func (o *EncodeOptions) quality() Quality {
 	if (o != nil) && ((o.Quality.representation & 0x80) != 0) {
-		return Quality(o.Quality.representation & 0x03)
+		return Quality(o.Quality.representation & 0x7F)
 	}
 	return QualityBest
 }
@@ -278,9 +309,9 @@ func Encode(w io.Writer, src image.Image, options *EncodeOptions) error {
 	c := options.color()
 	q := options.quality()
 	buf := [fileSizeMax]byte{}
-	buf[0] = Magic[0]
-	buf[1] = Magic[1]
-	buf[2] = ((uint8(c)) << 7) | ((uint8(q)) << 5) | aspectRatio
+	buf[0] = Magic0[0]
+	buf[1] = Magic0[1] | uint8((c-1)>>1)
+	buf[2] = ((uint8(c - 1)) << 7) | ((uint8(q)) << 5) | aspectRatio
 
 	bitOffset := 3 * 8
 	encodeBlock := encodeBlockFuncs[q]
@@ -381,12 +412,16 @@ func DecodeConfig(r io.Reader) (image.Config, error) {
 	buf := [fileSizeHeader]byte{}
 	if _, err := io.ReadFull(r, buf[:]); err != nil {
 		return image.Config{}, err
-	} else if (buf[0] != Magic[0]) || (buf[1] != Magic[1]) {
+	} else if (buf[0] != Magic0[0]) || ((0xFE & buf[1]) != Magic0[1]) {
+		return image.Config{}, ErrNotAHandsumFile
+	}
+	c, ok := decodeColorSetting(buf[1], buf[2])
+	if !ok {
 		return image.Config{}, ErrNotAHandsumFile
 	}
 
 	cm := color.GrayModel
-	if (buf[2] & 0x80) != 0 {
+	if c > ColorGray {
 		cm = color.RGBAModel
 	}
 
@@ -398,15 +433,30 @@ func DecodeConfig(r io.Reader) (image.Config, error) {
 	}, nil
 }
 
+func decodeColorSetting(buf1 byte, buf2 byte) (Color, bool) {
+	switch ((buf1 & 1) << 1) | (buf2 >> 7) {
+	case 0:
+		return ColorGray, true
+	case 2:
+		return ColorRGB, true
+	case 3:
+		// TODO: return ColorRGBA, true
+	}
+	return 0, false
+}
+
 // Decode reads a Handsum image from r.
 func Decode(r io.Reader) (image.Image, error) {
 	buf := [fileSizeMax]byte{}
 	if _, err := io.ReadFull(r, buf[:fileSizeHeader]); err != nil {
 		return nil, err
-	} else if (buf[0] != Magic[0]) || (buf[1] != Magic[1]) {
+	} else if (buf[0] != Magic0[0]) || ((0xFE & buf[1]) != Magic0[1]) {
 		return nil, ErrNotAHandsumFile
 	}
-	c := Color(buf[2] >> 7)
+	c, ok := decodeColorSetting(buf[1], buf[2])
+	if !ok {
+		return nil, ErrNotAHandsumFile
+	}
 	q := Quality((buf[2] >> 5) & 0x03)
 	if _, err := io.ReadFull(r, buf[fileSizeHeader:fileSize(c, q)]); err != nil {
 		return nil, err
@@ -424,7 +474,7 @@ func Decode(r io.Reader) (image.Image, error) {
 	cbQuadBlockU8 := lowleveljpeg.QuadBlockU8{}
 	crQuadBlockU8 := lowleveljpeg.QuadBlockU8{}
 
-	if c != 0 {
+	if c > ColorGray {
 		cbBlockU8 := lowleveljpeg.BlockU8{}
 		crBlockU8 := lowleveljpeg.BlockU8{}
 
@@ -438,7 +488,7 @@ func Decode(r io.Reader) (image.Image, error) {
 	}
 
 	dstW, dstH := decodeWidthAndHeight(buf[2])
-	return finishDecode(dstW, dstH, c == 0, &lumaQuadBlockU8, &cbQuadBlockU8, &crQuadBlockU8), nil
+	return finishDecode(dstW, dstH, c == ColorGray, &lumaQuadBlockU8, &cbQuadBlockU8, &crQuadBlockU8), nil
 }
 
 func decodeWidthAndHeight(buf2 byte) (w int, h int) {

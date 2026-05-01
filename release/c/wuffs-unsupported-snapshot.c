@@ -23989,6 +23989,7 @@ wuffs_base__magic_number_guess_fourcc(wuffs_base__slice_u8 prefix_data,
       {+0x504E4720, "\x03\x89\x50\x4E\x47"},          // PNG
       {+0x54482020, "\x02\xC3\xBE\xFE"},              // TH
       {+0x585A2020, "\x04\xFD\x37\x7A\x58\x5A"},      // XZ
+      {+0x484E534D, "\x01\xFE\xD6"},                  // HANDSUM
       {+0x484E534D, "\x01\xFE\xD7"},                  // HANDSUM
       {+0x4A504547, "\x01\xFF\xD8"},                  // JPEG
   };
@@ -50319,12 +50320,16 @@ const char wuffs_handsum__error__truncated_input[] = "#handsum: truncated input"
 
 // ---------------- Private Consts
 
-static const uint32_t
-WUFFS_HANDSUM__PAYLOAD_SIZES[2][4] WUFFS_BASE__POTENTIALLY_UNUSED = {
+static const uint8_t
+WUFFS_HANDSUM__PAYLOAD_SIZES[4][4] WUFFS_BASE__POTENTIALLY_UNUSED = {
   {
     30u, 48u, 80u, 96u,
   }, {
+    0u, 0u, 0u, 0u,
+  }, {
     45u, 72u, 120u, 144u,
+  }, {
+    76u, 99u, 147u, 171u,
   },
 };
 
@@ -50917,9 +50922,9 @@ wuffs_handsum__decoder__do_decode_image_config(
     {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
       uint32_t t_0;
-      if (WUFFS_BASE__LIKELY(io2_a_src - iop_a_src >= 2)) {
-        t_0 = ((uint32_t)(wuffs_base__peek_u16le__no_bounds_check(iop_a_src)));
-        iop_a_src += 2;
+      if (WUFFS_BASE__LIKELY(io2_a_src - iop_a_src >= 3)) {
+        t_0 = ((uint32_t)(wuffs_base__peek_u24be__no_bounds_check(iop_a_src)));
+        iop_a_src += 3;
       } else {
         self->private_data.s_do_decode_image_config.scratch = 0;
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
@@ -50929,34 +50934,29 @@ wuffs_handsum__decoder__do_decode_image_config(
             goto suspend;
           }
           uint64_t* scratch = &self->private_data.s_do_decode_image_config.scratch;
-          uint32_t num_bits_0 = ((uint32_t)(*scratch >> 56));
-          *scratch <<= 8;
+          uint32_t num_bits_0 = ((uint32_t)(*scratch & 0xFFu));
           *scratch >>= 8;
-          *scratch |= ((uint64_t)(*iop_a_src++)) << num_bits_0;
-          if (num_bits_0 == 8) {
-            t_0 = ((uint32_t)(*scratch));
+          *scratch <<= 8;
+          *scratch |= ((uint64_t)(*iop_a_src++)) << (56 - num_bits_0);
+          if (num_bits_0 == 16) {
+            t_0 = ((uint32_t)(*scratch >> 40));
             break;
           }
           num_bits_0 += 8u;
-          *scratch |= ((uint64_t)(num_bits_0)) << 56;
+          *scratch |= ((uint64_t)(num_bits_0));
         }
       }
       v_c32 = t_0;
     }
-    if (v_c32 != 55294u) {
+    if ((v_c32 >> 9u) != 32619u) {
       status = wuffs_base__make_status(wuffs_handsum__error__bad_header);
       goto exit;
     }
-    {
-      WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
-      if (WUFFS_BASE__UNLIKELY(iop_a_src == io2_a_src)) {
-        status = wuffs_base__make_status(wuffs_base__suspension__short_read);
-        goto suspend;
-      }
-      uint32_t t_1 = *iop_a_src++;
-      v_c32 = t_1;
+    self->private_impl.f_color = ((v_c32 >> 7u) & 3u);
+    if ((self->private_impl.f_color & 1u) == 1u) {
+      status = wuffs_base__make_status(wuffs_handsum__error__bad_header);
+      goto exit;
     }
-    self->private_impl.f_color = (v_c32 >> 7u);
     self->private_impl.f_quality = ((v_c32 >> 5u) & 3u);
     if ((v_c32 & 16u) == 0u) {
       self->private_impl.f_width = 16u;
@@ -51243,6 +51243,7 @@ wuffs_handsum__decoder__do_decode_frame(
   uint32_t v_pixfmt = 0;
   wuffs_base__status v_status = wuffs_base__make_status(NULL);
   uint32_t v_num_read = 0;
+  uint32_t v_payload_size = 0;
   uint32_t v_which = 0;
 
   const uint8_t* iop_a_src = NULL;
@@ -51300,10 +51301,14 @@ wuffs_handsum__decoder__do_decode_frame(
       }
       goto ok;
     }
-    while (v_num_read < WUFFS_HANDSUM__PAYLOAD_SIZES[self->private_impl.f_color][self->private_impl.f_quality]) {
+    while (true) {
+      v_payload_size = ((uint32_t)(WUFFS_HANDSUM__PAYLOAD_SIZES[self->private_impl.f_color][self->private_impl.f_quality]));
+      if (v_num_read >= v_payload_size) {
+        break;
+      }
       v_num_read += wuffs_private_impl__io_reader__limited_copy_u32_to_slice(
-          &iop_a_src, io2_a_src,(WUFFS_HANDSUM__PAYLOAD_SIZES[self->private_impl.f_color][self->private_impl.f_quality] - v_num_read), wuffs_base__make_slice_u8_ij(self->private_data.f_bits, v_num_read, 256));
-      if (v_num_read < WUFFS_HANDSUM__PAYLOAD_SIZES[self->private_impl.f_color][self->private_impl.f_quality]) {
+          &iop_a_src, io2_a_src,(v_payload_size - v_num_read), wuffs_base__make_slice_u8_ij(self->private_data.f_bits, v_num_read, 256));
+      if (v_num_read < v_payload_size) {
         status = wuffs_base__make_status(wuffs_base__suspension__short_read);
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(2);
       }
