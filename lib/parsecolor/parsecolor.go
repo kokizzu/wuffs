@@ -50,7 +50,10 @@ func Parse(s string) (nrgba color.NRGBA, ok bool) {
 
 	if !startsWithHash {
 		adjustment, p, n := 0, 0, len(s)
-		if string(buf[:4]) == "dark" {
+		if ((n == 4) && (string(buf[:4]) == "none")) ||
+			((n == 11) && (string(buf[:11]) == "transparent")) {
+			return color.NRGBA{}, true
+		} else if string(buf[:4]) == "dark" {
 			adjustment = 1
 			p += 4
 			n -= 4

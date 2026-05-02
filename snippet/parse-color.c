@@ -85,7 +85,10 @@ parse_color(const char* s_ptr, size_t s_len) {
     const char* b_ptr = &buf[0];
     size_t b_len = s_len;
     int adjustment = 0;
-    if ((b_len > 4) && !memcmp(buf, "dark", 4)) {
+    if (((b_len == 4) && !memcmp(buf, "none", 4)) ||
+        ((b_len == 11) && !memcmp(buf, "transparent", 11))) {
+      return 0;
+    } else if ((b_len > 4) && !memcmp(buf, "dark", 4)) {
       adjustment = 1;
       b_ptr += 4;
       b_len -= 4;
