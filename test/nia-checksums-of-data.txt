@@ -6,8 +6,8 @@ OK. e3bae566 test/data/49.bp4.nie
 OK. c3528d19 test/data/49.bp8.nie
 OK. bf3fd567 test/data/49.c3q1.handsum
 OK. 7cac72e5 test/data/49.c3q3.handsum
-OK. 2d906dc0 test/data/49.c4q1.handsum
-OK. dcf12bd3 test/data/49.c4q3.handsum
+OK. 44e9cb76 test/data/49.c4q1.handsum
+OK. d55478dd test/data/49.c4q3.handsum
 OK. f2a0a3f6 test/data/49.png
 OK. d3bb0beb test/data/DCI-P3-D65.icc
 OK. 646e081a test/data/animated-red-blue.000000.nie

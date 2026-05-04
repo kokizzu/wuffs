@@ -119,6 +119,9 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 }
 
 pri func decoder.do_decode_frame_config?(dst: nptr base.frame_config, src: base.io_reader) {
+    var opaque_within_bounds : base.bool
+    var background_color     : base.u32
+
     if this.call_sequence == 0x20 {
         // No-op.
     } else if this.call_sequence < 0x20 {
@@ -135,6 +138,13 @@ pri func decoder.do_decode_frame_config?(dst: nptr base.frame_config, src: base.
     }
 
     if args.dst <> nullptr {
+        opaque_within_bounds = false
+        background_color = 0x0000_0000
+        if this.color < 3 {
+            opaque_within_bounds = true
+            background_color = 0xFF00_0000
+        }
+
         args.dst.set!(bounds: this.util.make_rect_ie_u32(
                 min_incl_x: 0,
                 min_incl_y: 0,
@@ -144,9 +154,9 @@ pri func decoder.do_decode_frame_config?(dst: nptr base.frame_config, src: base.
                 index: 0,
                 io_position: 3,
                 disposal: 0,
-                opaque_within_bounds: true,
+                opaque_within_bounds: opaque_within_bounds,
                 overwrite_instead_of_blend: false,
-                background_color: 0xFF00_0000)
+                background_color: background_color)
     }
 
     this.call_sequence = 0x40
@@ -253,7 +263,7 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
 
     if this.color <> 0 {
         this.scale_and_bias_chroma_down!()
-        this.upsample_chroma!()
+        this.upsample_chroma_and_alpha!()
         this.convert_ycca_to_bgra!()
     }
 
@@ -782,10 +792,10 @@ pri func decoder.scale_and_bias_chroma_down!() {
     }
 }
 
-// upsample_chroma converts the 8×8 Chroma samples in this.buffers[1] to 16×16
-// Chroma samples in this.buffers[0], adjacent to the existing 16×16 Luma
-// samples in this.buffers[0].
-pri func decoder.upsample_chroma!() {
+// upsample_chroma_and_alpha converts the 8×8 Chroma and Alpha samples in
+// this.buffers[1] to 16×16 samples in this.buffers[0], adjacent to the
+// existing 16×16 Luma samples in this.buffers[0].
+pri func decoder.upsample_chroma_and_alpha!() {
     var y  : base.u32
     var dy : base.u32
     var y0 : base.u32[..= 7]

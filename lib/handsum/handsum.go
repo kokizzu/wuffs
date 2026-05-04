@@ -59,6 +59,9 @@
 // Chroma blocks' bytes are all 0x88, and the color=Gray payload is just the 4
 // Luma blocks without explicitly recording the 2 Chroma blocks.
 //
+// The color=RGBA payload extends the color=RGB payload with one more 8×8 Alpha
+// block. That seventh block is always encoded in 24 bytes (as if quality=3).
+//
 // Each 8×8 block is sub-divided into 8×8 (for q0), 4×4 (for q1 and q2) or 2×2
 // (for q3) tiles. DCT (Discrete Cosine Transform) is applied to each tile,
 // producing 64, 16, 16 or 4 DCT coefficients (depending on the quality). Only
@@ -72,12 +75,15 @@
 // Each DCT coefficient is encoded as one nibble (4 bits) with fixed bias and
 // quantization factors.
 //
-// All Handsum images use the sRGB color profile.
+// All Handsum images use the sRGB color profile and non-premultiplied alpha.
 //
 // The "Handsum" name was inspired by the "Thumbhash" image file format, which
 // is also designed for very small thumbnails (or very compact representations
 // of image placeholders). Handsum files are bigger (but better quality) than
 // Thumbhash. "Handsum" also sounds like "handsome", meaning "good looking".
+//
+// Other techniques and image formats, similar to Thumbhash, can be found by
+// search for "LQIP" or "Low Quality Image Placeholders".
 package handsum
 
 // When decoding, each nibble produces a DCT coefficient according to a simple
@@ -121,8 +127,8 @@ package handsum
 // are rare in practice. The latter range has a slight bias (not centred on the
 // neutral 0x80) so that the Chroma DC components of a neutral gray image can
 // round-trip losslessly (in the 0x8 bucket). Chroma is narrowed (after Inverse
-// DCT) on decode and so is widened (before Forward DCT) on encode. Luma and
-// wide-Chroma then use the same DCT buckets.
+// DCT) on decode and so is widened (before Forward DCT) on encode. Luma,
+// wide-Chroma and Alpha then use the same DCT buckets.
 
 import (
 	"errors"
@@ -212,6 +218,9 @@ func MakeOptionColor(c Color) OptionColor {
 }
 
 // Quality is a Handsum image's quality setting, from 0 (worst) to 3 (best).
+//
+// "Best" is relative to the other settings. In absolute terms, Handsum's image
+// quality ranges from "potato" (best) to "extremely potato" (worst).
 type Quality uint8
 
 const (

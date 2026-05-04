@@ -50650,7 +50650,7 @@ wuffs_handsum__decoder__scale_and_bias_chroma_down(
 
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
-wuffs_handsum__decoder__upsample_chroma(
+wuffs_handsum__decoder__upsample_chroma_and_alpha(
     wuffs_handsum__decoder* self);
 
 WUFFS_BASE__GENERATED_C_CODE
@@ -51086,6 +51086,9 @@ wuffs_handsum__decoder__do_decode_frame_config(
     wuffs_base__io_buffer* a_src) {
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
+  bool v_opaque_within_bounds = false;
+  uint32_t v_background_color = 0;
+
   const uint8_t* iop_a_src = NULL;
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -51128,6 +51131,12 @@ wuffs_handsum__decoder__do_decode_frame_config(
       goto ok;
     }
     if (a_dst != NULL) {
+      v_opaque_within_bounds = false;
+      v_background_color = 0u;
+      if (self->private_impl.f_color < 3u) {
+        v_opaque_within_bounds = true;
+        v_background_color = 4278190080u;
+      }
       wuffs_base__frame_config__set(
           a_dst,
           wuffs_base__utility__make_rect_ie_u32(
@@ -51139,9 +51148,9 @@ wuffs_handsum__decoder__do_decode_frame_config(
           0u,
           3u,
           0u,
-          true,
+          v_opaque_within_bounds,
           false,
-          4278190080u);
+          v_background_color);
     }
     self->private_impl.f_call_sequence = 64u;
 
@@ -51362,7 +51371,7 @@ wuffs_handsum__decoder__do_decode_frame(
     wuffs_handsum__decoder__smooth_seams_16x16(self);
     if (self->private_impl.f_color != 0u) {
       wuffs_handsum__decoder__scale_and_bias_chroma_down(self);
-      wuffs_handsum__decoder__upsample_chroma(self);
+      wuffs_handsum__decoder__upsample_chroma_and_alpha(self);
       wuffs_handsum__decoder__convert_ycca_to_bgra(self);
     }
     v_which = 0u;
@@ -51862,11 +51871,11 @@ wuffs_handsum__decoder__scale_and_bias_chroma_down(
   return wuffs_base__make_empty_struct();
 }
 
-// -------- func handsum.decoder.upsample_chroma
+// -------- func handsum.decoder.upsample_chroma_and_alpha
 
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
-wuffs_handsum__decoder__upsample_chroma(
+wuffs_handsum__decoder__upsample_chroma_and_alpha(
     wuffs_handsum__decoder* self) {
   uint32_t v_y = 0;
   uint32_t v_dy = 0;
