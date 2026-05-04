@@ -182,3 +182,6 @@ to use fixed (not dynamic) Huffman tables for the deflate encoding.
 
 `sheep-more.rac` is a RAC-compression of original text by Nigel Tao
 <nigeltao@golang.org>.
+
+`transparent-1x1.gif` was created by [this Go
+program](https://go.dev/play/p/_2V-FxaR2B0).
