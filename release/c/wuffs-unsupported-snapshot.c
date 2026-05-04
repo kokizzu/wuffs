@@ -50394,6 +50394,42 @@ WUFFS_HANDSUM__SCALE_AND_BIAS_CHROMA_DOWN[256] WUFFS_BASE__POTENTIALLY_UNUSED = 
 };
 
 static const uint8_t
+WUFFS_HANDSUM__CUBE_ROOT[256] WUFFS_BASE__POTENTIALLY_UNUSED = {
+  0u, 0u, 1u, 1u, 1u, 2u, 2u, 2u,
+  3u, 3u, 3u, 4u, 4u, 4u, 5u, 5u,
+  6u, 6u, 6u, 7u, 7u, 7u, 8u, 8u,
+  9u, 9u, 9u, 10u, 10u, 11u, 11u, 11u,
+  12u, 12u, 13u, 13u, 13u, 14u, 14u, 15u,
+  15u, 15u, 16u, 16u, 17u, 17u, 18u, 18u,
+  19u, 19u, 19u, 20u, 20u, 21u, 21u, 22u,
+  22u, 23u, 23u, 24u, 24u, 25u, 25u, 26u,
+  26u, 27u, 27u, 28u, 29u, 29u, 30u, 30u,
+  31u, 31u, 32u, 33u, 33u, 34u, 34u, 35u,
+  36u, 36u, 37u, 38u, 38u, 39u, 40u, 40u,
+  41u, 42u, 43u, 43u, 44u, 45u, 46u, 47u,
+  47u, 48u, 49u, 50u, 51u, 52u, 53u, 54u,
+  55u, 56u, 57u, 58u, 59u, 60u, 61u, 63u,
+  64u, 65u, 67u, 68u, 70u, 72u, 73u, 75u,
+  77u, 79u, 82u, 85u, 88u, 91u, 96u, 103u,
+  128u, 153u, 160u, 165u, 168u, 171u, 174u, 177u,
+  179u, 181u, 183u, 184u, 186u, 188u, 189u, 191u,
+  192u, 193u, 195u, 196u, 197u, 198u, 199u, 200u,
+  201u, 202u, 203u, 204u, 205u, 206u, 207u, 208u,
+  209u, 209u, 210u, 211u, 212u, 213u, 213u, 214u,
+  215u, 216u, 216u, 217u, 218u, 218u, 219u, 220u,
+  220u, 221u, 222u, 222u, 223u, 223u, 224u, 225u,
+  225u, 226u, 226u, 227u, 227u, 228u, 229u, 229u,
+  230u, 230u, 231u, 231u, 232u, 232u, 233u, 233u,
+  234u, 234u, 235u, 235u, 236u, 236u, 237u, 237u,
+  237u, 238u, 238u, 239u, 239u, 240u, 240u, 241u,
+  241u, 241u, 242u, 242u, 243u, 243u, 243u, 244u,
+  244u, 245u, 245u, 245u, 246u, 246u, 247u, 247u,
+  247u, 248u, 248u, 249u, 249u, 249u, 250u, 250u,
+  250u, 251u, 251u, 252u, 252u, 252u, 253u, 253u,
+  253u, 254u, 254u, 254u, 255u, 255u, 255u, 255u,
+};
+
+static const uint8_t
 WUFFS_HANDSUM__SMOOTHING_PAIRS_16X16[56] WUFFS_BASE__POTENTIALLY_UNUSED = {
   7u, 8u, 23u, 24u, 39u, 40u, 55u, 56u,
   71u, 72u, 87u, 88u, 103u, 104u, 112u, 128u,
@@ -51911,6 +51947,18 @@ wuffs_handsum__decoder__upsample_chroma_and_alpha(
           (((uint32_t)(self->private_data.f_buffers[1u][v_y1][((4u * v_x0) + 3u)])) * 3u) +
           ((uint32_t)(self->private_data.f_buffers[1u][v_y1][((4u * v_x1) + 3u)])) +
           8u) / 16u)));
+      v_x += 1u;
+    }
+    v_y += 1u;
+  }
+  if (self->private_impl.f_color < 3u) {
+    return wuffs_base__make_empty_struct();
+  }
+  v_y = 0u;
+  while (v_y < 16u) {
+    v_x = 0u;
+    while (v_x < 16u) {
+      self->private_data.f_buffers[0u][v_y][((4u * v_x) + 3u)] = WUFFS_HANDSUM__CUBE_ROOT[self->private_data.f_buffers[0u][v_y][((4u * v_x) + 3u)]];
       v_x += 1u;
     }
     v_y += 1u;
