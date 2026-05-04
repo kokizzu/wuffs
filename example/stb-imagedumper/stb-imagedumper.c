@@ -639,6 +639,8 @@ struct {
 static const char* g_usage =
     "Usage: stb-imagedumper *.{jpeg,png}\n"
     "\n"
+    "If no filenames are given then it defaults to /dev/stdin\n"
+    "\n"
     "Flags:\n"
     "    -a or -ascii-art (use ASCII art instead of ANSI color codes)\n"
     "    -B or -braille-art-dark-mode (use white-on-black Braille art)\n"
@@ -1152,5 +1154,9 @@ main(int argc, char** argv) {
     const char* filename = g_flags.remaining_argv[c];
     handle(filename, get_filesize(filename), NULL, 0);
   }
+  if (g_flags.remaining_argc == 0) {
+    handle("/dev/stdin", 0, NULL, 0);
+  }
+
   return 0;
 }
