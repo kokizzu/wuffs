@@ -645,7 +645,8 @@ static const char* g_usage =
     "    -a or -ascii-art (use ASCII art instead of ANSI color codes)\n"
     "    -B or -braille-art-dark-mode (use white-on-black Braille art)\n"
     "    -b or -braille-art-light-mode (use black-on-white Braille art)\n"
-    "    -c=orange or -background-color=ff9800 (set a background color)\n"
+    "    -c=orange or -bg=f90 or -background-color=ff9800 (set a background\n"
+    "        color, for transparent input)\n"
     "    -demo (dump the built-in demonstration images)\n"
     "    -n or -natural-size (use each image's natural size); this\n"
     "        overrides -resize=N\n"
@@ -696,7 +697,9 @@ parse_flags(int argc, char** argv) {
       g_flags.natural_size = true;
       continue;
     }
-    if (!strncmp(arg, "c=", 2) || !strncmp(arg, "background-color=", 17)) {
+    if (!strncmp(arg, "c=", 2) ||   //
+        !strncmp(arg, "bg=", 3) ||  //
+        !strncmp(arg, "background-color=", 17)) {
       while (*arg++ != '=') {
       }
       int64_t c = parse_color(arg, strlen(arg));

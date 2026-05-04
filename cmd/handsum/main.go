@@ -39,10 +39,18 @@ var (
 	encodeFlag    = flag.Bool("encode", false, "")
 	roundtripFlag = flag.Bool("roundtrip", false, "")
 
-	bFlag = flag.String("b", "", "")
-	cFlag = flag.String("c", "rgb", "")
-	qFlag = flag.Int("q", 3, "")
+	bFlag  = flag.String("b", "", "")
+	bgFlag = flag.String("bg", "", "")
+	cFlag  = flag.String("c", "rgb", "")
+	qFlag  = flag.Int("q", 3, "")
 )
+
+func getBFlag() string {
+	if *bFlag != "" {
+		return *bFlag
+	}
+	return *bgFlag
+}
 
 const usageStr = `handsum decodes and encodes the Handsum lossy image file format.
 
@@ -61,10 +69,10 @@ Encode inputs BMP, GIF, JPEG, PNG, TIFF or WEBP and outputs Handsum.
 Roundtrip is equivalent to encode (to an ephemeral file) and then decode.
 
 For encode or roundtrip, the default color and quality is -c=rgb -q=3 (best
-quality; 147 bytes per file) but you can choose a lower setting. The -b flag
-sets a background color (in case the input has transparency). For example:
+quality; 147 bytes per file) but you can choose a lower setting. The -b or -bg
+flag sets a background color (in case the input is transparent). For example:
 
-handsum -encode -b=darkblue -c=rgb -q=2 foo.png > foo.handsum
+handsum -encode -bg=darkblue -c=rgb -q=2 foo.png > foo.handsum
 
 ----
 
@@ -74,7 +82,7 @@ Flags:
   -encode     Whether to encode the input.
   -roundtrip  Whether to encode-and-decode the input.
 
-  -b  Encoding background color: e.g. red, white, 9c27b0 or #ff8.
+  -b or -bg  Encoding background color: e.g. red, white, 9c27b0 or #ff8.
       The default is ff9e9e9e (for -c=1 or -c=3) or 00000000 (for -c=4).
   -c  Encoding color: gray (1), rgb (3, default) or rgba (4).
   -q  Encoding quality: 0, 1, 2 or 3 (default).
@@ -100,7 +108,7 @@ func main1() error {
 	}
 	quality := handsum.Quality(max(0, min(3, *qFlag)))
 
-	if (color <= handsum.ColorRGB) && (*bFlag == "") {
+	if (color <= handsum.ColorRGB) && (getBFlag() == "") {
 		*bFlag = "ff9e9e9e"
 	}
 
@@ -169,7 +177,7 @@ func roundtrip(inFile *os.File, color handsum.Color, quality handsum.Quality) er
 }
 
 func applyBackgroundColor(src image.Image) image.Image {
-	backgroundColor, _ := parsecolor.Parse(*bFlag)
+	backgroundColor, _ := parsecolor.Parse(getBFlag())
 	r16, g16, b16, a16 := backgroundColor.RGBA()
 	if (r16 == 0) && (g16 == 0) && (b16 == 0) && (a16 == 0) {
 		return src
