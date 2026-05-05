@@ -51002,7 +51002,10 @@ wuffs_handsum__decoder__do_decode_image_config(
       goto exit;
     }
     self->private_impl.f_quality = ((v_c32 >> 5u) & 3u);
-    if ((v_c32 & 16u) == 0u) {
+    if ((v_c32 & 31u) == 31u) {
+      status = wuffs_base__make_status(wuffs_handsum__error__bad_header);
+      goto exit;
+    } else if ((v_c32 & 16u) == 0u) {
       self->private_impl.f_width = 16u;
       self->private_impl.f_height = ((v_c32 & 15u) + 1u);
     } else {

@@ -78,7 +78,9 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
     }
     this.quality = (c32 >> 5) & 3
 
-    if (c32 & 0x10) == 0x00 {  // Landscape.
+    if (c32 & 0x1F) == 0x1F {  // Reserved for future expansion.
+        return "#bad header"
+    } else if (c32 & 0x10) == 0x00 {  // Landscape.
         this.width = 16
         this.height = (c32 & 0x0F) + 1
     } else {  // Portrait.

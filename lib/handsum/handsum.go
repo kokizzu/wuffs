@@ -292,19 +292,22 @@ func Encode(w io.Writer, src image.Image, options *EncodeOptions) error {
 		return ErrBadArgument
 	}
 
-	aspectRatio := byte(0x0F)
-	if srcW > srcH { // Landscape.
+	aspectRatio := byte(0)
+	if srcW >= srcH { // Landscape.
 		a := ((int64(srcH) * 32) + int64(srcW)) / (2 * int64(srcW))
 		if a <= 0 {
 			a = 1
 		}
 		aspectRatio = byte(a-1) | 0x00
-	} else if srcW < srcH { // Portrait.
+	} else { // Portrait.
 		a := ((int64(srcW) * 32) + int64(srcH)) / (2 * int64(srcH))
 		if a <= 0 {
 			a = 1
 		}
 		aspectRatio = byte(a-1) | 0x10
+		if aspectRatio == 0x1F { // Reserved for future expansion.
+			aspectRatio = 0x0F
+		}
 	}
 
 	alphasQuadBlock := lowleveljpeg.QuadBlockU8{}
@@ -465,6 +468,10 @@ func DecodeConfig(r io.Reader) (image.Config, error) {
 	if !ok {
 		return image.Config{}, ErrNotAHandsumFile
 	}
+	w, h, ok := decodeWidthAndHeight(buf[2])
+	if !ok {
+		return image.Config{}, ErrNotAHandsumFile
+	}
 
 	cm := color.GrayModel
 	if c == ColorRGB {
@@ -473,7 +480,6 @@ func DecodeConfig(r io.Reader) (image.Config, error) {
 		cm = color.NRGBAModel
 	}
 
-	w, h := decodeWidthAndHeight(buf[2])
 	return image.Config{
 		ColorModel: cm,
 		Width:      w,
@@ -508,6 +514,10 @@ func Decode(r io.Reader) (image.Image, error) {
 	q := Quality((buf[2] >> 5) & 0x03)
 	if _, err := io.ReadFull(r, buf[fileSizeHeader:fileSize(c, q)]); err != nil {
 		return nil, err
+	}
+	dstW, dstH, ok := decodeWidthAndHeight(buf[2])
+	if !ok {
+		return nil, ErrNotAHandsumFile
 	}
 
 	bitOffset := 3 * 8
@@ -548,19 +558,20 @@ func Decode(r io.Reader) (image.Image, error) {
 		}
 	}
 
-	dstW, dstH := decodeWidthAndHeight(buf[2])
 	return finishDecode(dstW, dstH, c, &lumaQuadBlockU8, &cbQuadBlockU8, &crQuadBlockU8, &aaQuadBlockU8), nil
 }
 
-func decodeWidthAndHeight(buf2 byte) (w int, h int) {
-	if (buf2 & 0x10) == 0 { // Landscape.
+func decodeWidthAndHeight(buf2 byte) (w int, h int, ok bool) {
+	if (buf2 & 0x1F) == 0x1F {
+		return 0, 0, false
+	} else if (buf2 & 0x10) == 0x00 { // Landscape.
 		w = 16
 		h = 1 + int(buf2&0x0F)
 	} else { // Portrait.
 		w = 1 + int(buf2&0x0F)
 		h = 16
 	}
-	return w, h
+	return w, h, true
 }
 
 type decodeBlockFunc func(dst []byte, stride int, buf *[fileSizeMax]byte, bitOffset int, nCoeffs int) int
