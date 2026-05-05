@@ -1151,14 +1151,14 @@ main(int argc, char** argv) {
       handle(demos[c].filename, demos[c].src_len, demos[c].src_ptr,
              demos[c].src_len);
     }
+
+  } else if (g_flags.remaining_argc == 0) {
+    handle("/dev/stdin", 0, NULL, 0);
   }
 
   for (int c = 0; c < g_flags.remaining_argc; c++) {
     const char* filename = g_flags.remaining_argv[c];
     handle(filename, get_filesize(filename), NULL, 0);
-  }
-  if (g_flags.remaining_argc == 0) {
-    handle("/dev/stdin", 0, NULL, 0);
   }
 
   return 0;
