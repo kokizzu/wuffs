@@ -24,6 +24,7 @@ json:   test/data/*.json  ../simdjson_corpus/*  ../JSONTestSuite/test_*/*.json
 png:    test/data/*.png   test/data/artificial-png/*.png  ../pngsuite_corpus/*.png
 targa:  test/data/*.tga
 wbmp:   test/data/*.wbmp
+webp:   test/data/*.webp  ../webp_corpus/*.webp
 xz:     test/data/*.xz    ../xz_corpus/*.xz
 zlib:   test/data/*.zlib
 
