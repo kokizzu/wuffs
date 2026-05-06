@@ -23,7 +23,7 @@ pub struct decoder? implements base.image_decoder(
         width   : base.u32[..= 16],
         height  : base.u32[..= 16],
         color   : base.u32[..= 3],  // 0=gray, 2=rgb, 3=rgba.
-        quality : base.u32[..= 3],
+        quality : base.u32[..= 3],  // 0=worst, 3=best.
 
         // The call sequence state machine is discussed in
         // (/doc/std/image-decoders-call-sequence.md).

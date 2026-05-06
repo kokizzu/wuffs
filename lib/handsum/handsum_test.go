@@ -32,11 +32,11 @@ func testRoundTrip(tt *testing.T, src image.Image, pixelValue uint8, justCheckTh
 	}
 
 	for _, c := range colors {
-		for q := Quality(0); q < 4; q++ {
+		for q := QualityWorst; q <= QualityBest; q++ {
 			buf := &bytes.Buffer{}
 			err := Encode(buf, src, &EncodeOptions{
-				Color:   MakeOptionColor(c),
-				Quality: MakeOptionQuality(q),
+				Color:   c,
+				Quality: q,
 			})
 			if err != nil {
 				tt.Fatalf("c=%d: q=%d: Encode: %v", c, q, err)

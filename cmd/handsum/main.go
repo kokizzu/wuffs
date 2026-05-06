@@ -42,7 +42,7 @@ var (
 	bFlag  = flag.String("b", "", "")
 	bgFlag = flag.String("bg", "", "")
 	cFlag  = flag.String("c", "rgb", "")
-	qFlag  = flag.Int("q", 3, "")
+	qFlag  = flag.Int("q", 4, "")
 )
 
 func getBFlag() string {
@@ -68,7 +68,7 @@ Decode inputs Handsum and outputs PNG.
 Encode inputs BMP, GIF, JPEG, PNG, TIFF or WEBP and outputs Handsum.
 Roundtrip is equivalent to encode (to an ephemeral file) and then decode.
 
-For encode or roundtrip, the default color and quality is -c=rgb -q=3 (best
+For encode or roundtrip, the default color and quality is -c=rgb -q=4 (best
 quality; 147 bytes per file) but you can choose a lower setting. The -b or -bg
 flag sets a background color (in case the input is transparent). For example:
 
@@ -85,7 +85,7 @@ Flags:
   -b or -bg  Encoding background color: e.g. red, white, 9c27b0 or #ff8.
       The default is ff9e9e9e (for -c=1 or -c=3) or 00000000 (for -c=4).
   -c  Encoding color: gray (1), rgb (3, default) or rgba (4).
-  -q  Encoding quality: 0, 1, 2 or 3 (default).
+  -q  Encoding quality: 1, 2, 3 or 4 (default).
 `
 
 func main() {
@@ -106,7 +106,7 @@ func main1() error {
 	case "4", "RGBA", "Rgba", "rgba":
 		color = handsum.ColorRGBA
 	}
-	quality := handsum.Quality(max(0, min(3, *qFlag)))
+	quality := handsum.Quality(max(1, min(4, *qFlag)))
 
 	if (color <= handsum.ColorRGB) && (getBFlag() == "") {
 		*bFlag = "ff9e9e9e"
@@ -158,8 +158,8 @@ func encode(w io.Writer, inFile *os.File, color handsum.Color, quality handsum.Q
 	}
 
 	return handsum.Encode(w, src, &handsum.EncodeOptions{
-		Color:   handsum.MakeOptionColor(color),
-		Quality: handsum.MakeOptionQuality(quality),
+		Color:   color,
+		Quality: quality,
 	})
 }
 

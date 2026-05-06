@@ -15,33 +15,35 @@
 // This is a very lossy format for very small thumbnails. Very small in terms
 // of image dimensions, up to 16×16 pixels, but also in terms of file size.
 //
-// The file format has three color settings (Gray, RGB and RGBA) and four
+// The file format has three color settings (1=Gray, 3=RGB and 4=RGBA) and four
 // quality settings. For any given color-and-quality combination, every Handsum
-// image file with those settings is a fixed number of bytes. For color=Gray:
+// image file with those settings is a fixed number of bytes.
 //
-//   - A quality=0 file is  33 bytes long.
-//   - A quality=1 file is  51 bytes long.
-//   - A quality=2 file is  83 bytes long.
-//   - A quality=3 file is  99 bytes long.
+// For color=1, also known as color=Gray:
 //
-// For color=RGB:
+//   - A quality=1 file is  33 bytes long.
+//   - A quality=2 file is  51 bytes long.
+//   - A quality=3 file is  83 bytes long.
+//   - A quality=4 file is  99 bytes long.
 //
-//   - A quality=0 file is  48 bytes long.
-//   - A quality=1 file is  75 bytes long.
-//   - A quality=2 file is 123 bytes long.
+// For color=3, also known as color=RGB:
+//
+//   - A quality=1 file is  48 bytes long.
+//   - A quality=2 file is  75 bytes long.
+//   - A quality=3 file is 123 bytes long.
+//   - A quality=4 file is 147 bytes long.
+//
+// For color=4, also known as color=RGBA:
+//
+//   - A quality=1 file is  72 bytes long.
+//   - A quality=2 file is  99 bytes long.
 //   - A quality=3 file is 147 bytes long.
+//   - A quality=4 file is 171 bytes long.
 //
-// For color=RGBA:
-//
-//   - A quality=0 file is  72 bytes long.
-//   - A quality=1 file is  99 bytes long.
-//   - A quality=2 file is 147 bytes long.
-//   - A quality=3 file is 171 bytes long.
-//
-// Every Gray/q0 image file is exactly 48 bytes (384 bits) long. For a 16×16
+// Every Gray/q1 image file is exactly 48 bytes (384 bits) long. For a 16×16
 // pixel image, this uses 1.5 bits (0.1875 bytes) per pixel.
 //
-// Every RGB/q3 image file is exactly 147 bytes (1176 bits) long. This uses
+// Every RGB/q4 image file is exactly 147 bytes (1176 bits) long. This uses
 // 4.59375 bits per pixel for a 16×16 pixel image (a 1:1 aspect ratio), or
 // 6.125 bits per pixel for a 16×12 pixel image (a 4:3 aspect ratio).
 //
@@ -60,10 +62,10 @@
 // Luma blocks without explicitly recording the 2 Chroma blocks.
 //
 // The color=RGBA payload extends the color=RGB payload with one more 8×8 Alpha
-// block. That seventh block is always encoded in 24 bytes (as if quality=3).
+// block. That seventh block is always encoded in 24 bytes (as if quality=4).
 //
-// Each 8×8 block is sub-divided into 8×8 (for q0), 4×4 (for q1 and q2) or 2×2
-// (for q3) tiles. DCT (Discrete Cosine Transform) is applied to each tile,
+// Each 8×8 block is sub-divided into 8×8 (for q1), 4×4 (for q2 and q3) or 2×2
+// (for q4) tiles. DCT (Discrete Cosine Transform) is applied to each tile,
 // producing 64, 16, 16 or 4 DCT coefficients (depending on the quality). Only
 // the 15 (out of 64), 6 (out of 16), 10 (out of 16) or 3 (out of 4) lowest
 // frequency DCT coefficients are kept for each tile. Lowest frequency means
@@ -92,7 +94,7 @@ package handsum
 // tiles are 8×8, 4×4 or 2×2):
 //
 // ======    ======== DC ========    ======== AC ========
-// Bucket      q0   q1,q2      q3      q0   q1,q2      q3
+// Bucket      q1   q2,q3      q4      q1   q2,q3      q4
 //
 // 0x0      -1024    -512    -256    -512    -256    -128
 // 0x1       -888    -444    -222    -448    -224    -112
@@ -187,7 +189,7 @@ func fileSize(c Color, q Quality) int {
 		"\x21\x33\x53\x63" +
 		"\x00\x00\x00\x00" +
 		"\x30\x4B\x7B\x93" +
-		"\x48\x63\x93\xAB")[(int((c-1)&3)<<2)|int(q&3)])
+		"\x48\x63\x93\xAB")[(int((c-1)&3)<<2)|int((q-1)&3)])
 }
 
 // Color is a Handsum image's color setting, either 1 (Gray), 3 (RGB) or 4
@@ -207,74 +209,52 @@ func (c Color) numberOfBlocks() int {
 	return 6
 }
 
-// OptionColor is an option type, what Rust would call an Option<Color>.
-type OptionColor struct {
-	representation uint8
-}
-
-// MakeOptionColor returns an option value that is Some(c), instead of the
-// OptionColor zero-value, which is None.
-func MakeOptionColor(c Color) OptionColor {
-	if (c == ColorGray) || (c == ColorRGB) || (c == ColorRGBA) {
-		return OptionColor{representation: 0x80 | uint8(c)}
-	}
-	return OptionColor{}
-}
-
-// Quality is a Handsum image's quality setting, from 0 (worst) to 3 (best).
+// Quality is a Handsum image's quality setting, from 1 (worst) to 4 (best).
 //
 // "Best" is relative to the other settings. In absolute terms, Handsum's image
 // quality ranges from "potato" (best) to "extremely potato" (worst).
 type Quality uint8
 
 const (
-	QualityWorst      = Quality(0)
-	QualityMediumLow  = Quality(1)
-	QualityMediumHigh = Quality(2)
-	QualityBest       = Quality(3)
+	QualityWorst      = Quality(1)
+	QualityMediumLow  = Quality(2)
+	QualityMediumHigh = Quality(3)
+	QualityBest       = Quality(4)
 )
 
 func (q Quality) numberOfCoefficients() int {
 	// 15 (out of 64), 6 (out of 16), 10 (out of 16), 3 (out of 4).
-	return int("\x0F\x06\x0A\x03"[q&3])
-}
-
-// OptionQuality is an option type, what Rust would call an Option<Quality>.
-type OptionQuality struct {
-	representation uint8
-}
-
-// MakeOptionQuality returns an option value that is Some(q), instead of the
-// OptionQuality zero-value, which is None.
-func MakeOptionQuality(q Quality) OptionQuality {
-	if (0 <= q) && (q <= 3) {
-		return OptionQuality{representation: 0x80 | uint8(q)}
-	}
-	return OptionQuality{}
+	return int("\x0F\x06\x0A\x03"[(q-1)&3])
 }
 
 // EncodeOptions are optional arguments to Encode. The zero value is valid and
 // means to use the default configuration, encoding to 147 bytes.
 type EncodeOptions struct {
-	// Color is the color setting. The None option (the zero OptionColor value)
-	// means to use the default, ColorRGB.
-	Color OptionColor
+	// Color is the color setting. The zero value means to use the default,
+	// ColorRGB.
+	Color Color
 
-	// Quality is the quality-versus-file-size setting. The None option (the
-	// zero OptionQuality value) means to use the default, QualityBest.
-	Quality OptionQuality
+	// Quality is the quality-versus-file-size setting. The zero value means to
+	// use the default, QualityBest (which is also the largest file size).
+	Quality Quality
 }
 
 func (o *EncodeOptions) color() Color {
-	if (o != nil) && ((o.Color.representation & 0x80) != 0) {
-		return Color(o.Color.representation & 0x7F)
+	if o != nil {
+		switch o.Color {
+		case ColorGray, ColorRGB, ColorRGBA:
+			return o.Color
+		}
 	}
 	return ColorRGB
 }
 
 func (o *EncodeOptions) quality() Quality {
-	if (o != nil) && ((o.Quality.representation & 0x80) != 0) {
-		return Quality(o.Quality.representation & 0x7F)
+	if o != nil {
+		switch o.Quality {
+		case QualityWorst, QualityMediumLow, QualityMediumHigh, QualityBest:
+			return o.Quality
+		}
 	}
 	return QualityBest
 }
@@ -326,10 +306,10 @@ func Encode(w io.Writer, src image.Image, options *EncodeOptions) error {
 	buf := [fileSizeMax]byte{}
 	buf[0] = Magic0[0]
 	buf[1] = Magic0[1] | uint8((c-1)>>1)
-	buf[2] = ((uint8(c - 1)) << 7) | ((uint8(q)) << 5) | aspectRatio
+	buf[2] = ((uint8(c - 1)) << 7) | ((uint8(q - 1)) << 5) | aspectRatio
 
 	bitOffset := 3 * 8
-	encodeBlock := encodeBlockFuncs[q]
+	encodeBlock := encodeBlockFuncs[(q-1)&3]
 	for i := range c.numberOfBlocks() {
 		bitOffset = encodeBlock(&buf, bitOffset, &dstU8s[i], q.numberOfCoefficients())
 	}
@@ -511,7 +491,7 @@ func Decode(r io.Reader) (image.Image, error) {
 	if !ok {
 		return nil, ErrNotAHandsumFile
 	}
-	q := Quality((buf[2] >> 5) & 0x03)
+	q := Quality((buf[2]>>5)&0x03) + 1
 	if _, err := io.ReadFull(r, buf[fileSizeHeader:fileSize(c, q)]); err != nil {
 		return nil, err
 	}
@@ -521,7 +501,7 @@ func Decode(r io.Reader) (image.Image, error) {
 	}
 
 	bitOffset := 3 * 8
-	decodeBlock := decodeBlockFuncs[q]
+	decodeBlock := decodeBlockFuncs[(q-1)&3]
 	lumaQuadBlockU8 := lowleveljpeg.QuadBlockU8{}
 	bitOffset = decodeBlock(lumaQuadBlockU8[0x00:], 16, &buf, bitOffset, q.numberOfCoefficients())
 	bitOffset = decodeBlock(lumaQuadBlockU8[0x08:], 16, &buf, bitOffset, q.numberOfCoefficients())

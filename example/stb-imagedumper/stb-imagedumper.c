@@ -230,15 +230,15 @@ const uint8_t g_src_ptr__mona_lisa_21_32_th[] = {
 };
 const size_t g_src_len__mona_lisa_21_32_th = 24;
 
-const uint8_t g_src_ptr__mona_lisa_21_32_c3q0_handsum[] = {
+const uint8_t g_src_ptr__mona_lisa_21_32_c3q1_handsum[] = {
     0xfe, 0xd7, 0x1a, 0x76, 0x8b, 0x9a, 0x76, 0x58, 0x88, 0x99, 0x68, 0xb6,
     0x79, 0xaa, 0xa6, 0x86, 0x99, 0x97, 0x63, 0x7b, 0x89, 0x98, 0xb9, 0x59,
     0x79, 0x28, 0xb8, 0x88, 0x8a, 0x89, 0x8a, 0x99, 0x98, 0x77, 0x94, 0x98,
     0x79, 0x88, 0x88, 0x88, 0x97, 0x79, 0x87, 0x77, 0x88, 0x88, 0x88, 0x98,
 };
-const size_t g_src_len__mona_lisa_21_32_c3q0_handsum = 48;
+const size_t g_src_len__mona_lisa_21_32_c3q1_handsum = 48;
 
-const uint8_t g_src_ptr__mona_lisa_21_32_c3q3_handsum[] = {
+const uint8_t g_src_ptr__mona_lisa_21_32_c3q4_handsum[] = {
     0xfe, 0xd7, 0x7a, 0x87, 0x76, 0x68, 0x87, 0x75, 0x89, 0x77, 0x8c, 0xb7,
     0xc7, 0x9b, 0x78, 0x64, 0x5a, 0x98, 0xb4, 0x79, 0xe6, 0x75, 0x57, 0x8a,
     0x84, 0x88, 0x03, 0x86, 0x7a, 0x68, 0x87, 0x76, 0x68, 0xf4, 0x55, 0xe2,
@@ -253,7 +253,7 @@ const uint8_t g_src_ptr__mona_lisa_21_32_c3q3_handsum[] = {
     0xba, 0x86, 0x58, 0x8a, 0x9a, 0xa8, 0x89, 0x9a, 0xa7, 0x79, 0xa9, 0xc8,
     0x99, 0x8b, 0x87,
 };
-const size_t g_src_len__mona_lisa_21_32_c3q3_handsum = 147;
+const size_t g_src_len__mona_lisa_21_32_c3q4_handsum = 147;
 
 const uint8_t g_src_ptr__mona_lisa_21_32_etc2_pkm[] = {
     0x50, 0x4b, 0x4d, 0x20, 0x32, 0x30, 0x00, 0x01, 0x00, 0x18, 0x00, 0x20,
@@ -1115,14 +1115,14 @@ main(int argc, char** argv) {
           g_src_len__mona_lisa_21_32_th,
       },
       {
-          "«demo»/mona-lisa.21x32.c3q0.handsum",
-          g_src_ptr__mona_lisa_21_32_c3q0_handsum,
-          g_src_len__mona_lisa_21_32_c3q0_handsum,
+          "«demo»/mona-lisa.21x32.c3q1.handsum",
+          g_src_ptr__mona_lisa_21_32_c3q1_handsum,
+          g_src_len__mona_lisa_21_32_c3q1_handsum,
       },
       {
-          "«demo»/mona-lisa.21x32.c3q3.handsum",
-          g_src_ptr__mona_lisa_21_32_c3q3_handsum,
-          g_src_len__mona_lisa_21_32_c3q3_handsum,
+          "«demo»/mona-lisa.21x32.c3q4.handsum",
+          g_src_ptr__mona_lisa_21_32_c3q4_handsum,
+          g_src_len__mona_lisa_21_32_c3q4_handsum,
       },
       {
           "«demo»/mona-lisa.21x32.etc2.pkm",
