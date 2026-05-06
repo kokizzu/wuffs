@@ -101,9 +101,9 @@ type EncoderOptions struct {
 // AddN takes ArrayNBlockI16 arguments, which are post-FDCT (when encoding) or
 // pre-IDCT (when decoding) coefficients.
 //
-// To get ArrayNBlockI16 values from pixels, use ExtractFrom on an image.Image
-// (to get an array of BlockU8 values) and then FowardDCTFrom (to get an array
-// of BlockI16 values). See Example_basic for an example.
+// To get ArrayNBlockI16 values from pixels, use ExtractYCbCrFrom on an
+// image.Image (to get an array of BlockU8 values) and then FowardDCTFrom (to
+// get an array of BlockI16 values). See Example_basic for an example.
 //
 // An Encoder makes no allocations, other than the Encoder struct itself and
 // any allocations that the passed io.Writer makes.

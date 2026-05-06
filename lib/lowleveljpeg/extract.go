@@ -15,9 +15,9 @@ import (
 	"image/color"
 )
 
-// ExtractFrom sets dst to a single channel (Gray) 8×8 MCU (Minimum Coded
+// ExtractYCbCrFrom sets dst to a single channel (Gray) 8×8 MCU (Minimum Coded
 // Unit), with the given top-left corner, from the image m.
-func (dst *Array1BlockU8) ExtractFrom(m image.Image, topLeftX int, topLeftY int) {
+func (dst *Array1BlockU8) ExtractYCbCrFrom(m image.Image, topLeftX int, topLeftY int) {
 	if dst == nil {
 		return
 	}
@@ -57,10 +57,10 @@ func (dst *Array1BlockU8) ExtractFrom(m image.Image, topLeftX int, topLeftY int)
 	fillRightAndDown(&dst[0], topLeftX, topLeftY, bounds.Max.X, bounds.Max.Y)
 }
 
-// ExtractFrom sets dst to a three channel (Luma, Chroma-blue, Chroma-red) 8×8
-// 4:4:4 MCU (Minimum Coded Unit), with the given top-left corner, from the
+// ExtractYCbCrFrom sets dst to a three channel (Luma, Chroma-blue, Chroma-red)
+// 8×8 4:4:4 MCU (Minimum Coded Unit), with the given top-left corner, from the
 // image m.
-func (dst *Array3BlockU8) ExtractFrom(m image.Image, topLeftX int, topLeftY int) {
+func (dst *Array3BlockU8) ExtractYCbCrFrom(m image.Image, topLeftX int, topLeftY int) {
 	if dst == nil {
 		return
 	}
@@ -116,7 +116,7 @@ func (dst *Array3BlockU8) ExtractFrom(m image.Image, topLeftX int, topLeftY int)
 	fillRightAndDown(&dst[2], topLeftX, topLeftY, bounds.Max.X, bounds.Max.Y)
 }
 
-// ExtractFrom sets dst to a three channel (Luma, Chroma-blue, Chroma-red)
+// ExtractYCbCrFrom sets dst to a three channel (Luma, Chroma-blue, Chroma-red)
 // 16×16 4:2:0 MCU (Minimum Coded Unit, with the given top-left corner, from
 // the image m.
 //
@@ -127,7 +127,7 @@ func (dst *Array3BlockU8) ExtractFrom(m image.Image, topLeftX int, topLeftY int)
 //   - Luma bottom right
 //   - Chroma-blue
 //   - Chroma-red
-func (dst *Array6BlockU8) ExtractFrom(m image.Image, topLeftX int, topLeftY int) {
+func (dst *Array6BlockU8) ExtractYCbCrFrom(m image.Image, topLeftX int, topLeftY int) {
 	if dst == nil {
 		return
 	}
@@ -137,10 +137,10 @@ func (dst *Array6BlockU8) ExtractFrom(m image.Image, topLeftX int, topLeftY int)
 	}
 
 	tmp := [4]Array3BlockU8{}
-	tmp[0].ExtractFrom(m, topLeftX+0, topLeftY+0)
-	tmp[1].ExtractFrom(m, topLeftX+8, topLeftY+0)
-	tmp[2].ExtractFrom(m, topLeftX+0, topLeftY+8)
-	tmp[3].ExtractFrom(m, topLeftX+8, topLeftY+8)
+	tmp[0].ExtractYCbCrFrom(m, topLeftX+0, topLeftY+0)
+	tmp[1].ExtractYCbCrFrom(m, topLeftX+8, topLeftY+0)
+	tmp[2].ExtractYCbCrFrom(m, topLeftX+0, topLeftY+8)
+	tmp[3].ExtractYCbCrFrom(m, topLeftX+8, topLeftY+8)
 
 	dst[0] = tmp[0][0]
 	dst[1] = tmp[1][0]

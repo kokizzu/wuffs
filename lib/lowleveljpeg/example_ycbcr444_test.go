@@ -172,7 +172,7 @@ func Example_yCbCr444() {
 		srcI16s := lowleveljpeg.Array3BlockI16{}
 		for y := bounds.Min.Y; y < bounds.Max.Y; y += 8 {
 			for x := bounds.Min.X; x < bounds.Max.X; x += 8 {
-				srcU8s.ExtractFrom(src, x, y)
+				srcU8s.ExtractYCbCrFrom(src, x, y)
 				example.transform(&srcI16s, &srcU8s)
 				if err := enc.Add3(buf, &srcI16s); err != nil {
 					log.Fatalf("enc.Add3: %v", err)

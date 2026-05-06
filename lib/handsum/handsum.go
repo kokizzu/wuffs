@@ -293,7 +293,7 @@ func Encode(w io.Writer, src image.Image, options *EncodeOptions) error {
 	alphasQuadBlock := lowleveljpeg.QuadBlockU8{}
 	dst := scaleSrc(src, &alphasQuadBlock)
 	dstU8s := lowleveljpeg.Array6BlockU8{}
-	dstU8s.ExtractFrom(dst, 0, 0)
+	dstU8s.ExtractYCbCrFrom(dst, 0, 0)
 
 	// Biasing the Chroma blocks by +8 shifts the neutral (gray) Chroma values
 	// from 0x80 to 0x88. DC coefficient bias-and-quantization can losslessly

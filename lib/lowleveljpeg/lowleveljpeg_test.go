@@ -97,7 +97,7 @@ func testLowLevelJpegEncodeJpegDecode(tt *testing.T, src image.RGBA64Image, colo
 		srcI16s := Array1BlockI16{}
 		for y := bounds.Min.Y; y < bounds.Max.Y; y += 8 {
 			for x := bounds.Min.X; x < bounds.Max.X; x += 8 {
-				srcU8s.ExtractFrom(src, x, y)
+				srcU8s.ExtractYCbCrFrom(src, x, y)
 				srcI16s.ForwardDCTFrom(&srcU8s)
 				if err := enc.Add1(buf, &srcI16s); err != nil {
 					tt.Fatalf("enc.Add1: %v", err)
@@ -110,7 +110,7 @@ func testLowLevelJpegEncodeJpegDecode(tt *testing.T, src image.RGBA64Image, colo
 		srcI16s := Array3BlockI16{}
 		for y := bounds.Min.Y; y < bounds.Max.Y; y += 8 {
 			for x := bounds.Min.X; x < bounds.Max.X; x += 8 {
-				srcU8s.ExtractFrom(src, x, y)
+				srcU8s.ExtractYCbCrFrom(src, x, y)
 				srcI16s.ForwardDCTFrom(&srcU8s)
 				if err := enc.Add3(buf, &srcI16s); err != nil {
 					tt.Fatalf("enc.Add3: %v", err)

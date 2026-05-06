@@ -55,7 +55,7 @@ func Example_basic() {
 	srcI16s := lowleveljpeg.Array6BlockI16{}
 	for y := bounds.Min.Y; y < bounds.Max.Y; y += dy {
 		for x := bounds.Min.X; x < bounds.Max.X; x += dx {
-			srcU8s.ExtractFrom(src, x, y)
+			srcU8s.ExtractYCbCrFrom(src, x, y)
 			srcI16s.ForwardDCTFrom(&srcU8s)
 			if err := enc.Add6(buf, &srcI16s); err != nil {
 				log.Fatalf("enc.Add6: %v", err)
