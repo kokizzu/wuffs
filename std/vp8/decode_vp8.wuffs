@@ -8,34 +8,112 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+pub status "#bad QUIRK_SOURCE_LENGTH"
 pub status "#bad header"
+pub status "#missing QUIRK_SOURCE_LENGTH"
 pub status "#truncated input"
+pub status "#unsupported QUIRK_SOURCE_LENGTH"
 pub status "#unsupported VP8 file"
 
-pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
+pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0x20FF_FFFF
 
 pub struct decoder? implements base.image_decoder(
         width  : base.u32[..= 0x3FFF],
         height : base.u32[..= 0x3FFF],
 
+        // Width and height again, but this time measured in 16×16 macroblocks.
+        mbw : base.u32[..= 0x400],
+        mbh : base.u32[..= 0x400],
+
         // The call sequence state machine is discussed in
         // (/doc/std/image-decoders-call-sequence.md).
         call_sequence : base.u8,
 
+        is_key_frame : base.bool,
+
         frame_config_io_position : base.u64,
+
+        quirk_source_length : base.u64,
+
+        // Just under 144 MiB, for 9 partitions each up to 0xFF_FFFF bytes.
+        partitioned_data_length : base.u32[..= 0x08FF_FFF7],
+
+        // args.workbuf strides and offsets.
+        //
+        // The workbuf holds the YUV buffers (after decoding from the source
+        // bytes but before converting YUV to RGBX) and then also a copy of
+        // most of the source bytes themselves - the "at least 2, up to 9"
+        // partitions after the frame header. Decoding successive rows of
+        // macroblocks alternates between the other (not-first) partitions.
+        // Source bytes are processed with random (not sequential) access.
+        workbuf_yuv_y_stride  : base.u32[..= 0x4000],
+        workbuf_yuv_uv_stride : base.u32[..= 0x2000],
+        workbuf_yuv_y_end     : base.u64[..= 0x1000_0000],
+        workbuf_yuv_u_end     : base.u64[..= 0x1400_0000],
+        workbuf_yuv_v_end     : base.u64[..= 0x1800_0000],
+
+        // Partition lengths and per-partition entropy decoder state.
+        //
+        // On naming: "foobar_m1" is "foobar minus 1" and "foobar_m1s" is the
+        // plural, "an array of (foobar - 1) values".
+        part_workbuf_ris : array[9] base.u64,
+        part_range_m1s   : array[9] base.u32[..= 0xFF],
+        part_bits        : array[9] base.u32,
+        part_n_bits      : array[9] base.u32,
+        part_lens        : array[9] base.u32[..= 0xFF_FFFF],
+
+        // The number of other partitions (other than the first one), minus 1.
+        num_other_partitions_m1 : base.u32[..= 7],
+
+        // Segmentation parameters.
+        seg_enabled    : base.bool,
+        seg_update_map : base.bool,
+        seg_absolute   : base.bool,
+        seg_quants     : array[4] base.u8,
+        seg_strengths  : array[4] base.u8,
+        seg_probs      : array[3] base.u8,
+
+        // Loop filter parameters.
+        filt_simple         : base.bool,
+        filt_level          : base.u8[..= 63],
+        filt_sharpness      : base.u8[..= 7],
+        filt_deltas_enabled : base.bool,
+        filt_deltas         : array[2] array[4] base.u8,
+
+        // Dequantization parameters.
+        quant_yac_qi     : base.u32[..= 127],
+        quant_ydc_delta  : base.u32,
+        quant_y2dc_delta : base.u32,
+        quant_y2ac_delta : base.u32,
+        quant_uvdc_delta : base.u32,
+        quant_uvac_delta : base.u32,
+
+        // These 9 bits combine what RFC 6386 calls mb_no_skip_coeff (which we
+        // hold in the 0x100 bit) and prob_skip_false (in the low 8 bits).
+        prob_skip : base.u32[..= 0x1FF],
 
         dst_x : base.u32,
         dst_y : base.u32,
 
         swizzler : base.pixel_swizzler,
         util     : base.utility,
+) + (
+        // 1056 is (4 planes, 8 bands, 3 contexts, 11 tokens) flattened.
+        coeff_probs : array[1056] base.u8,
 )
 
 pub func decoder.get_quirk(key: base.u32) base.u64 {
+    if args.key == base.QUIRK_SOURCE_LENGTH {
+        return this.quirk_source_length
+    }
     return 0
 }
 
 pub func decoder.set_quirk!(key: base.u32, value: base.u64) base.status {
+    if args.key == base.QUIRK_SOURCE_LENGTH {
+        this.quirk_source_length = args.value
+        return ok
+    }
     return base."#unsupported option"
 }
 
@@ -58,10 +136,27 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
         return base."#bad call sequence"
     }
 
+    if (this.quirk_source_length & 1) == 0 {
+        return "#missing QUIRK_SOURCE_LENGTH"
+    } else if (this.quirk_source_length >> 1) < 10 {
+        return "#bad QUIRK_SOURCE_LENGTH"
+    } else if (this.quirk_source_length >> 1) > (0x08FF_FFF7 + 10) {
+        return "#unsupported QUIRK_SOURCE_LENGTH"
+    }
+    this.partitioned_data_length = ((this.quirk_source_length >> 1) as base.u32) - 10
+
+    // RFC 6386 Section 9. Frame Header, up to and including 9.1. Uncompressed
+    // Data Chunk. decode_first_partition handles the rest of section 9.
+
     c32 = args.src.read_u24le_as_u32?()
-    if (c32 & 0x01) <> 0 {
+    this.is_key_frame = ((c32 & 0x01) == 0)
+    if not this.is_key_frame {
         // TODO: support non-key frames.
         return "#unsupported VP8 file"
+    }
+    this.part_lens[0] = c32 >> 5
+    if this.part_lens[0] > this.partitioned_data_length {
+        return "#bad header"
     }
 
     c32 = args.src.read_u24le_as_u32?()
@@ -72,6 +167,17 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
     c32 = args.src.read_u32le?()
     this.width = 0x3FFF & (c32 >> 0)
     this.height = 0x3FFF & (c32 >> 16)
+    this.mbw = (this.width + 15) / 16
+    this.mbh = (this.height + 15) / 16
+
+    this.workbuf_yuv_y_stride = this.mbw * 16
+    this.workbuf_yuv_uv_stride = this.mbw * 8
+    this.workbuf_yuv_y_end =
+            ((this.workbuf_yuv_y_stride as base.u64) * ((this.mbh * 16) as base.u64))
+    this.workbuf_yuv_u_end = this.workbuf_yuv_y_end +
+            ((this.workbuf_yuv_uv_stride as base.u64) * ((this.mbh * 8) as base.u64))
+    this.workbuf_yuv_v_end = this.workbuf_yuv_u_end +
+            ((this.workbuf_yuv_uv_stride as base.u64) * ((this.mbh * 8) as base.u64))
 
     this.frame_config_io_position = args.src.position()
 
@@ -135,9 +241,17 @@ pri func decoder.do_decode_frame_config?(dst: nptr base.frame_config, src: base.
 }
 
 pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
+    var wb_len : base.u64[..= DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE]
     var status : base.status
 
     while true {
+        wb_len = this.workbuf_yuv_v_end + (this.partitioned_data_length as base.u64) + 8
+        if wb_len > args.workbuf.length() {
+            return base."#bad workbuf length"
+        } else {
+            args.workbuf = args.workbuf[.. wb_len]
+        }
+
         status =? this.do_decode_frame?(dst: args.dst, src: args.src, blend: args.blend, workbuf: args.workbuf, opts: args.opts)
         if (status == base."$short read") and args.src.is_closed() {
             return "#truncated input"
@@ -147,6 +261,7 @@ pub func decoder.decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, 
 }
 
 pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reader, blend: base.pixel_blend, workbuf: slice base.u8, opts: nptr base.decode_frame_options) {
+    var i      : base.u32
     var status : base.status
 
     if this.call_sequence == 0x40 {
@@ -155,6 +270,28 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
         this.do_decode_frame_config?(dst: nullptr, src: args.src)
     } else {
         return base."@end of data"
+    }
+
+    this.copy_partitions_to_workbuf?(src: args.src, workbuf: args.workbuf)
+
+    // Initialize per-partition bitstreams.
+    i = 0
+    while i < 9 {
+        this.part_workbuf_ris[i] = this.workbuf_yuv_v_end
+        this.part_range_m1s[i] = 0xFE
+        this.part_bits[i] = 0
+        this.part_n_bits[i] = 0
+        i += 1
+    }
+
+    status = this.decode_first_partition!(workbuf: args.workbuf)
+    if not status.is_ok() {
+        return status
+    }
+
+    status = this.decode_other_partition_lengths!(workbuf: args.workbuf)
+    if not status.is_ok() {
+        return status
     }
 
     this.dst_x = 0
@@ -279,5 +416,10 @@ pub func decoder.tell_me_more?(dst: base.io_writer, minfo: nptr base.more_inform
 }
 
 pub func decoder.workbuf_len() base.range_ii_u64 {
-    return this.util.make_range_ii_u64(min_incl: 0, max_incl: 0)
+    var wb_len : base.u64[..= DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE]
+
+    wb_len = this.workbuf_yuv_v_end + (this.partitioned_data_length as base.u64) + 8
+    return this.util.make_range_ii_u64(
+            min_incl: wb_len,
+            max_incl: wb_len)
 }

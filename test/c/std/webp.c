@@ -114,6 +114,99 @@ test_wuffs_webp_decode_interface_lossy() {
       "test/data/bricks-color.lossy.webp", 0, SIZE_MAX, 160, 120, 0xFF9F7780);
 }
 
+const char*  //
+test_wuffs_webp_decode_many_small_reads() {
+  CHECK_FOCUS(__func__);
+  wuffs_webp__decoder* dec = &g_webp_decoder;
+  CHECK_STATUS("initialize",
+               wuffs_webp__decoder__initialize(
+                   dec, sizeof *dec, WUFFS_VERSION,
+                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+
+  wuffs_base__io_buffer src = ((wuffs_base__io_buffer){
+      .data = g_src_slice_u8,
+  });
+  CHECK_STRING(read_file(&src, "test/data/mona-lisa.21x32.q0.lossy.webp"));
+
+  wuffs_base__image_config ic = ((wuffs_base__image_config){});
+  CHECK_STATUS("decode_image_config",
+               wuffs_webp__decoder__decode_image_config(dec, &ic, &src));
+
+  const uint32_t w = 21;
+  if (wuffs_base__pixel_config__width(&ic.pixcfg) != 21) {
+    RETURN_FAIL("width: have %" PRIu32 ", want 21",
+                wuffs_base__pixel_config__width(&ic.pixcfg));
+  }
+  const uint32_t h = 32;
+  if (wuffs_base__pixel_config__height(&ic.pixcfg) != 32) {
+    RETURN_FAIL("height: have %" PRIu32 ", want 32",
+                wuffs_base__pixel_config__height(&ic.pixcfg));
+  }
+  if (wuffs_base__pixel_config__pixel_format(&ic.pixcfg).repr !=
+      WUFFS_BASE__PIXEL_FORMAT__BGRX) {
+    RETURN_FAIL("pixel_format: have %" PRIu32
+                ", want WUFFS_BASE__PIXEL_FORMAT__BGRX",
+                wuffs_base__pixel_config__pixel_format(&ic.pixcfg).repr);
+  }
+
+  // 30 is 12 for the RIFF container header, 8 for the RIFF chunk header and
+  // 10 for the VP8 header.
+  if (wuffs_base__image_config__first_frame_io_position(&ic) != 30) {
+    RETURN_FAIL("first_frame_io_position: have %" PRIu64 ", want 30",
+                wuffs_base__image_config__first_frame_io_position(&ic));
+  }
+
+  wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
+  CHECK_STATUS("set_from_slice", wuffs_base__pixel_buffer__set_from_slice(
+                                     &pb, &ic.pixcfg, g_pixel_slice_u8));
+  wuffs_base__pixel_buffer__set_color_u32_fill_rect(
+      &pb, wuffs_base__make_rect_ie_u32(0, 0, w, h), 0xFF234567);
+
+  uint64_t m = wuffs_webp__decoder__workbuf_len(dec).min_incl;
+  wuffs_base__slice_u8 workbuf = g_work_slice_u8;
+  if (workbuf.len > m) {
+    workbuf.len = m;
+  }
+
+  const uint64_t rlimit = 10;
+  int num_iters = 0;
+  while (true) {
+    num_iters++;
+    wuffs_base__io_buffer limited_src = make_limited_reader(src, rlimit);
+    size_t old_ri = src.meta.ri;
+
+    wuffs_base__status status = wuffs_webp__decoder__decode_frame(
+        dec, &pb, &limited_src, WUFFS_BASE__PIXEL_BLEND__SRC, workbuf, NULL);
+    src.meta.ri += limited_src.meta.ri;
+
+    if (wuffs_base__status__is_ok(&status)) {
+      break;
+    }
+    if (status.repr != wuffs_base__suspension__short_read) {
+      RETURN_FAIL("decode_frame: have \"%s\", want \"%s\"", status.repr,
+                  wuffs_base__suspension__short_read);
+    }
+
+    if (src.meta.ri < old_ri) {
+      RETURN_FAIL("read index src.meta.ri went backwards");
+    } else if (src.meta.ri == old_ri) {
+      RETURN_FAIL("no progress was made");
+    }
+  }
+
+  if (num_iters <= 1) {
+    RETURN_FAIL("num_iters: have %d, want > 1", num_iters);
+  }
+
+  wuffs_base__color_u32_argb_premul last_pixel =
+      wuffs_base__pixel_buffer__color_u32_at(&pb, w - 1, h - 1);
+  if (last_pixel != 0xFF141F80) {
+    RETURN_FAIL("last_pixel: have 0x%" PRIX32 ", want 0xFF141F80", last_pixel);
+  }
+
+  return NULL;
+}
+
 // ---------------- Mimic Tests
 
 #ifdef WUFFS_MIMIC
@@ -295,6 +388,7 @@ proc g_tests[] = {
 
     test_wuffs_webp_decode_interface_lossless,
     test_wuffs_webp_decode_interface_lossy,
+    test_wuffs_webp_decode_many_small_reads,
 
 #ifdef WUFFS_MIMIC
 

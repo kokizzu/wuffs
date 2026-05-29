@@ -970,6 +970,8 @@ typedef struct wuffs_base__transform__output__struct {
 
 #define WUFFS_BASE__QUIRK_QUALITY 2
 
+#define WUFFS_BASE__QUIRK_SOURCE_LENGTH 3
+
 // --------
 
 // Flicks are a unit of time. One flick (frame-tick) is 1 / 705_600_000 of a
@@ -15316,13 +15318,16 @@ struct wuffs_thumbhash__decoder__struct {
 
 // ---------------- Status Codes
 
+extern const char wuffs_vp8__error__bad_quirk_source_length[];
 extern const char wuffs_vp8__error__bad_header[];
+extern const char wuffs_vp8__error__missing_quirk_source_length[];
 extern const char wuffs_vp8__error__truncated_input[];
+extern const char wuffs_vp8__error__unsupported_quirk_source_length[];
 extern const char wuffs_vp8__error__unsupported_vp8_file[];
 
 // ---------------- Public Consts
 
-#define WUFFS_VP8__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 0u
+#define WUFFS_VP8__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 553648127u
 
 // ---------------- Struct Declarations
 
@@ -15489,12 +15494,47 @@ struct wuffs_vp8__decoder__struct {
 
     uint32_t f_width;
     uint32_t f_height;
+    uint32_t f_mbw;
+    uint32_t f_mbh;
     uint8_t f_call_sequence;
+    bool f_is_key_frame;
     uint64_t f_frame_config_io_position;
+    uint64_t f_quirk_source_length;
+    uint32_t f_partitioned_data_length;
+    uint32_t f_workbuf_yuv_y_stride;
+    uint32_t f_workbuf_yuv_uv_stride;
+    uint64_t f_workbuf_yuv_y_end;
+    uint64_t f_workbuf_yuv_u_end;
+    uint64_t f_workbuf_yuv_v_end;
+    uint64_t f_part_workbuf_ris[9];
+    uint32_t f_part_range_m1s[9];
+    uint32_t f_part_bits[9];
+    uint32_t f_part_n_bits[9];
+    uint32_t f_part_lens[9];
+    uint32_t f_num_other_partitions_m1;
+    bool f_seg_enabled;
+    bool f_seg_update_map;
+    bool f_seg_absolute;
+    uint8_t f_seg_quants[4];
+    uint8_t f_seg_strengths[4];
+    uint8_t f_seg_probs[3];
+    bool f_filt_simple;
+    uint8_t f_filt_level;
+    uint8_t f_filt_sharpness;
+    bool f_filt_deltas_enabled;
+    uint8_t f_filt_deltas[2][4];
+    uint32_t f_quant_yac_qi;
+    uint32_t f_quant_ydc_delta;
+    uint32_t f_quant_y2dc_delta;
+    uint32_t f_quant_y2ac_delta;
+    uint32_t f_quant_uvdc_delta;
+    uint32_t f_quant_uvac_delta;
+    uint32_t f_prob_skip;
     uint32_t f_dst_x;
     uint32_t f_dst_y;
     wuffs_base__pixel_swizzler f_swizzler;
 
+    uint32_t p_copy_partitions_to_workbuf;
     uint32_t p_decode_image_config;
     uint32_t p_do_decode_image_config;
     uint32_t p_decode_frame_config;
@@ -15504,6 +15544,12 @@ struct wuffs_vp8__decoder__struct {
   } private_impl;
 
   struct {
+    uint8_t f_coeff_probs[1056];
+
+    struct {
+      uint64_t v_i;
+      uint64_t v_j;
+    } s_copy_partitions_to_workbuf;
     struct {
       uint64_t scratch;
     } s_do_decode_image_config;
@@ -16036,7 +16082,7 @@ extern const char wuffs_webp__error__unsupported_webp_file[];
 
 // ---------------- Public Consts
 
-#define WUFFS_WEBP__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 0u
+#define WUFFS_WEBP__DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE 1275068416u
 
 // ---------------- Struct Declarations
 
@@ -80837,15 +80883,423 @@ wuffs_thumbhash__decoder__workbuf_len(
 
 // ---------------- Status Codes Implementations
 
+const char wuffs_vp8__error__bad_quirk_source_length[] = "#vp8: bad QUIRK_SOURCE_LENGTH";
 const char wuffs_vp8__error__bad_header[] = "#vp8: bad header";
+const char wuffs_vp8__error__missing_quirk_source_length[] = "#vp8: missing QUIRK_SOURCE_LENGTH";
 const char wuffs_vp8__error__truncated_input[] = "#vp8: truncated input";
+const char wuffs_vp8__error__unsupported_quirk_source_length[] = "#vp8: unsupported QUIRK_SOURCE_LENGTH";
 const char wuffs_vp8__error__unsupported_vp8_file[] = "#vp8: unsupported VP8 file";
 
 // ---------------- Private Consts
 
+static const uint8_t
+WUFFS_VP8__RENORM_SHIFT[256] WUFFS_BASE__POTENTIALLY_UNUSED = {
+  7u, 6u, 6u, 5u, 5u, 5u, 5u, 4u,
+  4u, 4u, 4u, 4u, 4u, 4u, 4u, 3u,
+  3u, 3u, 3u, 3u, 3u, 3u, 3u, 3u,
+  3u, 3u, 3u, 3u, 3u, 3u, 3u, 2u,
+  2u, 2u, 2u, 2u, 2u, 2u, 2u, 2u,
+  2u, 2u, 2u, 2u, 2u, 2u, 2u, 2u,
+  2u, 2u, 2u, 2u, 2u, 2u, 2u, 2u,
+  2u, 2u, 2u, 2u, 2u, 2u, 2u, 1u,
+  1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u,
+  1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u,
+  1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u,
+  1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u,
+  1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u,
+  1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u,
+  1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u,
+  1u, 1u, 1u, 1u, 1u, 1u, 1u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+};
+
+static const uint8_t
+WUFFS_VP8__RENORM_RANGE_M1[256] WUFFS_BASE__POTENTIALLY_UNUSED = {
+  127u, 127u, 191u, 127u, 159u, 191u, 223u, 127u,
+  143u, 159u, 175u, 191u, 207u, 223u, 239u, 127u,
+  135u, 143u, 151u, 159u, 167u, 175u, 183u, 191u,
+  199u, 207u, 215u, 223u, 231u, 239u, 247u, 127u,
+  131u, 135u, 139u, 143u, 147u, 151u, 155u, 159u,
+  163u, 167u, 171u, 175u, 179u, 183u, 187u, 191u,
+  195u, 199u, 203u, 207u, 211u, 215u, 219u, 223u,
+  227u, 231u, 235u, 239u, 243u, 247u, 251u, 127u,
+  129u, 131u, 133u, 135u, 137u, 139u, 141u, 143u,
+  145u, 147u, 149u, 151u, 153u, 155u, 157u, 159u,
+  161u, 163u, 165u, 167u, 169u, 171u, 173u, 175u,
+  177u, 179u, 181u, 183u, 185u, 187u, 189u, 191u,
+  193u, 195u, 197u, 199u, 201u, 203u, 205u, 207u,
+  209u, 211u, 213u, 215u, 217u, 219u, 221u, 223u,
+  225u, 227u, 229u, 231u, 233u, 235u, 237u, 239u,
+  241u, 243u, 245u, 247u, 249u, 251u, 253u, 127u,
+  128u, 129u, 130u, 131u, 132u, 133u, 134u, 135u,
+  136u, 137u, 138u, 139u, 140u, 141u, 142u, 143u,
+  144u, 145u, 146u, 147u, 148u, 149u, 150u, 151u,
+  152u, 153u, 154u, 155u, 156u, 157u, 158u, 159u,
+  160u, 161u, 162u, 163u, 164u, 165u, 166u, 167u,
+  168u, 169u, 170u, 171u, 172u, 173u, 174u, 175u,
+  176u, 177u, 178u, 179u, 180u, 181u, 182u, 183u,
+  184u, 185u, 186u, 187u, 188u, 189u, 190u, 191u,
+  192u, 193u, 194u, 195u, 196u, 197u, 198u, 199u,
+  200u, 201u, 202u, 203u, 204u, 205u, 206u, 207u,
+  208u, 209u, 210u, 211u, 212u, 213u, 214u, 215u,
+  216u, 217u, 218u, 219u, 220u, 221u, 222u, 223u,
+  224u, 225u, 226u, 227u, 228u, 229u, 230u, 231u,
+  232u, 233u, 234u, 235u, 236u, 237u, 238u, 239u,
+  240u, 241u, 242u, 243u, 244u, 245u, 246u, 247u,
+  248u, 249u, 250u, 251u, 252u, 253u, 254u, 254u,
+};
+
+static const uint8_t
+WUFFS_VP8__COEFF_UPDATE_PROBS[1056] WUFFS_BASE__POTENTIALLY_UNUSED = {
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 176u, 246u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 223u, 241u, 252u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 249u,
+  253u, 253u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 244u, 252u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 234u, 254u, 254u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  253u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 246u, 254u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 239u, 253u,
+  254u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 254u, 255u, 254u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 248u, 254u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 251u,
+  255u, 254u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 253u, 254u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  251u, 254u, 254u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 254u, 255u, 254u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 254u,
+  253u, 255u, 254u, 255u, 255u, 255u, 255u, 255u,
+  255u, 250u, 255u, 254u, 255u, 254u, 255u, 255u,
+  255u, 255u, 255u, 255u, 254u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  217u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 225u, 252u, 241u, 253u, 255u,
+  255u, 254u, 255u, 255u, 255u, 255u, 234u, 250u,
+  241u, 250u, 253u, 255u, 253u, 254u, 255u, 255u,
+  255u, 255u, 254u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 223u, 254u, 254u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 238u,
+  253u, 254u, 254u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 248u, 254u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 249u, 254u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 253u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 247u, 254u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 253u, 254u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 252u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 254u, 254u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  253u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 254u,
+  253u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 250u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 254u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  186u, 251u, 250u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 234u, 251u, 244u, 254u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 251u, 251u,
+  243u, 253u, 254u, 255u, 254u, 255u, 255u, 255u,
+  255u, 255u, 253u, 254u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 236u, 253u, 254u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 251u,
+  253u, 253u, 254u, 254u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 254u, 254u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 254u, 254u, 254u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 254u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 254u, 254u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 254u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 254u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  248u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 250u, 254u, 252u, 254u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 248u, 254u,
+  249u, 253u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 253u, 253u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 246u, 253u, 253u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 252u,
+  254u, 251u, 254u, 254u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 254u, 252u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 248u, 254u, 253u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  253u, 255u, 254u, 254u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 251u, 254u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 245u, 251u,
+  254u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 253u, 253u, 254u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 251u, 253u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 252u,
+  253u, 254u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 254u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 252u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  249u, 255u, 254u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 254u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  253u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 250u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 254u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+};
+
+static const uint8_t
+WUFFS_VP8__DEFAULT_COEFF_PROBS[1056] WUFFS_BASE__POTENTIALLY_UNUSED = {
+  128u, 128u, 128u, 128u, 128u, 128u, 128u, 128u,
+  128u, 128u, 128u, 128u, 128u, 128u, 128u, 128u,
+  128u, 128u, 128u, 128u, 128u, 128u, 128u, 128u,
+  128u, 128u, 128u, 128u, 128u, 128u, 128u, 128u,
+  128u, 253u, 136u, 254u, 255u, 228u, 219u, 128u,
+  128u, 128u, 128u, 128u, 189u, 129u, 242u, 255u,
+  227u, 213u, 255u, 219u, 128u, 128u, 128u, 106u,
+  126u, 227u, 252u, 214u, 209u, 255u, 255u, 128u,
+  128u, 128u, 1u, 98u, 248u, 255u, 236u, 226u,
+  255u, 255u, 128u, 128u, 128u, 181u, 133u, 238u,
+  254u, 221u, 234u, 255u, 154u, 128u, 128u, 128u,
+  78u, 134u, 202u, 247u, 198u, 180u, 255u, 219u,
+  128u, 128u, 128u, 1u, 185u, 249u, 255u, 243u,
+  255u, 128u, 128u, 128u, 128u, 128u, 184u, 150u,
+  247u, 255u, 236u, 224u, 128u, 128u, 128u, 128u,
+  128u, 77u, 110u, 216u, 255u, 236u, 230u, 128u,
+  128u, 128u, 128u, 128u, 1u, 101u, 251u, 255u,
+  241u, 255u, 128u, 128u, 128u, 128u, 128u, 170u,
+  139u, 241u, 252u, 236u, 209u, 255u, 255u, 128u,
+  128u, 128u, 37u, 116u, 196u, 243u, 228u, 255u,
+  255u, 255u, 128u, 128u, 128u, 1u, 204u, 254u,
+  255u, 245u, 255u, 128u, 128u, 128u, 128u, 128u,
+  207u, 160u, 250u, 255u, 238u, 128u, 128u, 128u,
+  128u, 128u, 128u, 102u, 103u, 231u, 255u, 211u,
+  171u, 128u, 128u, 128u, 128u, 128u, 1u, 152u,
+  252u, 255u, 240u, 255u, 128u, 128u, 128u, 128u,
+  128u, 177u, 135u, 243u, 255u, 234u, 225u, 128u,
+  128u, 128u, 128u, 128u, 80u, 129u, 211u, 255u,
+  194u, 224u, 128u, 128u, 128u, 128u, 128u, 1u,
+  1u, 255u, 128u, 128u, 128u, 128u, 128u, 128u,
+  128u, 128u, 246u, 1u, 255u, 128u, 128u, 128u,
+  128u, 128u, 128u, 128u, 128u, 255u, 128u, 128u,
+  128u, 128u, 128u, 128u, 128u, 128u, 128u, 128u,
+  198u, 35u, 237u, 223u, 193u, 187u, 162u, 160u,
+  145u, 155u, 62u, 131u, 45u, 198u, 221u, 172u,
+  176u, 220u, 157u, 252u, 221u, 1u, 68u, 47u,
+  146u, 208u, 149u, 167u, 221u, 162u, 255u, 223u,
+  128u, 1u, 149u, 241u, 255u, 221u, 224u, 255u,
+  255u, 128u, 128u, 128u, 184u, 141u, 234u, 253u,
+  222u, 220u, 255u, 199u, 128u, 128u, 128u, 81u,
+  99u, 181u, 242u, 176u, 190u, 249u, 202u, 255u,
+  255u, 128u, 1u, 129u, 232u, 253u, 214u, 197u,
+  242u, 196u, 255u, 255u, 128u, 99u, 121u, 210u,
+  250u, 201u, 198u, 255u, 202u, 128u, 128u, 128u,
+  23u, 91u, 163u, 242u, 170u, 187u, 247u, 210u,
+  255u, 255u, 128u, 1u, 200u, 246u, 255u, 234u,
+  255u, 128u, 128u, 128u, 128u, 128u, 109u, 178u,
+  241u, 255u, 231u, 245u, 255u, 255u, 128u, 128u,
+  128u, 44u, 130u, 201u, 253u, 205u, 192u, 255u,
+  255u, 128u, 128u, 128u, 1u, 132u, 239u, 251u,
+  219u, 209u, 255u, 165u, 128u, 128u, 128u, 94u,
+  136u, 225u, 251u, 218u, 190u, 255u, 255u, 128u,
+  128u, 128u, 22u, 100u, 174u, 245u, 186u, 161u,
+  255u, 199u, 128u, 128u, 128u, 1u, 182u, 249u,
+  255u, 232u, 235u, 128u, 128u, 128u, 128u, 128u,
+  124u, 143u, 241u, 255u, 227u, 234u, 128u, 128u,
+  128u, 128u, 128u, 35u, 77u, 181u, 251u, 193u,
+  211u, 255u, 205u, 128u, 128u, 128u, 1u, 157u,
+  247u, 255u, 236u, 231u, 255u, 255u, 128u, 128u,
+  128u, 121u, 141u, 235u, 255u, 225u, 227u, 255u,
+  255u, 128u, 128u, 128u, 45u, 99u, 188u, 251u,
+  195u, 217u, 255u, 224u, 128u, 128u, 128u, 1u,
+  1u, 251u, 255u, 213u, 255u, 128u, 128u, 128u,
+  128u, 128u, 203u, 1u, 248u, 255u, 255u, 128u,
+  128u, 128u, 128u, 128u, 128u, 137u, 1u, 177u,
+  255u, 224u, 255u, 128u, 128u, 128u, 128u, 128u,
+  253u, 9u, 248u, 251u, 207u, 208u, 255u, 192u,
+  128u, 128u, 128u, 175u, 13u, 224u, 243u, 193u,
+  185u, 249u, 198u, 255u, 255u, 128u, 73u, 17u,
+  171u, 221u, 161u, 179u, 236u, 167u, 255u, 234u,
+  128u, 1u, 95u, 247u, 253u, 212u, 183u, 255u,
+  255u, 128u, 128u, 128u, 239u, 90u, 244u, 250u,
+  211u, 209u, 255u, 255u, 128u, 128u, 128u, 155u,
+  77u, 195u, 248u, 188u, 195u, 255u, 255u, 128u,
+  128u, 128u, 1u, 24u, 239u, 251u, 218u, 219u,
+  255u, 205u, 128u, 128u, 128u, 201u, 51u, 219u,
+  255u, 196u, 186u, 128u, 128u, 128u, 128u, 128u,
+  69u, 46u, 190u, 239u, 201u, 218u, 255u, 228u,
+  128u, 128u, 128u, 1u, 191u, 251u, 255u, 255u,
+  128u, 128u, 128u, 128u, 128u, 128u, 223u, 165u,
+  249u, 255u, 213u, 255u, 128u, 128u, 128u, 128u,
+  128u, 141u, 124u, 248u, 255u, 255u, 128u, 128u,
+  128u, 128u, 128u, 128u, 1u, 16u, 248u, 255u,
+  255u, 128u, 128u, 128u, 128u, 128u, 128u, 190u,
+  36u, 230u, 255u, 236u, 255u, 128u, 128u, 128u,
+  128u, 128u, 149u, 1u, 255u, 128u, 128u, 128u,
+  128u, 128u, 128u, 128u, 128u, 1u, 226u, 255u,
+  128u, 128u, 128u, 128u, 128u, 128u, 128u, 128u,
+  247u, 192u, 255u, 128u, 128u, 128u, 128u, 128u,
+  128u, 128u, 128u, 240u, 128u, 255u, 128u, 128u,
+  128u, 128u, 128u, 128u, 128u, 128u, 1u, 134u,
+  252u, 255u, 255u, 128u, 128u, 128u, 128u, 128u,
+  128u, 213u, 62u, 250u, 255u, 255u, 128u, 128u,
+  128u, 128u, 128u, 128u, 55u, 93u, 255u, 128u,
+  128u, 128u, 128u, 128u, 128u, 128u, 128u, 128u,
+  128u, 128u, 128u, 128u, 128u, 128u, 128u, 128u,
+  128u, 128u, 128u, 128u, 128u, 128u, 128u, 128u,
+  128u, 128u, 128u, 128u, 128u, 128u, 128u, 128u,
+  128u, 128u, 128u, 128u, 128u, 128u, 128u, 128u,
+  202u, 24u, 213u, 235u, 186u, 191u, 220u, 160u,
+  240u, 175u, 255u, 126u, 38u, 182u, 232u, 169u,
+  184u, 228u, 174u, 255u, 187u, 128u, 61u, 46u,
+  138u, 219u, 151u, 178u, 240u, 170u, 255u, 216u,
+  128u, 1u, 112u, 230u, 250u, 199u, 191u, 247u,
+  159u, 255u, 255u, 128u, 166u, 109u, 228u, 252u,
+  211u, 215u, 255u, 174u, 128u, 128u, 128u, 39u,
+  77u, 162u, 232u, 172u, 180u, 245u, 178u, 255u,
+  255u, 128u, 1u, 52u, 220u, 246u, 198u, 199u,
+  249u, 220u, 255u, 255u, 128u, 124u, 74u, 191u,
+  243u, 183u, 193u, 250u, 221u, 255u, 255u, 128u,
+  24u, 71u, 130u, 219u, 154u, 170u, 243u, 182u,
+  255u, 255u, 128u, 1u, 182u, 225u, 249u, 219u,
+  240u, 255u, 224u, 128u, 128u, 128u, 149u, 150u,
+  226u, 252u, 216u, 205u, 255u, 171u, 128u, 128u,
+  128u, 28u, 108u, 170u, 242u, 183u, 194u, 254u,
+  223u, 255u, 255u, 128u, 1u, 81u, 230u, 252u,
+  204u, 203u, 255u, 192u, 128u, 128u, 128u, 123u,
+  102u, 209u, 247u, 188u, 196u, 255u, 233u, 128u,
+  128u, 128u, 20u, 95u, 153u, 243u, 164u, 173u,
+  255u, 203u, 128u, 128u, 128u, 1u, 222u, 248u,
+  255u, 216u, 213u, 128u, 128u, 128u, 128u, 128u,
+  168u, 175u, 246u, 252u, 235u, 205u, 255u, 255u,
+  128u, 128u, 128u, 47u, 116u, 215u, 255u, 211u,
+  212u, 255u, 255u, 128u, 128u, 128u, 1u, 121u,
+  236u, 253u, 212u, 214u, 255u, 255u, 128u, 128u,
+  128u, 141u, 84u, 213u, 252u, 201u, 202u, 255u,
+  219u, 128u, 128u, 128u, 42u, 80u, 160u, 240u,
+  162u, 185u, 255u, 205u, 128u, 128u, 128u, 1u,
+  1u, 255u, 128u, 128u, 128u, 128u, 128u, 128u,
+  128u, 128u, 244u, 1u, 255u, 128u, 128u, 128u,
+  128u, 128u, 128u, 128u, 128u, 238u, 1u, 255u,
+  128u, 128u, 128u, 128u, 128u, 128u, 128u, 128u,
+};
+
 // ---------------- Private Initializer Prototypes
 
 // ---------------- Private Function Prototypes
+
+WUFFS_BASE__GENERATED_C_CODE
+static uint32_t
+wuffs_vp8__decoder__read_bit(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf,
+    uint32_t a_part,
+    uint32_t a_prob);
+
+WUFFS_BASE__GENERATED_C_CODE
+static uint32_t
+wuffs_vp8__decoder__read_unsigned(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf,
+    uint32_t a_part,
+    uint32_t a_n);
+
+WUFFS_BASE__GENERATED_C_CODE
+static uint32_t
+wuffs_vp8__decoder__read_signed(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf,
+    uint32_t a_part,
+    uint32_t a_n);
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__status
+wuffs_vp8__decoder__copy_partitions_to_workbuf(
+    wuffs_vp8__decoder* self,
+    wuffs_base__io_buffer* a_src,
+    wuffs_base__slice_u8 a_workbuf);
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__status
+wuffs_vp8__decoder__decode_first_partition(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf);
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_vp8__decoder__decode_segment_header(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf);
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_vp8__decoder__decode_filter_header(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf);
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_vp8__decoder__decode_coeff_probs(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf);
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__status
+wuffs_vp8__decoder__decode_other_partition_lengths(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf);
 
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__status
@@ -80986,6 +81440,380 @@ sizeof__wuffs_vp8__decoder(void) {
 
 // ---------------- Function Implementations
 
+// -------- func vp8.decoder.read_bit
+
+WUFFS_BASE__GENERATED_C_CODE
+static uint32_t
+wuffs_vp8__decoder__read_bit(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf,
+    uint32_t a_part,
+    uint32_t a_prob) {
+  uint32_t v_p = 0;
+  uint8_t v_c8 = 0;
+  uint32_t v_shift = 0;
+  uint32_t v_split_m1 = 0;
+  uint32_t v_ret = 0;
+
+  v_p = a_part;
+  if (self->private_impl.f_part_n_bits[v_p] < 8u) {
+    v_c8 = 0u;
+    if (self->private_impl.f_part_workbuf_ris[v_p] < ((uint64_t)(a_workbuf.len))) {
+      v_c8 = a_workbuf.ptr[self->private_impl.f_part_workbuf_ris[v_p]];
+      self->private_impl.f_part_workbuf_ris[v_p] += 1u;
+    }
+    self->private_impl.f_part_bits[v_p] = (((uint32_t)(self->private_impl.f_part_bits[v_p] << 8u)) | ((uint32_t)(v_c8)));
+    self->private_impl.f_part_n_bits[v_p] += 8u;
+  }
+  v_shift = (((uint32_t)(self->private_impl.f_part_n_bits[v_p] - 8u)) & 31u);
+  v_split_m1 = ((self->private_impl.f_part_range_m1s[v_p] * a_prob) >> 8u);
+  if ((self->private_impl.f_part_bits[v_p] >> v_shift) > v_split_m1) {
+    v_ret = 1u;
+    self->private_impl.f_part_range_m1s[v_p] = (((uint32_t)(self->private_impl.f_part_range_m1s[v_p] - (v_split_m1 + 1u))) & 255u);
+    self->private_impl.f_part_bits[v_p] -= ((uint32_t)((v_split_m1 + 1u) << v_shift));
+  } else {
+    v_ret = 0u;
+    self->private_impl.f_part_range_m1s[v_p] = v_split_m1;
+  }
+  self->private_impl.f_part_n_bits[v_p] -= ((uint32_t)(WUFFS_VP8__RENORM_SHIFT[self->private_impl.f_part_range_m1s[v_p]]));
+  self->private_impl.f_part_range_m1s[v_p] = ((uint32_t)(WUFFS_VP8__RENORM_RANGE_M1[self->private_impl.f_part_range_m1s[v_p]]));
+  return v_ret;
+}
+
+// -------- func vp8.decoder.read_unsigned
+
+WUFFS_BASE__GENERATED_C_CODE
+static uint32_t
+wuffs_vp8__decoder__read_unsigned(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf,
+    uint32_t a_part,
+    uint32_t a_n) {
+  uint32_t v_n = 0;
+  uint32_t v_v1 = 0;
+  uint32_t v_v32 = 0;
+
+  v_n = a_n;
+  while (v_n > 0u) {
+    v_n -= 1u;
+    v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, a_part, 128u);
+    v_v32 |= ((uint32_t)(v_v1 << v_n));
+  }
+  return v_v32;
+}
+
+// -------- func vp8.decoder.read_signed
+
+WUFFS_BASE__GENERATED_C_CODE
+static uint32_t
+wuffs_vp8__decoder__read_signed(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf,
+    uint32_t a_part,
+    uint32_t a_n) {
+  uint32_t v_v1 = 0;
+  uint32_t v_v32 = 0;
+
+  v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, a_part, 128u);
+  if (v_v1 == 0u) {
+    return 0u;
+  }
+  v_v32 = wuffs_vp8__decoder__read_unsigned(self, a_workbuf, a_part, a_n);
+  v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, a_part, 128u);
+  if (v_v1 == 0u) {
+    return v_v32;
+  }
+  return ((uint32_t)(0u - v_v32));
+}
+
+// -------- func vp8.decoder.copy_partitions_to_workbuf
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__status
+wuffs_vp8__decoder__copy_partitions_to_workbuf(
+    wuffs_vp8__decoder* self,
+    wuffs_base__io_buffer* a_src,
+    wuffs_base__slice_u8 a_workbuf) {
+  wuffs_base__status status = wuffs_base__make_status(NULL);
+
+  uint64_t v_i = 0;
+  uint64_t v_j = 0;
+  uint32_t v_n = 0;
+
+  const uint8_t* iop_a_src = NULL;
+  const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  const uint8_t* io2_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
+  if (a_src && a_src->data.ptr) {
+    io0_a_src = a_src->data.ptr;
+    io1_a_src = io0_a_src + a_src->meta.ri;
+    iop_a_src = io1_a_src;
+    io2_a_src = io0_a_src + a_src->meta.wi;
+  }
+
+  uint32_t coro_susp_point = self->private_impl.p_copy_partitions_to_workbuf;
+  if (coro_susp_point) {
+    v_i = self->private_data.s_copy_partitions_to_workbuf.v_i;
+    v_j = self->private_data.s_copy_partitions_to_workbuf.v_j;
+  }
+  switch (coro_susp_point) {
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
+
+    v_i = self->private_impl.f_workbuf_yuv_v_end;
+    v_j = (self->private_impl.f_workbuf_yuv_v_end + ((uint64_t)(self->private_impl.f_partitioned_data_length)));
+    while (v_i < v_j) {
+      if (v_j > ((uint64_t)(a_workbuf.len))) {
+        status = wuffs_base__make_status(wuffs_base__error__bad_workbuf_length);
+        goto exit;
+      }
+      v_n = wuffs_private_impl__io_reader__limited_copy_u32_to_slice(
+          &iop_a_src, io2_a_src,((uint32_t)((v_j - v_i))), wuffs_base__slice_u8__subslice_ij(a_workbuf, v_i, v_j));
+      v_i += ((uint64_t)(v_n));
+      if (v_i < v_j) {
+        status = wuffs_base__make_status(wuffs_base__suspension__short_read);
+        WUFFS_BASE__COROUTINE_SUSPENSION_POINT_MAYBE_SUSPEND(1);
+      }
+    }
+    v_j += 8u;
+    while (v_i < v_j) {
+      if (v_i >= ((uint64_t)(a_workbuf.len))) {
+        status = wuffs_base__make_status(wuffs_base__error__bad_workbuf_length);
+        goto exit;
+      }
+      a_workbuf.ptr[v_i] = 0u;
+      v_i += 1u;
+    }
+
+    ok:
+    self->private_impl.p_copy_partitions_to_workbuf = 0;
+    goto exit;
+  }
+
+  goto suspend;
+  suspend:
+  self->private_impl.p_copy_partitions_to_workbuf = wuffs_base__status__is_suspension(&status) ? coro_susp_point : 0;
+  self->private_data.s_copy_partitions_to_workbuf.v_i = v_i;
+  self->private_data.s_copy_partitions_to_workbuf.v_j = v_j;
+
+  goto exit;
+  exit:
+  if (a_src && a_src->data.ptr) {
+    a_src->meta.ri = ((size_t)(iop_a_src - a_src->data.ptr));
+  }
+
+  return status;
+}
+
+// -------- func vp8.decoder.decode_first_partition
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__status
+wuffs_vp8__decoder__decode_first_partition(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf) {
+  uint32_t v_v1 = 0;
+  uint32_t v_v32 = 0;
+
+  if (self->private_impl.f_is_key_frame) {
+    wuffs_vp8__decoder__read_bit(self, a_workbuf, 0u, 128u);
+    wuffs_vp8__decoder__read_bit(self, a_workbuf, 0u, 128u);
+  }
+  wuffs_vp8__decoder__decode_segment_header(self, a_workbuf);
+  wuffs_vp8__decoder__decode_filter_header(self, a_workbuf);
+  v_v32 = wuffs_vp8__decoder__read_unsigned(self, a_workbuf, 0u, 2u);
+  self->private_impl.f_num_other_partitions_m1 = ((((uint32_t)(1u)) << (v_v32 & 3u)) - 1u);
+  v_v32 = wuffs_vp8__decoder__read_unsigned(self, a_workbuf, 0u, 7u);
+  self->private_impl.f_quant_yac_qi = (v_v32 & 127u);
+  self->private_impl.f_quant_ydc_delta = wuffs_vp8__decoder__read_signed(self, a_workbuf, 0u, 4u);
+  self->private_impl.f_quant_y2dc_delta = wuffs_vp8__decoder__read_signed(self, a_workbuf, 0u, 4u);
+  self->private_impl.f_quant_y2ac_delta = wuffs_vp8__decoder__read_signed(self, a_workbuf, 0u, 4u);
+  self->private_impl.f_quant_uvdc_delta = wuffs_vp8__decoder__read_signed(self, a_workbuf, 0u, 4u);
+  self->private_impl.f_quant_uvac_delta = wuffs_vp8__decoder__read_signed(self, a_workbuf, 0u, 4u);
+  if ( ! self->private_impl.f_is_key_frame) {
+    return wuffs_base__make_status(wuffs_vp8__error__unsupported_vp8_file);
+  }
+  wuffs_vp8__decoder__read_bit(self, a_workbuf, 0u, 128u);
+  wuffs_vp8__decoder__decode_coeff_probs(self, a_workbuf);
+  if ( ! self->private_impl.f_is_key_frame) {
+    return wuffs_base__make_status(wuffs_vp8__error__unsupported_vp8_file);
+  } else {
+    v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, 0u, 128u);
+    if (v_v1 != 0u) {
+      v_v32 = wuffs_vp8__decoder__read_unsigned(self, a_workbuf, 0u, 8u);
+      self->private_impl.f_prob_skip = ((v_v32 & 255u) | 256u);
+    }
+  }
+  return wuffs_base__make_status(NULL);
+}
+
+// -------- func vp8.decoder.decode_segment_header
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_vp8__decoder__decode_segment_header(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf) {
+  uint32_t v_v1 = 0;
+  uint32_t v_v32 = 0;
+  uint32_t v_i = 0;
+
+  v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, 0u, 128u);
+  self->private_impl.f_seg_enabled = (v_v1 != 0u);
+  if ( ! self->private_impl.f_seg_enabled) {
+    self->private_impl.f_seg_update_map = false;
+    return wuffs_base__make_empty_struct();
+  }
+  v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, 0u, 128u);
+  self->private_impl.f_seg_update_map = (v_v1 != 0u);
+  v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, 0u, 128u);
+  if (v_v1 != 0u) {
+    v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, 0u, 128u);
+    self->private_impl.f_seg_absolute = (v_v1 != 0u);
+    v_i = 0u;
+    while (v_i < 4u) {
+      v_v32 = wuffs_vp8__decoder__read_signed(self, a_workbuf, 0u, 7u);
+      self->private_impl.f_seg_quants[v_i] = ((uint8_t)(v_v32));
+      v_i += 1u;
+    }
+    v_i = 0u;
+    while (v_i < 4u) {
+      v_v32 = wuffs_vp8__decoder__read_signed(self, a_workbuf, 0u, 6u);
+      self->private_impl.f_seg_strengths[v_i] = ((uint8_t)(v_v32));
+      v_i += 1u;
+    }
+  }
+  if (self->private_impl.f_seg_update_map) {
+    v_i = 0u;
+    while (v_i < 3u) {
+      v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, 0u, 128u);
+      if (v_v1 != 0u) {
+        v_v32 = wuffs_vp8__decoder__read_unsigned(self, a_workbuf, 0u, 8u);
+        self->private_impl.f_seg_probs[v_i] = ((uint8_t)(v_v32));
+      } else {
+        self->private_impl.f_seg_probs[v_i] = 255u;
+      }
+      v_i += 1u;
+    }
+  }
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func vp8.decoder.decode_filter_header
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_vp8__decoder__decode_filter_header(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf) {
+  uint32_t v_v1 = 0;
+  uint32_t v_v32 = 0;
+  uint32_t v_i = 0;
+
+  v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, 0u, 128u);
+  self->private_impl.f_filt_simple = (v_v1 != 0u);
+  v_v32 = wuffs_vp8__decoder__read_unsigned(self, a_workbuf, 0u, 6u);
+  self->private_impl.f_filt_level = ((uint8_t)((v_v32 & 63u)));
+  v_v32 = wuffs_vp8__decoder__read_unsigned(self, a_workbuf, 0u, 3u);
+  self->private_impl.f_filt_sharpness = ((uint8_t)((v_v32 & 7u)));
+  v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, 0u, 128u);
+  self->private_impl.f_filt_deltas_enabled = (v_v1 != 0u);
+  if ( ! self->private_impl.f_filt_deltas_enabled) {
+    return wuffs_base__make_empty_struct();
+  }
+  v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, 0u, 128u);
+  if (v_v1 == 0u) {
+    return wuffs_base__make_empty_struct();
+  }
+  v_i = 0u;
+  while (v_i < 8u) {
+    v_v32 = wuffs_vp8__decoder__read_signed(self, a_workbuf, 0u, 6u);
+    self->private_impl.f_filt_deltas[(v_i >> 2u)][(v_i & 3u)] = ((uint8_t)(v_v32));
+    v_i += 1u;
+  }
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func vp8.decoder.decode_coeff_probs
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_vp8__decoder__decode_coeff_probs(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf) {
+  uint32_t v_v1 = 0;
+  uint32_t v_v32 = 0;
+  uint32_t v_i = 0;
+
+  v_i = 0u;
+  while (v_i < 1056u) {
+    v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, 0u, ((uint32_t)(WUFFS_VP8__COEFF_UPDATE_PROBS[v_i])));
+    if (v_v1 != 0u) {
+      v_v32 = wuffs_vp8__decoder__read_unsigned(self, a_workbuf, 0u, 8u);
+      self->private_data.f_coeff_probs[v_i] = ((uint8_t)(v_v32));
+    } else {
+      self->private_data.f_coeff_probs[v_i] = WUFFS_VP8__DEFAULT_COEFF_PROBS[v_i];
+    }
+    v_i += 1u;
+  }
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func vp8.decoder.decode_other_partition_lengths
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__status
+wuffs_vp8__decoder__decode_other_partition_lengths(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf) {
+  uint32_t v_v32 = 0;
+  uint32_t v_remainder = 0;
+  uint32_t v_i = 0;
+  uint64_t v_o = 0;
+
+  v_remainder = wuffs_base__u32__sat_sub(self->private_impl.f_partitioned_data_length, self->private_impl.f_part_lens[0u]);
+  wuffs_private_impl__u32__sat_sub_indirect(&v_remainder, (3u * self->private_impl.f_num_other_partitions_m1));
+  v_o = (self->private_impl.f_workbuf_yuv_v_end + ((uint64_t)(self->private_impl.f_part_lens[0u])));
+  v_i = 0u;
+  while (v_i < self->private_impl.f_num_other_partitions_m1) {
+    v_v32 = 0u;
+    if (v_o >= ((uint64_t)(a_workbuf.len))) {
+      return wuffs_base__make_status(wuffs_vp8__error__bad_header);
+    }
+    v_v32 |= (((uint32_t)(a_workbuf.ptr[v_o])) << 0u);
+    v_o += 1u;
+    if (v_o >= ((uint64_t)(a_workbuf.len))) {
+      return wuffs_base__make_status(wuffs_vp8__error__bad_header);
+    }
+    v_v32 |= (((uint32_t)(a_workbuf.ptr[v_o])) << 8u);
+    v_o += 1u;
+    if (v_o >= ((uint64_t)(a_workbuf.len))) {
+      return wuffs_base__make_status(wuffs_vp8__error__bad_header);
+    }
+    v_v32 |= (((uint32_t)(a_workbuf.ptr[v_o])) << 16u);
+    v_o += 1u;
+    if (v_remainder < v_v32) {
+      return wuffs_base__make_status(wuffs_vp8__error__bad_header);
+    }
+    v_remainder -= v_v32;
+    self->private_impl.f_part_lens[(1u + v_i)] = v_v32;
+    v_i += 1u;
+  }
+  if (v_remainder > 16777215u) {
+    return wuffs_base__make_status(wuffs_vp8__error__unsupported_vp8_file);
+  }
+  self->private_impl.f_part_lens[(1u + self->private_impl.f_num_other_partitions_m1)] = v_remainder;
+  v_i = 0u;
+  while (v_i < (1u + self->private_impl.f_num_other_partitions_m1)) {
+    self->private_impl.f_part_workbuf_ris[(1u + v_i)] = v_o;
+    v_o += ((uint64_t)(self->private_impl.f_part_lens[(1u + v_i)]));
+    if (v_o > ((uint64_t)(a_workbuf.len))) {
+      return wuffs_base__make_status(wuffs_vp8__error__bad_header);
+    }
+    v_i += 1u;
+  }
+  return wuffs_base__make_status(NULL);
+}
+
 // -------- func vp8.decoder.get_quirk
 
 WUFFS_BASE__GENERATED_C_CODE
@@ -81001,6 +81829,9 @@ wuffs_vp8__decoder__get_quirk(
     return 0;
   }
 
+  if (a_key == 3u) {
+    return self->private_impl.f_quirk_source_length;
+  }
   return 0u;
 }
 
@@ -81022,6 +81853,10 @@ wuffs_vp8__decoder__set_quirk(
         : wuffs_base__error__initialize_not_called);
   }
 
+  if (a_key == 3u) {
+    self->private_impl.f_quirk_source_length = a_value;
+    return wuffs_base__make_status(NULL);
+  }
   return wuffs_base__make_status(wuffs_base__error__unsupported_option);
 }
 
@@ -81122,6 +81957,17 @@ wuffs_vp8__decoder__do_decode_image_config(
       status = wuffs_base__make_status(wuffs_base__error__bad_call_sequence);
       goto exit;
     }
+    if ((self->private_impl.f_quirk_source_length & 1u) == 0u) {
+      status = wuffs_base__make_status(wuffs_vp8__error__missing_quirk_source_length);
+      goto exit;
+    } else if ((self->private_impl.f_quirk_source_length >> 1u) < 10u) {
+      status = wuffs_base__make_status(wuffs_vp8__error__bad_quirk_source_length);
+      goto exit;
+    } else if ((self->private_impl.f_quirk_source_length >> 1u) > 150994945u) {
+      status = wuffs_base__make_status(wuffs_vp8__error__unsupported_quirk_source_length);
+      goto exit;
+    }
+    self->private_impl.f_partitioned_data_length = (((uint32_t)((self->private_impl.f_quirk_source_length >> 1u))) - 10u);
     {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(1);
       uint32_t t_0;
@@ -81151,8 +81997,14 @@ wuffs_vp8__decoder__do_decode_image_config(
       }
       v_c32 = t_0;
     }
-    if ((v_c32 & 1u) != 0u) {
+    self->private_impl.f_is_key_frame = ((v_c32 & 1u) == 0u);
+    if ( ! self->private_impl.f_is_key_frame) {
       status = wuffs_base__make_status(wuffs_vp8__error__unsupported_vp8_file);
+      goto exit;
+    }
+    self->private_impl.f_part_lens[0u] = (v_c32 >> 5u);
+    if (self->private_impl.f_part_lens[0u] > self->private_impl.f_partitioned_data_length) {
+      status = wuffs_base__make_status(wuffs_vp8__error__bad_header);
       goto exit;
     }
     {
@@ -81219,6 +82071,13 @@ wuffs_vp8__decoder__do_decode_image_config(
     }
     self->private_impl.f_width = (16383u & (v_c32 >> 0u));
     self->private_impl.f_height = (16383u & (v_c32 >> 16u));
+    self->private_impl.f_mbw = ((self->private_impl.f_width + 15u) / 16u);
+    self->private_impl.f_mbh = ((self->private_impl.f_height + 15u) / 16u);
+    self->private_impl.f_workbuf_yuv_y_stride = (self->private_impl.f_mbw * 16u);
+    self->private_impl.f_workbuf_yuv_uv_stride = (self->private_impl.f_mbw * 8u);
+    self->private_impl.f_workbuf_yuv_y_end = (((uint64_t)(self->private_impl.f_workbuf_yuv_y_stride)) * ((uint64_t)((self->private_impl.f_mbh * 16u))));
+    self->private_impl.f_workbuf_yuv_u_end = (self->private_impl.f_workbuf_yuv_y_end + (((uint64_t)(self->private_impl.f_workbuf_yuv_uv_stride)) * ((uint64_t)((self->private_impl.f_mbh * 8u)))));
+    self->private_impl.f_workbuf_yuv_v_end = (self->private_impl.f_workbuf_yuv_u_end + (((uint64_t)(self->private_impl.f_workbuf_yuv_uv_stride)) * ((uint64_t)((self->private_impl.f_mbh * 8u)))));
     self->private_impl.f_frame_config_io_position = wuffs_base__u64__sat_add((a_src ? a_src->meta.pos : 0), ((uint64_t)(iop_a_src - io0_a_src)));
     if (a_dst != NULL) {
       wuffs_base__image_config__set(
@@ -81436,6 +82295,7 @@ wuffs_vp8__decoder__decode_frame(
   self->private_impl.active_coroutine = 0;
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
+  uint64_t v_wb_len = 0;
   wuffs_base__status v_status = wuffs_base__make_status(NULL);
 
   uint32_t coro_susp_point = self->private_impl.p_decode_frame;
@@ -81443,6 +82303,13 @@ wuffs_vp8__decoder__decode_frame(
     WUFFS_BASE__COROUTINE_SUSPENSION_POINT_0;
 
     while (true) {
+      v_wb_len = (self->private_impl.f_workbuf_yuv_v_end + ((uint64_t)(self->private_impl.f_partitioned_data_length)) + 8u);
+      if (v_wb_len > ((uint64_t)(a_workbuf.len))) {
+        status = wuffs_base__make_status(wuffs_base__error__bad_workbuf_length);
+        goto exit;
+      } else {
+        a_workbuf = wuffs_base__slice_u8__subslice_j(a_workbuf, v_wb_len);
+      }
       {
         wuffs_base__status t_0 = wuffs_vp8__decoder__do_decode_frame(self,
             a_dst,
@@ -81491,6 +82358,7 @@ wuffs_vp8__decoder__do_decode_frame(
     wuffs_base__decode_frame_options* a_opts) {
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
+  uint32_t v_i = 0;
   wuffs_base__status v_status = wuffs_base__make_status(NULL);
 
   uint32_t coro_susp_point = self->private_impl.p_do_decode_frame;
@@ -81506,6 +82374,41 @@ wuffs_vp8__decoder__do_decode_frame(
       }
     } else {
       status = wuffs_base__make_status(wuffs_base__note__end_of_data);
+      goto ok;
+    }
+    WUFFS_BASE__COROUTINE_SUSPENSION_POINT(2);
+    status = wuffs_vp8__decoder__copy_partitions_to_workbuf(self, a_src, a_workbuf);
+    if (status.repr) {
+      goto suspend;
+    }
+    v_i = 0u;
+    while (v_i < 9u) {
+      self->private_impl.f_part_workbuf_ris[v_i] = self->private_impl.f_workbuf_yuv_v_end;
+      self->private_impl.f_part_range_m1s[v_i] = 254u;
+      self->private_impl.f_part_bits[v_i] = 0u;
+      self->private_impl.f_part_n_bits[v_i] = 0u;
+      v_i += 1u;
+    }
+    v_status = wuffs_vp8__decoder__decode_first_partition(self, a_workbuf);
+    if ( ! wuffs_base__status__is_ok(&v_status)) {
+      status = v_status;
+      if (wuffs_base__status__is_error(&status)) {
+        goto exit;
+      } else if (wuffs_base__status__is_suspension(&status)) {
+        status = wuffs_base__make_status(wuffs_base__error__cannot_return_a_suspension);
+        goto exit;
+      }
+      goto ok;
+    }
+    v_status = wuffs_vp8__decoder__decode_other_partition_lengths(self, a_workbuf);
+    if ( ! wuffs_base__status__is_ok(&v_status)) {
+      status = v_status;
+      if (wuffs_base__status__is_error(&status)) {
+        goto exit;
+      } else if (wuffs_base__status__is_suspension(&status)) {
+        status = wuffs_base__make_status(wuffs_base__error__cannot_return_a_suspension);
+        goto exit;
+      }
       goto ok;
     }
     self->private_impl.f_dst_x = 0u;
@@ -81772,7 +82675,10 @@ wuffs_vp8__decoder__workbuf_len(
     return wuffs_base__utility__empty_range_ii_u64();
   }
 
-  return wuffs_base__utility__make_range_ii_u64(0u, 0u);
+  uint64_t v_wb_len = 0;
+
+  v_wb_len = (self->private_impl.f_workbuf_yuv_v_end + ((uint64_t)(self->private_impl.f_partitioned_data_length)) + 8u);
+  return wuffs_base__utility__make_range_ii_u64(v_wb_len, v_wb_len);
 }
 
 #endif  // !defined(WUFFS_CONFIG__MODULES) || defined(WUFFS_CONFIG__MODULE__VP8)
@@ -85229,6 +86135,9 @@ wuffs_webp__decoder__do_decode_image_config_limited(
       goto exit;
     }
     self->private_impl.f_sub_chunk_has_padding = ((self->private_impl.f_sub_chunk_length & 1u) != 0u);
+    if (self->private_impl.f_is_vp8_lossy) {
+      wuffs_vp8__decoder__set_quirk(&self->private_data.f_vp8, 3u, ((((uint64_t)(self->private_impl.f_sub_chunk_length)) << 1u) | 1u));
+    }
     while (true) {
       {
         const bool o_0_closed_a_src = a_src->meta.closed;

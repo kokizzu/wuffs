@@ -160,6 +160,7 @@ var Consts = [...]struct {
 
 	{t.IDU32, "1", "QUIRK_IGNORE_CHECKSUM"},
 	{t.IDU32, "2", "QUIRK_QUALITY"},
+	{t.IDU32, "3", "QUIRK_SOURCE_LENGTH"},
 
 	// ----
 

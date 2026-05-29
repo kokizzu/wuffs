@@ -27,7 +27,9 @@ pri status "#internal error: inconsistent Huffman code"
 pri status "#internal error: inconsistent dst buffer"
 pri status "#internal error: inconsistent n_bits"
 
-pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0
+// TODO: reference vp8.DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE, although the
+// worst case for VP8L is bigger than for VP8.
+pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0x4C00_0000
 
 pub struct decoder? implements base.image_decoder(
         pixfmt : base.u32,
@@ -238,6 +240,13 @@ pri func decoder.do_decode_image_config_limited?(dst: nptr base.image_config, sr
         return "#bad header"
     }
     this.sub_chunk_has_padding = (this.sub_chunk_length & 1) <> 0
+
+    if this.is_vp8_lossy {
+        this.vp8.set_quirk!(
+                key: base.QUIRK_SOURCE_LENGTH,
+                value: ((this.sub_chunk_length as base.u64) << 1) | 1)
+
+    }
 
     while true {
         io_limit (io: args.src, limit: this.sub_chunk_length as base.u64) {
