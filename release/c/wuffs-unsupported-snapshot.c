@@ -15530,6 +15530,9 @@ struct wuffs_vp8__decoder__struct {
     uint32_t f_quant_uvdc_delta;
     uint32_t f_quant_uvac_delta;
     uint32_t f_prob_skip;
+    uint8_t f_mb_subblock_modes[16];
+    uint8_t f_mb_left_modes[4];
+    uint8_t f_mb_top_modes[1024][4];
     uint32_t f_dst_x;
     uint32_t f_dst_y;
     wuffs_base__pixel_swizzler f_swizzler;
@@ -80965,6 +80968,342 @@ WUFFS_VP8__RENORM_RANGE_M1[256] WUFFS_BASE__POTENTIALLY_UNUSED = {
 };
 
 static const uint8_t
+WUFFS_VP8__SUBBLOCK_MODE_PROBS[10][10][9] WUFFS_BASE__POTENTIALLY_UNUSED = {
+  {
+    {
+      231u, 120u, 48u, 89u, 115u, 113u, 120u, 152u,
+      112u,
+    }, {
+      152u, 179u, 64u, 126u, 170u, 118u, 46u, 70u,
+      95u,
+    }, {
+      175u, 69u, 143u, 80u, 85u, 82u, 72u, 155u,
+      103u,
+    }, {
+      56u, 58u, 10u, 171u, 218u, 189u, 17u, 13u,
+      152u,
+    }, {
+      114u, 26u, 17u, 163u, 44u, 195u, 21u, 10u,
+      173u,
+    }, {
+      121u, 24u, 80u, 195u, 26u, 62u, 44u, 64u,
+      85u,
+    }, {
+      144u, 71u, 10u, 38u, 171u, 213u, 144u, 34u,
+      26u,
+    }, {
+      170u, 46u, 55u, 19u, 136u, 160u, 33u, 206u,
+      71u,
+    },
+    {
+      63u, 20u, 8u, 114u, 114u, 208u, 12u, 9u,
+      226u,
+    }, {
+      81u, 40u, 11u, 96u, 182u, 84u, 29u, 16u,
+      36u,
+    },
+  }, {
+    {
+      134u, 183u, 89u, 137u, 98u, 101u, 106u, 165u,
+      148u,
+    }, {
+      72u, 187u, 100u, 130u, 157u, 111u, 32u, 75u,
+      80u,
+    }, {
+      66u, 102u, 167u, 99u, 74u, 62u, 40u, 234u,
+      128u,
+    }, {
+      41u, 53u, 9u, 178u, 241u, 141u, 26u, 8u,
+      107u,
+    }, {
+      74u, 43u, 26u, 146u, 73u, 166u, 49u, 23u,
+      157u,
+    }, {
+      65u, 38u, 105u, 160u, 51u, 52u, 31u, 115u,
+      128u,
+    }, {
+      104u, 79u, 12u, 27u, 217u, 255u, 87u, 17u,
+      7u,
+    }, {
+      87u, 68u, 71u, 44u, 114u, 51u, 15u, 186u,
+      23u,
+    },
+    {
+      47u, 41u, 14u, 110u, 182u, 183u, 21u, 17u,
+      194u,
+    }, {
+      66u, 45u, 25u, 102u, 197u, 189u, 23u, 18u,
+      22u,
+    },
+  }, {
+    {
+      88u, 88u, 147u, 150u, 42u, 46u, 45u, 196u,
+      205u,
+    }, {
+      43u, 97u, 183u, 117u, 85u, 38u, 35u, 179u,
+      61u,
+    }, {
+      39u, 53u, 200u, 87u, 26u, 21u, 43u, 232u,
+      171u,
+    }, {
+      56u, 34u, 51u, 104u, 114u, 102u, 29u, 93u,
+      77u,
+    }, {
+      39u, 28u, 85u, 171u, 58u, 165u, 90u, 98u,
+      64u,
+    }, {
+      34u, 22u, 116u, 206u, 23u, 34u, 43u, 166u,
+      73u,
+    }, {
+      107u, 54u, 32u, 26u, 51u, 1u, 81u, 43u,
+      31u,
+    }, {
+      68u, 25u, 106u, 22u, 64u, 171u, 36u, 225u,
+      114u,
+    },
+    {
+      34u, 19u, 21u, 102u, 132u, 188u, 16u, 76u,
+      124u,
+    }, {
+      62u, 18u, 78u, 95u, 85u, 57u, 50u, 48u,
+      51u,
+    },
+  }, {
+    {
+      193u, 101u, 35u, 159u, 215u, 111u, 89u, 46u,
+      111u,
+    }, {
+      60u, 148u, 31u, 172u, 219u, 228u, 21u, 18u,
+      111u,
+    }, {
+      112u, 113u, 77u, 85u, 179u, 255u, 38u, 120u,
+      114u,
+    }, {
+      40u, 42u, 1u, 196u, 245u, 209u, 10u, 25u,
+      109u,
+    }, {
+      88u, 43u, 29u, 140u, 166u, 213u, 37u, 43u,
+      154u,
+    }, {
+      61u, 63u, 30u, 155u, 67u, 45u, 68u, 1u,
+      209u,
+    }, {
+      100u, 80u, 8u, 43u, 154u, 1u, 51u, 26u,
+      71u,
+    }, {
+      142u, 78u, 78u, 16u, 255u, 128u, 34u, 197u,
+      171u,
+    },
+    {
+      41u, 40u, 5u, 102u, 211u, 183u, 4u, 1u,
+      221u,
+    }, {
+      51u, 50u, 17u, 168u, 209u, 192u, 23u, 25u,
+      82u,
+    },
+  }, {
+    {
+      138u, 31u, 36u, 171u, 27u, 166u, 38u, 44u,
+      229u,
+    }, {
+      67u, 87u, 58u, 169u, 82u, 115u, 26u, 59u,
+      179u,
+    }, {
+      63u, 59u, 90u, 180u, 59u, 166u, 93u, 73u,
+      154u,
+    }, {
+      40u, 40u, 21u, 116u, 143u, 209u, 34u, 39u,
+      175u,
+    }, {
+      47u, 15u, 16u, 183u, 34u, 223u, 49u, 45u,
+      183u,
+    }, {
+      46u, 17u, 33u, 183u, 6u, 98u, 15u, 32u,
+      183u,
+    }, {
+      57u, 46u, 22u, 24u, 128u, 1u, 54u, 17u,
+      37u,
+    }, {
+      65u, 32u, 73u, 115u, 28u, 128u, 23u, 128u,
+      205u,
+    },
+    {
+      40u, 3u, 9u, 115u, 51u, 192u, 18u, 6u,
+      223u,
+    }, {
+      87u, 37u, 9u, 115u, 59u, 77u, 64u, 21u,
+      47u,
+    },
+  }, {
+    {
+      104u, 55u, 44u, 218u, 9u, 54u, 53u, 130u,
+      226u,
+    }, {
+      64u, 90u, 70u, 205u, 40u, 41u, 23u, 26u,
+      57u,
+    }, {
+      54u, 57u, 112u, 184u, 5u, 41u, 38u, 166u,
+      213u,
+    }, {
+      30u, 34u, 26u, 133u, 152u, 116u, 10u, 32u,
+      134u,
+    }, {
+      39u, 19u, 53u, 221u, 26u, 114u, 32u, 73u,
+      255u,
+    }, {
+      31u, 9u, 65u, 234u, 2u, 15u, 1u, 118u,
+      73u,
+    }, {
+      75u, 32u, 12u, 51u, 192u, 255u, 160u, 43u,
+      51u,
+    }, {
+      88u, 31u, 35u, 67u, 102u, 85u, 55u, 186u,
+      85u,
+    },
+    {
+      56u, 21u, 23u, 111u, 59u, 205u, 45u, 37u,
+      192u,
+    }, {
+      55u, 38u, 70u, 124u, 73u, 102u, 1u, 34u,
+      98u,
+    },
+  }, {
+    {
+      125u, 98u, 42u, 88u, 104u, 85u, 117u, 175u,
+      82u,
+    }, {
+      95u, 84u, 53u, 89u, 128u, 100u, 113u, 101u,
+      45u,
+    }, {
+      75u, 79u, 123u, 47u, 51u, 128u, 81u, 171u,
+      1u,
+    }, {
+      57u, 17u, 5u, 71u, 102u, 57u, 53u, 41u,
+      49u,
+    }, {
+      38u, 33u, 13u, 121u, 57u, 73u, 26u, 1u,
+      85u,
+    }, {
+      41u, 10u, 67u, 138u, 77u, 110u, 90u, 47u,
+      114u,
+    }, {
+      115u, 21u, 2u, 10u, 102u, 255u, 166u, 23u,
+      6u,
+    }, {
+      101u, 29u, 16u, 10u, 85u, 128u, 101u, 196u,
+      26u,
+    },
+    {
+      57u, 18u, 10u, 102u, 102u, 213u, 34u, 20u,
+      43u,
+    }, {
+      117u, 20u, 15u, 36u, 163u, 128u, 68u, 1u,
+      26u,
+    },
+  }, {
+    {
+      102u, 61u, 71u, 37u, 34u, 53u, 31u, 243u,
+      192u,
+    }, {
+      69u, 60u, 71u, 38u, 73u, 119u, 28u, 222u,
+      37u,
+    }, {
+      68u, 45u, 128u, 34u, 1u, 47u, 11u, 245u,
+      171u,
+    }, {
+      62u, 17u, 19u, 70u, 146u, 85u, 55u, 62u,
+      70u,
+    }, {
+      37u, 43u, 37u, 154u, 100u, 163u, 85u, 160u,
+      1u,
+    }, {
+      63u, 9u, 92u, 136u, 28u, 64u, 32u, 201u,
+      85u,
+    }, {
+      75u, 15u, 9u, 9u, 64u, 255u, 184u, 119u,
+      16u,
+    }, {
+      86u, 6u, 28u, 5u, 64u, 255u, 25u, 248u,
+      1u,
+    },
+    {
+      56u, 8u, 17u, 132u, 137u, 255u, 55u, 116u,
+      128u,
+    }, {
+      58u, 15u, 20u, 82u, 135u, 57u, 26u, 121u,
+      40u,
+    },
+  },
+  {
+    {
+      164u, 50u, 31u, 137u, 154u, 133u, 25u, 35u,
+      218u,
+    }, {
+      51u, 103u, 44u, 131u, 131u, 123u, 31u, 6u,
+      158u,
+    }, {
+      86u, 40u, 64u, 135u, 148u, 224u, 45u, 183u,
+      128u,
+    }, {
+      22u, 26u, 17u, 131u, 240u, 154u, 14u, 1u,
+      209u,
+    }, {
+      45u, 16u, 21u, 91u, 64u, 222u, 7u, 1u,
+      197u,
+    }, {
+      56u, 21u, 39u, 155u, 60u, 138u, 23u, 102u,
+      213u,
+    }, {
+      83u, 12u, 13u, 54u, 192u, 255u, 68u, 47u,
+      28u,
+    }, {
+      85u, 26u, 85u, 85u, 128u, 128u, 32u, 146u,
+      171u,
+    },
+    {
+      18u, 11u, 7u, 63u, 144u, 171u, 4u, 4u,
+      246u,
+    }, {
+      35u, 27u, 10u, 146u, 174u, 171u, 12u, 26u,
+      128u,
+    },
+  }, {
+    {
+      190u, 80u, 35u, 99u, 180u, 80u, 126u, 54u,
+      45u,
+    }, {
+      85u, 126u, 47u, 87u, 176u, 51u, 41u, 20u,
+      32u,
+    }, {
+      101u, 75u, 128u, 139u, 118u, 146u, 116u, 128u,
+      85u,
+    }, {
+      56u, 41u, 15u, 176u, 236u, 85u, 37u, 9u,
+      62u,
+    }, {
+      71u, 30u, 17u, 119u, 118u, 255u, 17u, 18u,
+      138u,
+    }, {
+      101u, 38u, 60u, 138u, 55u, 70u, 43u, 26u,
+      142u,
+    }, {
+      146u, 36u, 19u, 30u, 171u, 255u, 97u, 27u,
+      20u,
+    }, {
+      138u, 45u, 61u, 62u, 219u, 1u, 81u, 188u,
+      64u,
+    },
+    {
+      32u, 41u, 20u, 117u, 151u, 142u, 20u, 21u,
+      163u,
+    }, {
+      112u, 19u, 12u, 61u, 195u, 128u, 48u, 4u,
+      24u,
+    },
+  },
+};
+
+static const uint8_t
 WUFFS_VP8__COEFF_UPDATE_PROBS[1056] WUFFS_BASE__POTENTIALLY_UNUSED = {
   255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
   255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
@@ -81300,6 +81639,48 @@ static wuffs_base__status
 wuffs_vp8__decoder__decode_other_partition_lengths(
     wuffs_vp8__decoder* self,
     wuffs_base__slice_u8 a_workbuf);
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__status
+wuffs_vp8__decoder__decode_macroblocks(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf);
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_vp8__decoder__decode_one_macroblock(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf,
+    uint32_t a_mbx,
+    uint32_t a_mby);
+
+WUFFS_BASE__GENERATED_C_CODE
+static uint32_t
+wuffs_vp8__decoder__decode_luma_mode(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf);
+
+WUFFS_BASE__GENERATED_C_CODE
+static uint32_t
+wuffs_vp8__decoder__decode_chroma_mode(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf);
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_vp8__decoder__decode_subblock_modes(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf,
+    uint32_t a_mbx,
+    uint32_t a_luma_mode);
+
+WUFFS_BASE__GENERATED_C_CODE
+static uint8_t
+wuffs_vp8__decoder__decode_one_subblock_mode(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf,
+    uint8_t a_top_mode,
+    uint8_t a_left_mode);
 
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__status
@@ -81812,6 +82193,228 @@ wuffs_vp8__decoder__decode_other_partition_lengths(
     v_i += 1u;
   }
   return wuffs_base__make_status(NULL);
+}
+
+// -------- func vp8.decoder.decode_macroblocks
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__status
+wuffs_vp8__decoder__decode_macroblocks(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf) {
+  uint32_t v_mby = 0;
+  uint32_t v_mbx = 0;
+
+  v_mbx = 0u;
+  while (v_mbx < self->private_impl.f_mbw) {
+    self->private_impl.f_mb_top_modes[v_mbx][0u] = 0u;
+    self->private_impl.f_mb_top_modes[v_mbx][1u] = 0u;
+    self->private_impl.f_mb_top_modes[v_mbx][2u] = 0u;
+    self->private_impl.f_mb_top_modes[v_mbx][3u] = 0u;
+    v_mbx += 1u;
+  }
+  v_mby = 0u;
+  while (v_mby < self->private_impl.f_mbh) {
+    self->private_impl.f_mb_left_modes[0u] = 0u;
+    self->private_impl.f_mb_left_modes[1u] = 0u;
+    self->private_impl.f_mb_left_modes[2u] = 0u;
+    self->private_impl.f_mb_left_modes[3u] = 0u;
+    v_mbx = 0u;
+    while (v_mbx < self->private_impl.f_mbw) {
+      wuffs_vp8__decoder__decode_one_macroblock(self, a_workbuf, v_mbx, v_mby);
+      v_mbx += 1u;
+    }
+    v_mby += 1u;
+  }
+  return wuffs_base__make_status(NULL);
+}
+
+// -------- func vp8.decoder.decode_one_macroblock
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_vp8__decoder__decode_one_macroblock(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf,
+    uint32_t a_mbx,
+    uint32_t a_mby) {
+  uint32_t v_v1 = 0;
+  uint32_t v_seg = 0;
+  bool v_skip = false;
+  uint32_t v_luma_mode = 0;
+  uint32_t v_chroma_mode = 0;
+
+  v_seg = 0u;
+  if (self->private_impl.f_seg_update_map) {
+    v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, 0u, ((uint32_t)(self->private_impl.f_seg_probs[0u])));
+    if (v_v1 == 0u) {
+      v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, 0u, ((uint32_t)(self->private_impl.f_seg_probs[1u])));
+      v_seg = v_v1;
+    } else {
+      v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, 0u, ((uint32_t)(self->private_impl.f_seg_probs[2u])));
+      v_seg = (v_v1 + 2u);
+    }
+  }
+  v_skip = false;
+  if ((self->private_impl.f_prob_skip & 256u) != 0u) {
+    v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, 0u, (self->private_impl.f_prob_skip & 255u));
+    v_skip = (v_v1 != 0u);
+  }
+  v_luma_mode = wuffs_vp8__decoder__decode_luma_mode(self, a_workbuf);
+  wuffs_vp8__decoder__decode_subblock_modes(self, a_workbuf, a_mbx, v_luma_mode);
+  v_chroma_mode = wuffs_vp8__decoder__decode_chroma_mode(self, a_workbuf);
+  if (v_skip) {
+  }
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func vp8.decoder.decode_luma_mode
+
+WUFFS_BASE__GENERATED_C_CODE
+static uint32_t
+wuffs_vp8__decoder__decode_luma_mode(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf) {
+  uint32_t v_v1 = 0;
+
+  v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, 0u, 145u);
+  if (v_v1 == 0u) {
+    return 4u;
+  }
+  v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, 0u, 156u);
+  if (v_v1 == 0u) {
+    v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, 0u, 163u);
+    return (2u * v_v1);
+  }
+  v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, 0u, 128u);
+  return (3u - (2u * v_v1));
+}
+
+// -------- func vp8.decoder.decode_chroma_mode
+
+WUFFS_BASE__GENERATED_C_CODE
+static uint32_t
+wuffs_vp8__decoder__decode_chroma_mode(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf) {
+  uint32_t v_v1 = 0;
+
+  v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, 0u, 142u);
+  if (v_v1 == 0u) {
+    return 0u;
+  }
+  v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, 0u, 114u);
+  if (v_v1 == 0u) {
+    return 2u;
+  }
+  v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, 0u, 183u);
+  return (3u - (2u * v_v1));
+}
+
+// -------- func vp8.decoder.decode_subblock_modes
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_vp8__decoder__decode_subblock_modes(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf,
+    uint32_t a_mbx,
+    uint32_t a_luma_mode) {
+  uint32_t v_i = 0;
+  uint8_t v_top_mode = 0;
+  uint8_t v_left_mode = 0;
+  uint8_t v_mode = 0;
+
+  if (a_luma_mode < 4u) {
+    self->private_impl.f_mb_top_modes[a_mbx][0u] = v_mode;
+    self->private_impl.f_mb_top_modes[a_mbx][1u] = v_mode;
+    self->private_impl.f_mb_top_modes[a_mbx][2u] = v_mode;
+    self->private_impl.f_mb_top_modes[a_mbx][3u] = v_mode;
+    self->private_impl.f_mb_left_modes[0u] = v_mode;
+    self->private_impl.f_mb_left_modes[1u] = v_mode;
+    self->private_impl.f_mb_left_modes[2u] = v_mode;
+    self->private_impl.f_mb_left_modes[3u] = v_mode;
+    return wuffs_base__make_empty_struct();
+  }
+  v_i = 0u;
+  while (v_i < 16u) {
+    if (v_i < 4u) {
+      v_top_mode = self->private_impl.f_mb_top_modes[a_mbx][v_i];
+    } else {
+      v_top_mode = self->private_impl.f_mb_subblock_modes[(v_i - 4u)];
+    }
+    if ((v_i & 3u) == 0u) {
+      v_left_mode = self->private_impl.f_mb_left_modes[(v_i >> 2u)];
+    } else {
+      v_left_mode = self->private_impl.f_mb_subblock_modes[(((uint32_t)(v_i + 15u)) & 15u)];
+    }
+    v_mode = wuffs_vp8__decoder__decode_one_subblock_mode(self, a_workbuf, v_top_mode, v_left_mode);
+    self->private_impl.f_mb_subblock_modes[v_i] = v_mode;
+    v_i += 1u;
+  }
+  self->private_impl.f_mb_top_modes[a_mbx][0u] = self->private_impl.f_mb_subblock_modes[12u];
+  self->private_impl.f_mb_top_modes[a_mbx][1u] = self->private_impl.f_mb_subblock_modes[13u];
+  self->private_impl.f_mb_top_modes[a_mbx][2u] = self->private_impl.f_mb_subblock_modes[14u];
+  self->private_impl.f_mb_top_modes[a_mbx][3u] = self->private_impl.f_mb_subblock_modes[15u];
+  self->private_impl.f_mb_left_modes[0u] = self->private_impl.f_mb_subblock_modes[3u];
+  self->private_impl.f_mb_left_modes[1u] = self->private_impl.f_mb_subblock_modes[7u];
+  self->private_impl.f_mb_left_modes[2u] = self->private_impl.f_mb_subblock_modes[11u];
+  self->private_impl.f_mb_left_modes[3u] = self->private_impl.f_mb_subblock_modes[15u];
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func vp8.decoder.decode_one_subblock_mode
+
+WUFFS_BASE__GENERATED_C_CODE
+static uint8_t
+wuffs_vp8__decoder__decode_one_subblock_mode(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf,
+    uint8_t a_top_mode,
+    uint8_t a_left_mode) {
+  uint32_t v_v1 = 0;
+  uint8_t v_tm = 0;
+  uint8_t v_lm = 0;
+
+  v_tm = a_top_mode;
+  v_lm = a_left_mode;
+  v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, 0u, ((uint32_t)(WUFFS_VP8__SUBBLOCK_MODE_PROBS[v_tm][v_lm][0u])));
+  if (v_v1 == 0u) {
+    return 0u;
+  }
+  v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, 0u, ((uint32_t)(WUFFS_VP8__SUBBLOCK_MODE_PROBS[v_tm][v_lm][1u])));
+  if (v_v1 == 0u) {
+    return 1u;
+  }
+  v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, 0u, ((uint32_t)(WUFFS_VP8__SUBBLOCK_MODE_PROBS[v_tm][v_lm][2u])));
+  if (v_v1 == 0u) {
+    return 2u;
+  }
+  v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, 0u, ((uint32_t)(WUFFS_VP8__SUBBLOCK_MODE_PROBS[v_tm][v_lm][3u])));
+  if (v_v1 == 0u) {
+    v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, 0u, ((uint32_t)(WUFFS_VP8__SUBBLOCK_MODE_PROBS[v_tm][v_lm][4u])));
+    if (v_v1 == 0u) {
+      return 3u;
+    }
+    v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, 0u, ((uint32_t)(WUFFS_VP8__SUBBLOCK_MODE_PROBS[v_tm][v_lm][5u])));
+    if (v_v1 == 0u) {
+      return 4u;
+    }
+    return 5u;
+  }
+  v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, 0u, ((uint32_t)(WUFFS_VP8__SUBBLOCK_MODE_PROBS[v_tm][v_lm][6u])));
+  if (v_v1 == 0u) {
+    return 6u;
+  }
+  v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, 0u, ((uint32_t)(WUFFS_VP8__SUBBLOCK_MODE_PROBS[v_tm][v_lm][7u])));
+  if (v_v1 == 0u) {
+    return 7u;
+  }
+  v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, 0u, ((uint32_t)(WUFFS_VP8__SUBBLOCK_MODE_PROBS[v_tm][v_lm][8u])));
+  if (v_v1 == 0u) {
+    return 8u;
+  }
+  return 9u;
 }
 
 // -------- func vp8.decoder.get_quirk
@@ -82401,6 +83004,17 @@ wuffs_vp8__decoder__do_decode_frame(
       goto ok;
     }
     v_status = wuffs_vp8__decoder__decode_other_partition_lengths(self, a_workbuf);
+    if ( ! wuffs_base__status__is_ok(&v_status)) {
+      status = v_status;
+      if (wuffs_base__status__is_error(&status)) {
+        goto exit;
+      } else if (wuffs_base__status__is_suspension(&status)) {
+        status = wuffs_base__make_status(wuffs_base__error__cannot_return_a_suspension);
+        goto exit;
+      }
+      goto ok;
+    }
+    v_status = wuffs_vp8__decoder__decode_macroblocks(self, a_workbuf);
     if ( ! wuffs_base__status__is_ok(&v_status)) {
       status = v_status;
       if (wuffs_base__status__is_error(&status)) {

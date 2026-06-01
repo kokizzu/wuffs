@@ -1,0 +1,252 @@
+// Copyright 2026 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// https://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+pri func decoder.decode_macroblocks!(workbuf: slice base.u8) base.status {
+    var mby : base.u32
+    var mbx : base.u32
+
+    mbx = 0
+    while mbx < this.mbw {
+        assert mbx < 0x400 via "a < b: a < c; c <= b"(c: this.mbw)
+
+        this.mb_top_modes[mbx][0] = 0
+        this.mb_top_modes[mbx][1] = 0
+        this.mb_top_modes[mbx][2] = 0
+        this.mb_top_modes[mbx][3] = 0
+
+        mbx += 1
+    }
+
+    mby = 0
+    while mby < this.mbh {
+        assert mby < 0x400 via "a < b: a < c; c <= b"(c: this.mbh)
+
+        this.mb_left_modes[0] = 0
+        this.mb_left_modes[1] = 0
+        this.mb_left_modes[2] = 0
+        this.mb_left_modes[3] = 0
+
+        mbx = 0
+        while mbx < this.mbw,
+                inv mby < 0x400,
+        {
+            assert mbx < 0x400 via "a < b: a < c; c <= b"(c: this.mbw)
+
+            this.decode_one_macroblock!(workbuf: args.workbuf, mbx: mbx, mby: mby)
+
+            mbx += 1
+        }
+
+        mby += 1
+    }
+    return ok
+}
+
+pri func decoder.decode_one_macroblock!(workbuf: slice base.u8, mbx: base.u32[..= 0x3FF], mby: base.u32[..= 0x3FF]) {
+    var v1 : base.u32[..= 1]
+
+    var seg         : base.u32[..= 3]
+    var skip        : base.bool
+    var luma_mode   : base.u32[..= 4]
+    var chroma_mode : base.u32[..= 3]
+
+    seg = 0
+    if this.seg_update_map {
+        v1 = this.read_bit!(workbuf: args.workbuf, part: 0, prob: this.seg_probs[0] as base.u32)
+        if v1 == 0 {
+            v1 = this.read_bit!(workbuf: args.workbuf, part: 0, prob: this.seg_probs[1] as base.u32)
+            seg = v1
+        } else {
+            v1 = this.read_bit!(workbuf: args.workbuf, part: 0, prob: this.seg_probs[2] as base.u32)
+            seg = v1 + 2
+        }
+    }
+
+    skip = false
+    if (this.prob_skip & 0x100) <> 0 {
+        v1 = this.read_bit!(workbuf: args.workbuf, part: 0, prob: this.prob_skip & 0xFF)
+        skip = v1 <> 0
+    }
+
+    luma_mode = this.decode_luma_mode!(workbuf: args.workbuf)
+    this.decode_subblock_modes!(workbuf: args.workbuf, mbx: args.mbx, luma_mode: luma_mode)
+
+    chroma_mode = this.decode_chroma_mode!(workbuf: args.workbuf)
+
+    if skip {
+        // TODO.
+    } else {
+    }
+}
+
+// RFC 6386 Section 11.2. Luma Modes.
+//
+// 0 = B_DC_PRED = predict DC using row above and column to the left.
+// 1 = B_TM_PRED = propagate second differences a la "True Motion".
+// 2 = B_VE_PRED = predict rows using row above.
+// 3 = B_HE_PRED = predict columns using column to the left.
+// 4 = B_PRED    = each Y subblock is independently predicted.
+//
+// The RFC gives an enum in (DC_PRED, V_PRED, H_PRED, TM_PRED, B_PRED) order
+// but the libwebp implementation uses a different one, (B_DC_PRED, B_TM_PRED,
+// B_VE_PRED, B_HE_PRED, B_PRED). Modulo the B_ prefixes, it's DC,V,H,TM versus
+// DC,TM,VE,HE. At some point, the internal enum values were re-assigned after
+// the RFC was written.
+//
+// libwebp also uses B_PRED=10 instead of the RFC's B_PRED=4. We use 4.
+pri func decoder.decode_luma_mode!(workbuf: slice base.u8) base.u32[..= 4] {
+    var v1 : base.u32[..= 1]
+
+    v1 = this.read_bit!(workbuf: args.workbuf, part: 0, prob: 145)
+    if v1 == 0 {
+        return 4  // 4=B_PRED.
+    }
+
+    v1 = this.read_bit!(workbuf: args.workbuf, part: 0, prob: 156)
+    if v1 == 0 {
+        v1 = this.read_bit!(workbuf: args.workbuf, part: 0, prob: 163)
+        return 2 * v1  // 0=B_DC_PRED or 2=B_VE_PRED.
+    }
+
+    v1 = this.read_bit!(workbuf: args.workbuf, part: 0, prob: 128)
+    return 3 - (2 * v1)  // 3=B_HE_PRED or 1=B_TM_PRED.
+}
+
+// RFC 6386 Section 11.4. Chroma Modes.
+//
+// 0 = B_DC_PRED, etc, the same as the Luma Modes, except there's no B_PRED.
+pri func decoder.decode_chroma_mode!(workbuf: slice base.u8) base.u32[..= 3] {
+    var v1 : base.u32[..= 1]
+
+    v1 = this.read_bit!(workbuf: args.workbuf, part: 0, prob: 142)
+    if v1 == 0 {
+        return 0  // 0=B_DC_PRED.
+    }
+
+    v1 = this.read_bit!(workbuf: args.workbuf, part: 0, prob: 114)
+    if v1 == 0 {
+        return 2  // 2=B_VE_PRED.
+    }
+
+    v1 = this.read_bit!(workbuf: args.workbuf, part: 0, prob: 183)
+    return 3 - (2 * v1)  // 3=B_HE_PRED or 1=B_TM_PRED.
+}
+
+// RFC 6386 Section 11.2. Luma Modes.
+pri func decoder.decode_subblock_modes!(
+        workbuf: slice base.u8,
+        mbx: base.u32[..= 0x3FF],
+        luma_mode: base.u32[..= 4]) {
+    var i          : base.u32
+    var top_mode : base.u8[..= 9]
+    var left_mode  : base.u8[..= 9]
+    var mode       : base.u8[..= 9]
+
+    if args.luma_mode < 4 {
+        this.mb_top_modes[args.mbx][0] = mode
+        this.mb_top_modes[args.mbx][1] = mode
+        this.mb_top_modes[args.mbx][2] = mode
+        this.mb_top_modes[args.mbx][3] = mode
+        this.mb_left_modes[0] = mode
+        this.mb_left_modes[1] = mode
+        this.mb_left_modes[2] = mode
+        this.mb_left_modes[3] = mode
+        return nothing
+    }
+
+    i = 0
+    while i < 16 {
+        if i < 4 {
+            top_mode = this.mb_top_modes[args.mbx][i]
+        } else {
+            top_mode = this.mb_subblock_modes[i - 4]
+        }
+
+        if (i & 3) == 0 {
+            left_mode = this.mb_left_modes[i >> 2]
+        } else {
+            left_mode = this.mb_subblock_modes[(i ~mod+ 15) & 15]
+        }
+
+        mode = this.decode_one_subblock_mode!(workbuf: args.workbuf, top_mode: top_mode, left_mode: left_mode)
+        this.mb_subblock_modes[i] = mode
+
+        i += 1
+    }
+
+    this.mb_top_modes[args.mbx][0] = this.mb_subblock_modes[0xC]
+    this.mb_top_modes[args.mbx][1] = this.mb_subblock_modes[0xD]
+    this.mb_top_modes[args.mbx][2] = this.mb_subblock_modes[0xE]
+    this.mb_top_modes[args.mbx][3] = this.mb_subblock_modes[0xF]
+    this.mb_left_modes[0] = this.mb_subblock_modes[0x3]
+    this.mb_left_modes[1] = this.mb_subblock_modes[0x7]
+    this.mb_left_modes[2] = this.mb_subblock_modes[0xB]
+    this.mb_left_modes[3] = this.mb_subblock_modes[0xF]
+}
+
+// RFC 6386 Section 11.3. Subblock Mode Contexts.
+pri func decoder.decode_one_subblock_mode!(
+        workbuf: slice base.u8,
+        top_mode: base.u8[..= 9],
+        left_mode: base.u8[..= 9]) base.u8[..= 9] {
+    var v1 : base.u32[..= 1]
+    var tm : base.u8[..= 9]
+    var lm : base.u8[..= 9]
+
+    tm = args.top_mode
+    lm = args.left_mode
+
+    v1 = this.read_bit!(workbuf: args.workbuf, part: 0, prob: SUBBLOCK_MODE_PROBS[tm][lm][0] as base.u32)
+    if v1 == 0 {
+        return 0  // 0=B_DC_PRED.
+    }
+
+    v1 = this.read_bit!(workbuf: args.workbuf, part: 0, prob: SUBBLOCK_MODE_PROBS[tm][lm][1] as base.u32)
+    if v1 == 0 {
+        return 1  // 1=B_TM_PRED.
+    }
+
+    v1 = this.read_bit!(workbuf: args.workbuf, part: 0, prob: SUBBLOCK_MODE_PROBS[tm][lm][2] as base.u32)
+    if v1 == 0 {
+        return 2  // 2=B_VE_PRED.
+    }
+
+    v1 = this.read_bit!(workbuf: args.workbuf, part: 0, prob: SUBBLOCK_MODE_PROBS[tm][lm][3] as base.u32)
+    if v1 == 0 {
+        v1 = this.read_bit!(workbuf: args.workbuf, part: 0, prob: SUBBLOCK_MODE_PROBS[tm][lm][4] as base.u32)
+        if v1 == 0 {
+            return 3  // 3=B_HE_PRED.
+        }
+
+        v1 = this.read_bit!(workbuf: args.workbuf, part: 0, prob: SUBBLOCK_MODE_PROBS[tm][lm][5] as base.u32)
+        if v1 == 0 {
+            return 4  // 4=B_RD_PRED.
+        }
+
+        return 5  // 5=B_VR_PRED.
+    }
+
+    v1 = this.read_bit!(workbuf: args.workbuf, part: 0, prob: SUBBLOCK_MODE_PROBS[tm][lm][6] as base.u32)
+    if v1 == 0 {
+        return 6  // 6=B_LD_PRED.
+    }
+
+    v1 = this.read_bit!(workbuf: args.workbuf, part: 0, prob: SUBBLOCK_MODE_PROBS[tm][lm][7] as base.u32)
+    if v1 == 0 {
+        return 7  // 7=B_VL_PRED.
+    }
+
+    v1 = this.read_bit!(workbuf: args.workbuf, part: 0, prob: SUBBLOCK_MODE_PROBS[tm][lm][8] as base.u32)
+    if v1 == 0 {
+        return 8  // 8=B_HD_PRED.
+    }
+
+    return 9  // 9=B_HU_PRED.
+}
