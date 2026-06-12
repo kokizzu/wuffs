@@ -82279,7 +82279,7 @@ wuffs_vp8__decoder__calculate_dequants(
     } else if (self->private_impl.f_seg_absolute) {
       v_q = wuffs_base__utility__sign_extend_convert_u8_u32(self->private_impl.f_seg_quants[v_seg]);
     } else {
-      v_q += wuffs_base__utility__sign_extend_convert_u8_u32(self->private_impl.f_seg_quants[v_seg]);
+      v_q = ((uint32_t)(((uint32_t)(v_q)) + wuffs_base__utility__sign_extend_convert_u8_u32(self->private_impl.f_seg_quants[v_seg])));
     }
     self->private_impl.f_dequants[v_seg][0u][0u] = WUFFS_VP8__DEQUANTS[0u][wuffs_vp8__decoder__clip_127(self, ((uint32_t)(v_q + self->private_impl.f_quant_ydc_delta)))];
     self->private_impl.f_dequants[v_seg][0u][1u] = WUFFS_VP8__DEQUANTS[1u][wuffs_vp8__decoder__clip_127(self, v_q)];

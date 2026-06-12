@@ -216,7 +216,9 @@ pri func decoder.calculate_dequants!() {
         } else if this.seg_absolute {
             q = this.util.sign_extend_convert_u8_u32(a: this.seg_quants[seg])
         } else {
-            q ~mod+= this.util.sign_extend_convert_u8_u32(a: this.seg_quants[seg])
+            // The (q as base.u32) is redundant, equivalent to q, but avoids a
+            // -Werror=sign-conversion false positive with gcc 12.2.0.
+            q = (q as base.u32) ~mod+ this.util.sign_extend_convert_u8_u32(a: this.seg_quants[seg])
         }
 
         this.dequants[seg][0][0] = DEQUANTS[0][this.clip_127(a: q ~mod+ this.quant_ydc_delta)]
