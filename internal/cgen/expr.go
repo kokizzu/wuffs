@@ -290,6 +290,24 @@ func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, depth uint32) error {
 
 	op := n.Operator()
 	switch op {
+	case t.IDXBinaryPlus, t.IDXBinaryPipe, t.IDXBinaryHat:
+		if lcv := n.LHS().AsExpr().ConstValue(); (lcv != nil) && (lcv.Sign() == 0) {
+			return g.writeExpr(b, n.RHS().AsExpr(), false, depth)
+		} else if rcv := n.RHS().AsExpr().ConstValue(); (rcv != nil) && (rcv.Sign() == 0) {
+			return g.writeExpr(b, n.LHS().AsExpr(), false, depth)
+		}
+
+	case t.IDXBinaryStar:
+		if lcv := n.LHS().AsExpr().ConstValue(); (lcv != nil) && (lcv.Cmp(one) == 0) {
+			return g.writeExpr(b, n.RHS().AsExpr(), false, depth)
+		} else if (lcv != nil) && (lcv.Sign() == 0) && n.RHS().AsExpr().Effect().Pure() {
+			return g.writeExpr(b, n.LHS().AsExpr(), false, depth)
+		} else if rcv := n.RHS().AsExpr().ConstValue(); (rcv != nil) && (rcv.Cmp(one) == 0) {
+			return g.writeExpr(b, n.LHS().AsExpr(), false, depth)
+		} else if (rcv != nil) && (rcv.Sign() == 0) && n.LHS().AsExpr().Effect().Pure() {
+			return g.writeExpr(b, n.RHS().AsExpr(), false, depth)
+		}
+
 	case t.IDXBinaryTildeSatPlus, t.IDXBinaryTildeSatMinus:
 		uBits := uintBits(n.MType().QID())
 		if uBits == 0 {
@@ -313,7 +331,9 @@ func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, depth uint32) error {
 		fallthrough
 
 	case t.IDXBinaryShiftL, t.IDXBinaryShiftR:
-		if lhs := n.LHS().AsExpr(); lhs.ConstValue() != nil {
+		if rcv := n.RHS().AsExpr().ConstValue(); (rcv != nil) && (rcv.Sign() == 0) {
+			return g.writeExpr(b, n.LHS().AsExpr(), false, depth)
+		} else if lhs := n.LHS().AsExpr(); lhs.ConstValue() != nil {
 			lhsCast = true
 		}
 	}
@@ -467,17 +487,48 @@ func (g *gen) writeExprAs(b *buffer, lhs *a.Expr, rhs *a.TypeExpr, depth uint32)
 }
 
 func (g *gen) writeExprAssociativeOp(b *buffer, n *a.Expr, depth uint32) error {
+	args := n.Args()
 	op := n.Operator()
+	switch op {
+	case t.IDXAssociativePlus, t.IDXAssociativePipe, t.IDXAssociativeHat:
+		for len(args) > 1 {
+			if cv := args[0].AsExpr().ConstValue(); (cv != nil) && (cv.Sign() == 0) {
+				args = args[1:]
+				continue
+			} else if cv = args[len(args)-1].AsExpr().ConstValue(); (cv != nil) && (cv.Sign() == 0) {
+				args = args[:len(args)-1]
+				continue
+			}
+			break
+		}
+
+	case t.IDXAssociativeStar:
+		for len(args) > 1 {
+			if cv := args[0].AsExpr().ConstValue(); (cv != nil) && (cv.Cmp(one) == 0) {
+				args = args[1:]
+				continue
+			} else if cv = args[len(args)-1].AsExpr().ConstValue(); (cv != nil) && (cv.Cmp(one) == 0) {
+				args = args[:len(args)-1]
+				continue
+			}
+			break
+		}
+	}
+
+	if len(args) == 1 {
+		return g.writeExpr(b, args[0].AsExpr(), false, depth)
+	}
+
 	opName := cOpName(op)
 	if opName == "" {
 		return fmt.Errorf("unrecognized operator %q", op.AmbiguousForm().Str(g.tm))
 	}
-	if len(n.Args()) > 3 {
+	if len(args) > 3 {
 		opName = strings.TrimRight(opName, " ") + "\n"
 	}
 
 	b.writeb('(')
-	for i, o := range n.Args() {
+	for i, o := range args {
 		if i != 0 {
 			b.writes(opName)
 		}

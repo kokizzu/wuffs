@@ -36873,8 +36873,8 @@ wuffs_bmp__decoder__swizzle_none(
           v_j -= 8u;
         }
         while (v_j > 0u) {
-          if (((uint64_t)(io2_a_src - iop_a_src)) >= ((uint64_t)((v_src_bytes_per_pixel * 1u)))) {
-            iop_a_src += (v_src_bytes_per_pixel * 1u);
+          if (((uint64_t)(io2_a_src - iop_a_src)) >= ((uint64_t)(v_src_bytes_per_pixel))) {
+            iop_a_src += v_src_bytes_per_pixel;
           }
           v_j -= 1u;
         }
@@ -37001,7 +37001,7 @@ wuffs_bmp__decoder__swizzle_rle(
             v_indexes[1u] = ((uint8_t)(v_code & 15u));
             v_p0 = 0u;
             while (v_p0 < self->private_impl.f_rle_length) {
-              self->private_data.f_scratch[(v_p0 + 0u)] = v_indexes[0u];
+              self->private_data.f_scratch[v_p0] = v_indexes[0u];
               self->private_data.f_scratch[(v_p0 + 1u)] = v_indexes[1u];
               v_p0 += 2u;
             }
@@ -37054,10 +37054,10 @@ wuffs_bmp__decoder__swizzle_rle(
             while ((v_chunk_count > 0u) && (((uint64_t)(io2_a_src - iop_a_src)) >= 2u)) {
               v_chunk_bits = ((uint32_t)(wuffs_base__peek_u16be__no_bounds_check(iop_a_src)));
               iop_a_src += 2u;
-              self->private_data.f_scratch[(v_p0 + 0u)] = ((uint8_t)((15u & (v_chunk_bits >> 12u))));
+              self->private_data.f_scratch[v_p0] = ((uint8_t)((15u & (v_chunk_bits >> 12u))));
               self->private_data.f_scratch[(v_p0 + 1u)] = ((uint8_t)((15u & (v_chunk_bits >> 8u))));
               self->private_data.f_scratch[(v_p0 + 2u)] = ((uint8_t)((15u & (v_chunk_bits >> 4u))));
-              self->private_data.f_scratch[(v_p0 + 3u)] = ((uint8_t)((15u & (v_chunk_bits >> 0u))));
+              self->private_data.f_scratch[(v_p0 + 3u)] = ((uint8_t)((15u & v_chunk_bits)));
               v_p0 = ((v_p0 & 255u) + 4u);
               v_chunk_count -= 1u;
             }
@@ -37257,7 +37257,7 @@ wuffs_bmp__decoder__swizzle_bitfields(
         v_channel = 0u;
         while (v_channel < 4u) {
           if (self->private_impl.f_channel_num_bits[v_channel] == 0u) {
-            self->private_data.f_scratch[((8u * v_p0) + (2u * v_channel) + 0u)] = 255u;
+            self->private_data.f_scratch[((8u * v_p0) + (2u * v_channel))] = 255u;
             self->private_data.f_scratch[((8u * v_p0) + (2u * v_channel) + 1u)] = 255u;
           } else {
             v_c = ((v_c32 & self->private_impl.f_channel_masks[v_channel]) >> self->private_impl.f_channel_shifts[v_channel]);
@@ -37267,7 +37267,7 @@ wuffs_bmp__decoder__swizzle_bitfields(
               v_num_bits *= 2u;
             }
             v_c >>= (v_num_bits - 16u);
-            self->private_data.f_scratch[((8u * v_p0) + (2u * v_channel) + 0u)] = ((uint8_t)((v_c >> 0u)));
+            self->private_data.f_scratch[((8u * v_p0) + (2u * v_channel))] = ((uint8_t)(v_c));
             self->private_data.f_scratch[((8u * v_p0) + (2u * v_channel) + 1u)] = ((uint8_t)((v_c >> 8u)));
           }
           v_channel += 1u;
@@ -37390,7 +37390,7 @@ wuffs_bmp__decoder__swizzle_low_bit_depth(
           goto ok;
         }
         iop_a_src += 4u;
-        self->private_impl.f_dst_x = wuffs_base__u32__min(self->private_impl.f_width, ((uint32_t)(self->private_impl.f_dst_x + (v_pixels_per_chunk * 1u))));
+        self->private_impl.f_dst_x = wuffs_base__u32__min(self->private_impl.f_width, ((uint32_t)(self->private_impl.f_dst_x + v_pixels_per_chunk)));
         v_chunk_count -= 1u;
       }
       continue;
@@ -37403,7 +37403,7 @@ wuffs_bmp__decoder__swizzle_low_bit_depth(
       while ((v_chunk_count > 0u) && (((uint64_t)(io2_a_src - iop_a_src)) >= 4u)) {
         v_chunk_bits = wuffs_base__peek_u32be__no_bounds_check(iop_a_src);
         iop_a_src += 4u;
-        self->private_data.f_scratch[(v_p0 + 0u)] = ((uint8_t)((1u & (v_chunk_bits >> 31u))));
+        self->private_data.f_scratch[v_p0] = ((uint8_t)((1u & (v_chunk_bits >> 31u))));
         self->private_data.f_scratch[(v_p0 + 1u)] = ((uint8_t)((1u & (v_chunk_bits >> 30u))));
         self->private_data.f_scratch[(v_p0 + 2u)] = ((uint8_t)((1u & (v_chunk_bits >> 29u))));
         self->private_data.f_scratch[(v_p0 + 3u)] = ((uint8_t)((1u & (v_chunk_bits >> 28u))));
@@ -37434,7 +37434,7 @@ wuffs_bmp__decoder__swizzle_low_bit_depth(
         self->private_data.f_scratch[(v_p0 + 28u)] = ((uint8_t)((1u & (v_chunk_bits >> 3u))));
         self->private_data.f_scratch[(v_p0 + 29u)] = ((uint8_t)((1u & (v_chunk_bits >> 2u))));
         self->private_data.f_scratch[(v_p0 + 30u)] = ((uint8_t)((1u & (v_chunk_bits >> 1u))));
-        self->private_data.f_scratch[(v_p0 + 31u)] = ((uint8_t)((1u & (v_chunk_bits >> 0u))));
+        self->private_data.f_scratch[(v_p0 + 31u)] = ((uint8_t)((1u & v_chunk_bits)));
         v_p0 = ((v_p0 & 511u) + 32u);
         v_chunk_count -= 1u;
       }
@@ -37444,7 +37444,7 @@ wuffs_bmp__decoder__swizzle_low_bit_depth(
       while ((v_chunk_count > 0u) && (((uint64_t)(io2_a_src - iop_a_src)) >= 4u)) {
         v_chunk_bits = wuffs_base__peek_u32be__no_bounds_check(iop_a_src);
         iop_a_src += 4u;
-        self->private_data.f_scratch[(v_p0 + 0u)] = ((uint8_t)((3u & (v_chunk_bits >> 30u))));
+        self->private_data.f_scratch[v_p0] = ((uint8_t)((3u & (v_chunk_bits >> 30u))));
         self->private_data.f_scratch[(v_p0 + 1u)] = ((uint8_t)((3u & (v_chunk_bits >> 28u))));
         self->private_data.f_scratch[(v_p0 + 2u)] = ((uint8_t)((3u & (v_chunk_bits >> 26u))));
         self->private_data.f_scratch[(v_p0 + 3u)] = ((uint8_t)((3u & (v_chunk_bits >> 24u))));
@@ -37459,7 +37459,7 @@ wuffs_bmp__decoder__swizzle_low_bit_depth(
         self->private_data.f_scratch[(v_p0 + 12u)] = ((uint8_t)((3u & (v_chunk_bits >> 6u))));
         self->private_data.f_scratch[(v_p0 + 13u)] = ((uint8_t)((3u & (v_chunk_bits >> 4u))));
         self->private_data.f_scratch[(v_p0 + 14u)] = ((uint8_t)((3u & (v_chunk_bits >> 2u))));
-        self->private_data.f_scratch[(v_p0 + 15u)] = ((uint8_t)((3u & (v_chunk_bits >> 0u))));
+        self->private_data.f_scratch[(v_p0 + 15u)] = ((uint8_t)((3u & v_chunk_bits)));
         v_p0 = ((v_p0 & 511u) + 16u);
         v_chunk_count -= 1u;
       }
@@ -37469,14 +37469,14 @@ wuffs_bmp__decoder__swizzle_low_bit_depth(
       while ((v_chunk_count > 0u) && (((uint64_t)(io2_a_src - iop_a_src)) >= 4u)) {
         v_chunk_bits = wuffs_base__peek_u32be__no_bounds_check(iop_a_src);
         iop_a_src += 4u;
-        self->private_data.f_scratch[(v_p0 + 0u)] = ((uint8_t)((15u & (v_chunk_bits >> 28u))));
+        self->private_data.f_scratch[v_p0] = ((uint8_t)((15u & (v_chunk_bits >> 28u))));
         self->private_data.f_scratch[(v_p0 + 1u)] = ((uint8_t)((15u & (v_chunk_bits >> 24u))));
         self->private_data.f_scratch[(v_p0 + 2u)] = ((uint8_t)((15u & (v_chunk_bits >> 20u))));
         self->private_data.f_scratch[(v_p0 + 3u)] = ((uint8_t)((15u & (v_chunk_bits >> 16u))));
         self->private_data.f_scratch[(v_p0 + 4u)] = ((uint8_t)((15u & (v_chunk_bits >> 12u))));
         self->private_data.f_scratch[(v_p0 + 5u)] = ((uint8_t)((15u & (v_chunk_bits >> 8u))));
         self->private_data.f_scratch[(v_p0 + 6u)] = ((uint8_t)((15u & (v_chunk_bits >> 4u))));
-        self->private_data.f_scratch[(v_p0 + 7u)] = ((uint8_t)((15u & (v_chunk_bits >> 0u))));
+        self->private_data.f_scratch[(v_p0 + 7u)] = ((uint8_t)((15u & v_chunk_bits)));
         v_p0 = ((v_p0 & 511u) + 8u);
         v_chunk_count -= 1u;
       }
@@ -37799,7 +37799,7 @@ wuffs_bmp__decoder__read_palette(
           v_argb = t_0;
         }
         v_argb |= 4278190080u;
-        self->private_data.f_src_palette[((4u * v_i) + 0u)] = ((uint8_t)((v_argb >> 0u)));
+        self->private_data.f_src_palette[(4u * v_i)] = ((uint8_t)(v_argb));
         self->private_data.f_src_palette[((4u * v_i) + 1u)] = ((uint8_t)((v_argb >> 8u)));
         self->private_data.f_src_palette[((4u * v_i) + 2u)] = ((uint8_t)((v_argb >> 16u)));
         self->private_data.f_src_palette[((4u * v_i) + 3u)] = ((uint8_t)((v_argb >> 24u)));
@@ -37838,7 +37838,7 @@ wuffs_bmp__decoder__read_palette(
           v_argb = t_1;
         }
         v_argb |= 4278190080u;
-        self->private_data.f_src_palette[((4u * v_i) + 0u)] = ((uint8_t)((v_argb >> 0u)));
+        self->private_data.f_src_palette[(4u * v_i)] = ((uint8_t)(v_argb));
         self->private_data.f_src_palette[((4u * v_i) + 1u)] = ((uint8_t)((v_argb >> 8u)));
         self->private_data.f_src_palette[((4u * v_i) + 2u)] = ((uint8_t)((v_argb >> 16u)));
         self->private_data.f_src_palette[((4u * v_i) + 3u)] = ((uint8_t)((v_argb >> 24u)));
@@ -37846,7 +37846,7 @@ wuffs_bmp__decoder__read_palette(
       }
     }
     while (v_i < 256u) {
-      self->private_data.f_src_palette[((4u * v_i) + 0u)] = 0u;
+      self->private_data.f_src_palette[(4u * v_i)] = 0u;
       self->private_data.f_src_palette[((4u * v_i) + 1u)] = 0u;
       self->private_data.f_src_palette[((4u * v_i) + 2u)] = 0u;
       self->private_data.f_src_palette[((4u * v_i) + 3u)] = 255u;
@@ -41111,7 +41111,7 @@ wuffs_crc32__ieee_hasher__up__choosy_default(
     v_p.len = 16;
     const uint8_t* i_end0_p = wuffs_private_impl__ptr_u8_plus_len(v_p.ptr, (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 32) * 32));
     while (v_p.ptr < i_end0_p) {
-      v_s ^= ((((uint32_t)(v_p.ptr[0u])) << 0u) |
+      v_s ^= (((uint32_t)(v_p.ptr[0u])) |
           (((uint32_t)(v_p.ptr[1u])) << 8u) |
           (((uint32_t)(v_p.ptr[2u])) << 16u) |
           (((uint32_t)(v_p.ptr[3u])) << 24u));
@@ -41130,9 +41130,9 @@ wuffs_crc32__ieee_hasher__up__choosy_default(
           WUFFS_CRC32__IEEE_TABLE[12u][(255u & (v_s >> 24u))] ^
           WUFFS_CRC32__IEEE_TABLE[13u][(255u & (v_s >> 16u))] ^
           WUFFS_CRC32__IEEE_TABLE[14u][(255u & (v_s >> 8u))] ^
-          WUFFS_CRC32__IEEE_TABLE[15u][(255u & (v_s >> 0u))]);
+          WUFFS_CRC32__IEEE_TABLE[15u][(255u & v_s)]);
       v_p.ptr += 16;
-      v_s ^= ((((uint32_t)(v_p.ptr[0u])) << 0u) |
+      v_s ^= (((uint32_t)(v_p.ptr[0u])) |
           (((uint32_t)(v_p.ptr[1u])) << 8u) |
           (((uint32_t)(v_p.ptr[2u])) << 16u) |
           (((uint32_t)(v_p.ptr[3u])) << 24u));
@@ -41151,13 +41151,13 @@ wuffs_crc32__ieee_hasher__up__choosy_default(
           WUFFS_CRC32__IEEE_TABLE[12u][(255u & (v_s >> 24u))] ^
           WUFFS_CRC32__IEEE_TABLE[13u][(255u & (v_s >> 16u))] ^
           WUFFS_CRC32__IEEE_TABLE[14u][(255u & (v_s >> 8u))] ^
-          WUFFS_CRC32__IEEE_TABLE[15u][(255u & (v_s >> 0u))]);
+          WUFFS_CRC32__IEEE_TABLE[15u][(255u & v_s)]);
       v_p.ptr += 16;
     }
     v_p.len = 16;
     const uint8_t* i_end1_p = wuffs_private_impl__ptr_u8_plus_len(v_p.ptr, (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 16) * 16));
     while (v_p.ptr < i_end1_p) {
-      v_s ^= ((((uint32_t)(v_p.ptr[0u])) << 0u) |
+      v_s ^= (((uint32_t)(v_p.ptr[0u])) |
           (((uint32_t)(v_p.ptr[1u])) << 8u) |
           (((uint32_t)(v_p.ptr[2u])) << 16u) |
           (((uint32_t)(v_p.ptr[3u])) << 24u));
@@ -41176,7 +41176,7 @@ wuffs_crc32__ieee_hasher__up__choosy_default(
           WUFFS_CRC32__IEEE_TABLE[12u][(255u & (v_s >> 24u))] ^
           WUFFS_CRC32__IEEE_TABLE[13u][(255u & (v_s >> 16u))] ^
           WUFFS_CRC32__IEEE_TABLE[14u][(255u & (v_s >> 8u))] ^
-          WUFFS_CRC32__IEEE_TABLE[15u][(255u & (v_s >> 0u))]);
+          WUFFS_CRC32__IEEE_TABLE[15u][(255u & v_s)]);
       v_p.ptr += 16;
     }
     v_p.len = 1;
@@ -41943,7 +41943,7 @@ wuffs_crc64__ecma_hasher__up__choosy_default(
     v_p.len = 8;
     const uint8_t* i_end0_p = wuffs_private_impl__ptr_u8_plus_len(v_p.ptr, (((i_slice_p.len - (size_t)(v_p.ptr - i_slice_p.ptr)) / 8) * 8));
     while (v_p.ptr < i_end0_p) {
-      v_s ^= ((((uint64_t)(v_p.ptr[0u])) << 0u) |
+      v_s ^= (((uint64_t)(v_p.ptr[0u])) |
           (((uint64_t)(v_p.ptr[1u])) << 8u) |
           (((uint64_t)(v_p.ptr[2u])) << 16u) |
           (((uint64_t)(v_p.ptr[3u])) << 24u) |
@@ -41958,7 +41958,7 @@ wuffs_crc64__ecma_hasher__up__choosy_default(
           WUFFS_CRC64__ECMA_TABLE[4u][(255u & (v_s >> 24u))] ^
           WUFFS_CRC64__ECMA_TABLE[5u][(255u & (v_s >> 16u))] ^
           WUFFS_CRC64__ECMA_TABLE[6u][(255u & (v_s >> 8u))] ^
-          WUFFS_CRC64__ECMA_TABLE[7u][(255u & (v_s >> 0u))]);
+          WUFFS_CRC64__ECMA_TABLE[7u][(255u & v_s)]);
       v_p.ptr += 8;
     }
     v_p.len = 1;
@@ -45206,7 +45206,7 @@ wuffs_etc2__decoder__do_decode_image_config(
     if (self->private_impl.f_pixfmt == 2164308923u) {
       v_i = 0u;
       while (v_i <= 4088u) {
-        self->private_data.f_buffer[(v_i + 0u)] = 0u;
+        self->private_data.f_buffer[v_i] = 0u;
         self->private_data.f_buffer[(v_i + 1u)] = 0u;
         self->private_data.f_buffer[(v_i + 6u)] = 255u;
         self->private_data.f_buffer[(v_i + 7u)] = 255u;
@@ -45972,7 +45972,7 @@ wuffs_etc2__decoder__decode_t_mode(
       v_x4y = ((v_x * 4u) | v_y);
       v_index = (((uint32_t)(((a_bits >> v_x4y) & 1u))) | ((uint32_t)(((a_bits >> (v_x4y + 15u)) & 2u))));
       v_o = (a_offset + (v_x * 4u) + (v_y * 1024u));
-      self->private_data.f_buffer[(v_o + 0u)] = v_b[v_index];
+      self->private_data.f_buffer[v_o] = v_b[v_index];
       self->private_data.f_buffer[(v_o + 1u)] = v_g[v_index];
       self->private_data.f_buffer[(v_o + 2u)] = v_r[v_index];
       self->private_data.f_buffer[(v_o + 3u)] = v_a[v_index];
@@ -46018,8 +46018,8 @@ wuffs_etc2__decoder__decode_h_mode(
   v_g[2u] = ((uint8_t)(((uint8_t)(v_g[2u] << 4u)) | v_g[2u]));
   v_b[2u] = ((uint8_t)((15u & (a_bits >> 35u))));
   v_b[2u] = ((uint8_t)(((uint8_t)(v_b[2u] << 4u)) | v_b[2u]));
-  v_rgb0 = ((((uint32_t)(v_r[0u])) << 16u) | (((uint32_t)(v_g[0u])) << 8u) | (((uint32_t)(v_b[0u])) << 0u));
-  v_rgb2 = ((((uint32_t)(v_r[2u])) << 16u) | (((uint32_t)(v_g[2u])) << 8u) | (((uint32_t)(v_b[2u])) << 0u));
+  v_rgb0 = ((((uint32_t)(v_r[0u])) << 16u) | (((uint32_t)(v_g[0u])) << 8u) | ((uint32_t)(v_b[0u])));
+  v_rgb2 = ((((uint32_t)(v_r[2u])) << 16u) | (((uint32_t)(v_g[2u])) << 8u) | ((uint32_t)(v_b[2u])));
   v_which = (((uint32_t)((4u & (a_bits >> 32u)))) | ((uint32_t)((2u & (a_bits >> 31u)))));
   if (v_rgb0 >= v_rgb2) {
     v_which |= 1u;
@@ -46053,7 +46053,7 @@ wuffs_etc2__decoder__decode_h_mode(
       v_x4y = ((v_x * 4u) | v_y);
       v_index = (((uint32_t)(((a_bits >> v_x4y) & 1u))) | ((uint32_t)(((a_bits >> (v_x4y + 15u)) & 2u))));
       v_o = (a_offset + (v_x * 4u) + (v_y * 1024u));
-      self->private_data.f_buffer[(v_o + 0u)] = v_b[v_index];
+      self->private_data.f_buffer[v_o] = v_b[v_index];
       self->private_data.f_buffer[(v_o + 1u)] = v_g[v_index];
       self->private_data.f_buffer[(v_o + 2u)] = v_r[v_index];
       self->private_data.f_buffer[(v_o + 3u)] = v_a[v_index];
@@ -46104,7 +46104,7 @@ wuffs_etc2__decoder__decode_planar_mode(
   v_rv = (((uint32_t)(v_rv << 2u)) | (v_rv >> 4u));
   v_gv = ((uint32_t)((127u & (a_bits >> 6u))));
   v_gv = (((uint32_t)(v_gv << 1u)) | (v_gv >> 6u));
-  v_bv = ((uint32_t)((63u & (a_bits >> 0u))));
+  v_bv = ((uint32_t)((63u & a_bits)));
   v_bv = (((uint32_t)(v_bv << 2u)) | (v_bv >> 4u));
   v_rh -= v_ro;
   v_gh -= v_go;
@@ -46120,7 +46120,7 @@ wuffs_etc2__decoder__decode_planar_mode(
     while (v_x < 4u) {
       v_o = (a_offset + (v_x * 4u) + (v_y * 1024u));
       v_bp = ((uint32_t)(((uint32_t)(((uint32_t)(v_x * v_bh)) + ((uint32_t)(v_y * v_bv)))) + v_bo));
-      self->private_data.f_buffer[(v_o + 0u)] = WUFFS_ETC2__CLAMP[((((uint32_t)(v_bp + 2u)) / 4u) & 1023u)];
+      self->private_data.f_buffer[v_o] = WUFFS_ETC2__CLAMP[((((uint32_t)(v_bp + 2u)) / 4u) & 1023u)];
       v_gp = ((uint32_t)(((uint32_t)(((uint32_t)(v_x * v_gh)) + ((uint32_t)(v_y * v_gv)))) + v_go));
       self->private_data.f_buffer[(v_o + 1u)] = WUFFS_ETC2__CLAMP[((((uint32_t)(v_gp + 2u)) / 4u) & 1023u)];
       v_rp = ((uint32_t)(((uint32_t)(((uint32_t)(v_x * v_rh)) + ((uint32_t)(v_y * v_rv)))) + v_ro));
@@ -46182,12 +46182,12 @@ wuffs_etc2__decoder__decode_half_block(
     v_modif = WUFFS_ETC2__MODIFIERS[v_which][v_index];
     v_o = (a_offset + (v_x * 4u) + (v_y * 1024u));
     if (a_transparent && (v_index == 2u)) {
-      self->private_data.f_buffer[(v_o + 0u)] = 0u;
+      self->private_data.f_buffer[v_o] = 0u;
       self->private_data.f_buffer[(v_o + 1u)] = 0u;
       self->private_data.f_buffer[(v_o + 2u)] = 0u;
       self->private_data.f_buffer[(v_o + 3u)] = 0u;
     } else {
-      self->private_data.f_buffer[(v_o + 0u)] = WUFFS_ETC2__CLAMP[(((uint32_t)(a_b + v_modif)) & 1023u)];
+      self->private_data.f_buffer[v_o] = WUFFS_ETC2__CLAMP[(((uint32_t)(a_b + v_modif)) & 1023u)];
       self->private_data.f_buffer[(v_o + 1u)] = WUFFS_ETC2__CLAMP[(((uint32_t)(a_g + v_modif)) & 1023u)];
       self->private_data.f_buffer[(v_o + 2u)] = WUFFS_ETC2__CLAMP[(((uint32_t)(a_r + v_modif)) & 1023u)];
       self->private_data.f_buffer[(v_o + 3u)] = 255u;
@@ -46329,7 +46329,7 @@ wuffs_etc2__decoder__from_colors_to_buffer_unsigned(
         }
         v_c16 = ((v_c11 << 5u) | (v_c11 >> 6u));
         v_o = (v_offset + (v_x * a_dst_bytes_per_pixel) + (v_y * 1024u));
-        self->private_data.f_buffer[(v_o + 0u)] = ((uint8_t)((v_c16 >> 0u)));
+        self->private_data.f_buffer[v_o] = ((uint8_t)(v_c16));
         self->private_data.f_buffer[(v_o + 1u)] = ((uint8_t)((v_c16 >> 8u)));
         v_x += 1u;
       }
@@ -46403,7 +46403,7 @@ wuffs_etc2__decoder__from_colors_to_buffer_signed(
         }
         v_c16 ^= 32768u;
         v_o = (v_offset + (v_x * a_dst_bytes_per_pixel) + (v_y * 1024u));
-        self->private_data.f_buffer[(v_o + 0u)] = ((uint8_t)((v_c16 >> 0u)));
+        self->private_data.f_buffer[v_o] = ((uint8_t)(v_c16));
         self->private_data.f_buffer[(v_o + 1u)] = ((uint8_t)((v_c16 >> 8u)));
         v_x += 1u;
       }
@@ -48298,7 +48298,7 @@ wuffs_gif__decoder__decode_lsd(
           v_argb = t_4;
         }
         v_argb |= 4278190080u;
-        self->private_data.f_palettes[0u][((4u * v_i) + 0u)] = ((uint8_t)((v_argb >> 0u)));
+        self->private_data.f_palettes[0u][(4u * v_i)] = ((uint8_t)(v_argb));
         self->private_data.f_palettes[0u][((4u * v_i) + 1u)] = ((uint8_t)((v_argb >> 8u)));
         self->private_data.f_palettes[0u][((4u * v_i) + 2u)] = ((uint8_t)((v_argb >> 16u)));
         self->private_data.f_palettes[0u][((4u * v_i) + 3u)] = ((uint8_t)((v_argb >> 24u)));
@@ -48307,7 +48307,7 @@ wuffs_gif__decoder__decode_lsd(
       if (self->private_impl.f_quirks[2u]) {
         if ((v_background_color_index != 0u) && (((uint32_t)(v_background_color_index)) < v_num_palette_entries)) {
           v_j = (4u * ((uint32_t)(v_background_color_index)));
-          self->private_impl.f_background_color_u32_argb_premul = ((((uint32_t)(self->private_data.f_palettes[0u][(v_j + 0u)])) << 0u) |
+          self->private_impl.f_background_color_u32_argb_premul = (((uint32_t)(self->private_data.f_palettes[0u][v_j])) |
               (((uint32_t)(self->private_data.f_palettes[0u][(v_j + 1u)])) << 8u) |
               (((uint32_t)(self->private_data.f_palettes[0u][(v_j + 2u)])) << 16u) |
               (((uint32_t)(self->private_data.f_palettes[0u][(v_j + 3u)])) << 24u));
@@ -48317,7 +48317,7 @@ wuffs_gif__decoder__decode_lsd(
       }
     }
     while (v_i < 256u) {
-      self->private_data.f_palettes[0u][((4u * v_i) + 0u)] = 0u;
+      self->private_data.f_palettes[0u][(4u * v_i)] = 0u;
       self->private_data.f_palettes[0u][((4u * v_i) + 1u)] = 0u;
       self->private_data.f_palettes[0u][((4u * v_i) + 2u)] = 0u;
       self->private_data.f_palettes[0u][((4u * v_i) + 3u)] = 255u;
@@ -49119,14 +49119,14 @@ wuffs_gif__decoder__decode_id_part1(
           v_argb = t_1;
         }
         v_argb |= 4278190080u;
-        self->private_data.f_palettes[1u][((4u * v_i) + 0u)] = ((uint8_t)((v_argb >> 0u)));
+        self->private_data.f_palettes[1u][(4u * v_i)] = ((uint8_t)(v_argb));
         self->private_data.f_palettes[1u][((4u * v_i) + 1u)] = ((uint8_t)((v_argb >> 8u)));
         self->private_data.f_palettes[1u][((4u * v_i) + 2u)] = ((uint8_t)((v_argb >> 16u)));
         self->private_data.f_palettes[1u][((4u * v_i) + 3u)] = ((uint8_t)((v_argb >> 24u)));
         v_i += 1u;
       }
       while (v_i < 256u) {
-        self->private_data.f_palettes[1u][((4u * v_i) + 0u)] = 0u;
+        self->private_data.f_palettes[1u][(4u * v_i)] = 0u;
         self->private_data.f_palettes[1u][((4u * v_i) + 1u)] = 0u;
         self->private_data.f_palettes[1u][((4u * v_i) + 2u)] = 0u;
         self->private_data.f_palettes[1u][((4u * v_i) + 3u)] = 255u;
@@ -49141,7 +49141,7 @@ wuffs_gif__decoder__decode_id_part1(
       v_which_palette = 0u;
     }
     if (self->private_impl.f_gc_has_transparent_index) {
-      self->private_data.f_palettes[1u][((4u * ((uint32_t)(self->private_impl.f_gc_transparent_index))) + 0u)] = 0u;
+      self->private_data.f_palettes[1u][(4u * ((uint32_t)(self->private_impl.f_gc_transparent_index)))] = 0u;
       self->private_data.f_palettes[1u][((4u * ((uint32_t)(self->private_impl.f_gc_transparent_index))) + 1u)] = 0u;
       self->private_data.f_palettes[1u][((4u * ((uint32_t)(self->private_impl.f_gc_transparent_index))) + 2u)] = 0u;
       self->private_data.f_palettes[1u][((4u * ((uint32_t)(self->private_impl.f_gc_transparent_index))) + 3u)] = 0u;
@@ -51712,9 +51712,9 @@ wuffs_handsum__decoder__decode_block_q3(
       v_v01 = WUFFS_HANDSUM__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(((uint32_t)(v_dct0 - v_dct1)) + v_dct2)) + 1u)) >> 1u) & 1023u)];
       v_v10 = WUFFS_HANDSUM__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(((uint32_t)(v_dct0 + v_dct1)) - v_dct2)) + 1u)) >> 1u) & 1023u)];
       v_v11 = WUFFS_HANDSUM__BIAS_AND_CLAMP[((((uint32_t)(((uint32_t)(((uint32_t)(v_dct0 - v_dct1)) - v_dct2)) + 1u)) >> 1u) & 1023u)];
-      self->private_data.f_buffers[a_which][(a_y_offset + v_y + 0u)][(a_x_offset + (4u * v_x) + 0u)] = v_v00;
-      self->private_data.f_buffers[a_which][(a_y_offset + v_y + 0u)][(a_x_offset + (4u * v_x) + 4u)] = v_v01;
-      self->private_data.f_buffers[a_which][(a_y_offset + v_y + 1u)][(a_x_offset + (4u * v_x) + 0u)] = v_v10;
+      self->private_data.f_buffers[a_which][(a_y_offset + v_y)][(a_x_offset + (4u * v_x))] = v_v00;
+      self->private_data.f_buffers[a_which][(a_y_offset + v_y)][(a_x_offset + (4u * v_x) + 4u)] = v_v01;
+      self->private_data.f_buffers[a_which][(a_y_offset + v_y + 1u)][(a_x_offset + (4u * v_x))] = v_v10;
       self->private_data.f_buffers[a_which][(a_y_offset + v_y + 1u)][(a_x_offset + (4u * v_x) + 4u)] = v_v11;
       v_x += 2u;
     }
@@ -51725,32 +51725,32 @@ wuffs_handsum__decoder__decode_block_q3(
   while (v_y < 7u) {
     v_x = 1u;
     while (v_x < 7u) {
-      v_v0 = ((uint32_t)(self->private_data.f_buffers[a_which][(a_y_offset + v_y + 0u)][(a_x_offset + (4u * v_x) + 0u)]));
-      v_v1 = ((uint32_t)(self->private_data.f_buffers[a_which][(a_y_offset + v_y + 0u)][(a_x_offset + (4u * v_x) + 4u)]));
+      v_v0 = ((uint32_t)(self->private_data.f_buffers[a_which][(a_y_offset + v_y)][(a_x_offset + (4u * v_x))]));
+      v_v1 = ((uint32_t)(self->private_data.f_buffers[a_which][(a_y_offset + v_y)][(a_x_offset + (4u * v_x) + 4u)]));
       v_v9 = ((uint32_t)(self->private_data.f_buffers[a_which][(a_y_offset + v_y + 1u)][(a_x_offset + (4u * v_x) + 4u)]));
-      v_v8 = ((uint32_t)(self->private_data.f_buffers[a_which][(a_y_offset + v_y + 1u)][(a_x_offset + (4u * v_x) + 0u)]));
-      self->private_data.f_buffers[a_which][(a_y_offset + v_y + 0u)][(a_x_offset + (4u * v_x) + 0u)] = ((uint8_t)((((uint32_t)(((uint32_t)(((uint32_t)(((uint32_t)(((uint32_t)(9u * v_v0)) + ((uint32_t)(3u * v_v1)))) + v_v9)) + ((uint32_t)(3u * v_v8)))) + 8u)) / 16u)));
-      self->private_data.f_buffers[a_which][(a_y_offset + v_y + 0u)][(a_x_offset + (4u * v_x) + 4u)] = ((uint8_t)((((uint32_t)(((uint32_t)(((uint32_t)(((uint32_t)(((uint32_t)(9u * v_v1)) + ((uint32_t)(3u * v_v9)))) + v_v8)) + ((uint32_t)(3u * v_v0)))) + 8u)) / 16u)));
+      v_v8 = ((uint32_t)(self->private_data.f_buffers[a_which][(a_y_offset + v_y + 1u)][(a_x_offset + (4u * v_x))]));
+      self->private_data.f_buffers[a_which][(a_y_offset + v_y)][(a_x_offset + (4u * v_x))] = ((uint8_t)((((uint32_t)(((uint32_t)(((uint32_t)(((uint32_t)(((uint32_t)(9u * v_v0)) + ((uint32_t)(3u * v_v1)))) + v_v9)) + ((uint32_t)(3u * v_v8)))) + 8u)) / 16u)));
+      self->private_data.f_buffers[a_which][(a_y_offset + v_y)][(a_x_offset + (4u * v_x) + 4u)] = ((uint8_t)((((uint32_t)(((uint32_t)(((uint32_t)(((uint32_t)(((uint32_t)(9u * v_v1)) + ((uint32_t)(3u * v_v9)))) + v_v8)) + ((uint32_t)(3u * v_v0)))) + 8u)) / 16u)));
       self->private_data.f_buffers[a_which][(a_y_offset + v_y + 1u)][(a_x_offset + (4u * v_x) + 4u)] = ((uint8_t)((((uint32_t)(((uint32_t)(((uint32_t)(((uint32_t)(((uint32_t)(9u * v_v9)) + ((uint32_t)(3u * v_v8)))) + v_v0)) + ((uint32_t)(3u * v_v1)))) + 8u)) / 16u)));
-      self->private_data.f_buffers[a_which][(a_y_offset + v_y + 1u)][(a_x_offset + (4u * v_x) + 0u)] = ((uint8_t)((((uint32_t)(((uint32_t)(((uint32_t)(((uint32_t)(((uint32_t)(9u * v_v8)) + ((uint32_t)(3u * v_v0)))) + v_v1)) + ((uint32_t)(3u * v_v9)))) + 8u)) / 16u)));
+      self->private_data.f_buffers[a_which][(a_y_offset + v_y + 1u)][(a_x_offset + (4u * v_x))] = ((uint8_t)((((uint32_t)(((uint32_t)(((uint32_t)(((uint32_t)(((uint32_t)(9u * v_v8)) + ((uint32_t)(3u * v_v0)))) + v_v1)) + ((uint32_t)(3u * v_v9)))) + 8u)) / 16u)));
       v_x += 2u;
     }
-    v_v0 = ((uint32_t)(self->private_data.f_buffers[a_which][(a_y_offset + 0u + 0u)][(a_x_offset + (4u * v_y) + 0u)]));
-    v_v1 = ((uint32_t)(self->private_data.f_buffers[a_which][(a_y_offset + 0u + 0u)][(a_x_offset + (4u * v_y) + 4u)]));
-    self->private_data.f_buffers[a_which][(a_y_offset + 0u + 0u)][(a_x_offset + (4u * v_y) + 0u)] = ((uint8_t)((((uint32_t)(((uint32_t)(((uint32_t)(3u * v_v0)) + v_v1)) + 2u)) / 4u)));
-    self->private_data.f_buffers[a_which][(a_y_offset + 0u + 0u)][(a_x_offset + (4u * v_y) + 4u)] = ((uint8_t)((((uint32_t)(((uint32_t)(((uint32_t)(3u * v_v1)) + v_v0)) + 2u)) / 4u)));
-    v_v0 = ((uint32_t)(self->private_data.f_buffers[a_which][(a_y_offset + 7u + 0u)][(a_x_offset + (4u * v_y) + 0u)]));
-    v_v1 = ((uint32_t)(self->private_data.f_buffers[a_which][(a_y_offset + 7u + 0u)][(a_x_offset + (4u * v_y) + 4u)]));
-    self->private_data.f_buffers[a_which][(a_y_offset + 7u + 0u)][(a_x_offset + (4u * v_y) + 0u)] = ((uint8_t)((((uint32_t)(((uint32_t)(((uint32_t)(3u * v_v0)) + v_v1)) + 2u)) / 4u)));
-    self->private_data.f_buffers[a_which][(a_y_offset + 7u + 0u)][(a_x_offset + (4u * v_y) + 4u)] = ((uint8_t)((((uint32_t)(((uint32_t)(((uint32_t)(3u * v_v1)) + v_v0)) + 2u)) / 4u)));
-    v_v0 = ((uint32_t)(self->private_data.f_buffers[a_which][(a_y_offset + v_y + 0u)][(a_x_offset + 0u + 0u)]));
-    v_v1 = ((uint32_t)(self->private_data.f_buffers[a_which][(a_y_offset + v_y + 1u)][(a_x_offset + 0u + 0u)]));
-    self->private_data.f_buffers[a_which][(a_y_offset + v_y + 0u)][(a_x_offset + 0u + 0u)] = ((uint8_t)((((uint32_t)(((uint32_t)(((uint32_t)(3u * v_v0)) + v_v1)) + 2u)) / 4u)));
-    self->private_data.f_buffers[a_which][(a_y_offset + v_y + 1u)][(a_x_offset + 0u + 0u)] = ((uint8_t)((((uint32_t)(((uint32_t)(((uint32_t)(3u * v_v1)) + v_v0)) + 2u)) / 4u)));
-    v_v0 = ((uint32_t)(self->private_data.f_buffers[a_which][(a_y_offset + v_y + 0u)][(a_x_offset + 28u + 0u)]));
-    v_v1 = ((uint32_t)(self->private_data.f_buffers[a_which][(a_y_offset + v_y + 1u)][(a_x_offset + 28u + 0u)]));
-    self->private_data.f_buffers[a_which][(a_y_offset + v_y + 0u)][(a_x_offset + 28u + 0u)] = ((uint8_t)((((uint32_t)(((uint32_t)(((uint32_t)(3u * v_v0)) + v_v1)) + 2u)) / 4u)));
-    self->private_data.f_buffers[a_which][(a_y_offset + v_y + 1u)][(a_x_offset + 28u + 0u)] = ((uint8_t)((((uint32_t)(((uint32_t)(((uint32_t)(3u * v_v1)) + v_v0)) + 2u)) / 4u)));
+    v_v0 = ((uint32_t)(self->private_data.f_buffers[a_which][a_y_offset][(a_x_offset + (4u * v_y))]));
+    v_v1 = ((uint32_t)(self->private_data.f_buffers[a_which][a_y_offset][(a_x_offset + (4u * v_y) + 4u)]));
+    self->private_data.f_buffers[a_which][a_y_offset][(a_x_offset + (4u * v_y))] = ((uint8_t)((((uint32_t)(((uint32_t)(((uint32_t)(3u * v_v0)) + v_v1)) + 2u)) / 4u)));
+    self->private_data.f_buffers[a_which][a_y_offset][(a_x_offset + (4u * v_y) + 4u)] = ((uint8_t)((((uint32_t)(((uint32_t)(((uint32_t)(3u * v_v1)) + v_v0)) + 2u)) / 4u)));
+    v_v0 = ((uint32_t)(self->private_data.f_buffers[a_which][(a_y_offset + 7u)][(a_x_offset + (4u * v_y))]));
+    v_v1 = ((uint32_t)(self->private_data.f_buffers[a_which][(a_y_offset + 7u)][(a_x_offset + (4u * v_y) + 4u)]));
+    self->private_data.f_buffers[a_which][(a_y_offset + 7u)][(a_x_offset + (4u * v_y))] = ((uint8_t)((((uint32_t)(((uint32_t)(((uint32_t)(3u * v_v0)) + v_v1)) + 2u)) / 4u)));
+    self->private_data.f_buffers[a_which][(a_y_offset + 7u)][(a_x_offset + (4u * v_y) + 4u)] = ((uint8_t)((((uint32_t)(((uint32_t)(((uint32_t)(3u * v_v1)) + v_v0)) + 2u)) / 4u)));
+    v_v0 = ((uint32_t)(self->private_data.f_buffers[a_which][(a_y_offset + v_y)][a_x_offset]));
+    v_v1 = ((uint32_t)(self->private_data.f_buffers[a_which][(a_y_offset + v_y + 1u)][a_x_offset]));
+    self->private_data.f_buffers[a_which][(a_y_offset + v_y)][a_x_offset] = ((uint8_t)((((uint32_t)(((uint32_t)(((uint32_t)(3u * v_v0)) + v_v1)) + 2u)) / 4u)));
+    self->private_data.f_buffers[a_which][(a_y_offset + v_y + 1u)][a_x_offset] = ((uint8_t)((((uint32_t)(((uint32_t)(((uint32_t)(3u * v_v1)) + v_v0)) + 2u)) / 4u)));
+    v_v0 = ((uint32_t)(self->private_data.f_buffers[a_which][(a_y_offset + v_y)][(a_x_offset + 28u)]));
+    v_v1 = ((uint32_t)(self->private_data.f_buffers[a_which][(a_y_offset + v_y + 1u)][(a_x_offset + 28u)]));
+    self->private_data.f_buffers[a_which][(a_y_offset + v_y)][(a_x_offset + 28u)] = ((uint8_t)((((uint32_t)(((uint32_t)(((uint32_t)(3u * v_v0)) + v_v1)) + 2u)) / 4u)));
+    self->private_data.f_buffers[a_which][(a_y_offset + v_y + 1u)][(a_x_offset + 28u)] = ((uint8_t)((((uint32_t)(((uint32_t)(((uint32_t)(3u * v_v1)) + v_v0)) + 2u)) / 4u)));
     v_y += 2u;
   }
   return wuffs_base__make_empty_struct();
@@ -51808,7 +51808,7 @@ wuffs_handsum__decoder__smooth_seams_16x16(
 
   v_i = 0u;
   while (v_i <= 54u) {
-    v_p0 = WUFFS_HANDSUM__SMOOTHING_PAIRS_16X16[(v_i + 0u)];
+    v_p0 = WUFFS_HANDSUM__SMOOTHING_PAIRS_16X16[v_i];
     v_p1 = WUFFS_HANDSUM__SMOOTHING_PAIRS_16X16[(v_i + 1u)];
     v_y0 = ((uint32_t)(((uint8_t)(v_p0 >> 4u))));
     v_y1 = ((uint32_t)(((uint8_t)(v_p1 >> 4u))));
@@ -51884,7 +51884,7 @@ wuffs_handsum__decoder__smooth_seams_8x8(
 
   v_i = 0u;
   while (v_i <= 22u) {
-    v_p0 = WUFFS_HANDSUM__SMOOTHING_PAIRS_8X8[(v_i + 0u)];
+    v_p0 = WUFFS_HANDSUM__SMOOTHING_PAIRS_8X8[v_i];
     v_p1 = WUFFS_HANDSUM__SMOOTHING_PAIRS_8X8[(v_i + 1u)];
     v_y0 = (a_y_offset + ((uint32_t)(((uint8_t)(v_p0 >> 3u)))));
     v_y1 = (a_y_offset + ((uint32_t)(((uint8_t)(v_p1 >> 3u)))));
@@ -52051,7 +52051,7 @@ wuffs_handsum__decoder__convert_ycca_to_bgra(
   while (v_y < 16u) {
     v_x = 0u;
     while (v_x < 16u) {
-      v_yy1 = (((uint32_t)(self->private_data.f_buffers[0u][v_y][((4u * v_x) + 0u)])) * 65793u);
+      v_yy1 = (((uint32_t)(self->private_data.f_buffers[0u][v_y][(4u * v_x)])) * 65793u);
       v_cb1 = ((uint32_t)(((uint32_t)(self->private_data.f_buffers[0u][v_y][((4u * v_x) + 1u)])) - 128u));
       v_cr1 = ((uint32_t)(((uint32_t)(self->private_data.f_buffers[0u][v_y][((4u * v_x) + 2u)])) - 128u));
       v_r = ((uint32_t)(v_yy1 + ((uint32_t)(91881u * v_cr1))));
@@ -52072,7 +52072,7 @@ wuffs_handsum__decoder__convert_ycca_to_bgra(
       } else {
         v_b = (4294967295u ^ wuffs_base__utility__sign_extend_rshift_u32(v_b, 31u));
       }
-      self->private_data.f_buffers[0u][v_y][((4u * v_x) + 0u)] = ((uint8_t)(v_b));
+      self->private_data.f_buffers[0u][v_y][(4u * v_x)] = ((uint8_t)(v_b));
       self->private_data.f_buffers[0u][v_y][((4u * v_x) + 1u)] = ((uint8_t)(v_g));
       self->private_data.f_buffers[0u][v_y][((4u * v_x) + 2u)] = ((uint8_t)(v_r));
       v_x += 1u;
@@ -52112,7 +52112,7 @@ wuffs_handsum__decoder__scale_horizontal(
     v_acc3 = 0u;
     v_remainder = 16u;
     while (v_srcx < 16u) {
-      v_s0 = ((uint32_t)(self->private_data.f_buffers[0u][v_y][((4u * v_srcx) + 0u)]));
+      v_s0 = ((uint32_t)(self->private_data.f_buffers[0u][v_y][(4u * v_srcx)]));
       v_s1 = ((uint32_t)(self->private_data.f_buffers[0u][v_y][((4u * v_srcx) + 1u)]));
       v_s2 = ((uint32_t)(self->private_data.f_buffers[0u][v_y][((4u * v_srcx) + 2u)]));
       v_s3 = ((uint32_t)(self->private_data.f_buffers[0u][v_y][((4u * v_srcx) + 3u)]));
@@ -52127,7 +52127,7 @@ wuffs_handsum__decoder__scale_horizontal(
         v_acc1 += (v_remainder * v_s1);
         v_acc2 += (v_remainder * v_s2);
         v_acc3 += (v_remainder * v_s3);
-        self->private_data.f_buffers[1u][v_y][((4u * v_dstx) + 0u)] = ((uint8_t)((((uint32_t)(v_acc0 + 8u)) / 16u)));
+        self->private_data.f_buffers[1u][v_y][(4u * v_dstx)] = ((uint8_t)((((uint32_t)(v_acc0 + 8u)) / 16u)));
         self->private_data.f_buffers[1u][v_y][((4u * v_dstx) + 1u)] = ((uint8_t)((((uint32_t)(v_acc1 + 8u)) / 16u)));
         self->private_data.f_buffers[1u][v_y][((4u * v_dstx) + 2u)] = ((uint8_t)((((uint32_t)(v_acc2 + 8u)) / 16u)));
         self->private_data.f_buffers[1u][v_y][((4u * v_dstx) + 3u)] = ((uint8_t)((((uint32_t)(v_acc3 + 8u)) / 16u)));
@@ -52176,7 +52176,7 @@ wuffs_handsum__decoder__scale_vertical(
     v_acc3 = 0u;
     v_remainder = 16u;
     while (v_srcy < 16u) {
-      v_s0 = ((uint32_t)(self->private_data.f_buffers[0u][v_srcy][((4u * v_x) + 0u)]));
+      v_s0 = ((uint32_t)(self->private_data.f_buffers[0u][v_srcy][(4u * v_x)]));
       v_s1 = ((uint32_t)(self->private_data.f_buffers[0u][v_srcy][((4u * v_x) + 1u)]));
       v_s2 = ((uint32_t)(self->private_data.f_buffers[0u][v_srcy][((4u * v_x) + 2u)]));
       v_s3 = ((uint32_t)(self->private_data.f_buffers[0u][v_srcy][((4u * v_x) + 3u)]));
@@ -52191,7 +52191,7 @@ wuffs_handsum__decoder__scale_vertical(
         v_acc1 += (v_remainder * v_s1);
         v_acc2 += (v_remainder * v_s2);
         v_acc3 += (v_remainder * v_s3);
-        self->private_data.f_buffers[1u][v_dsty][((4u * v_x) + 0u)] = ((uint8_t)((((uint32_t)(v_acc0 + 8u)) / 16u)));
+        self->private_data.f_buffers[1u][v_dsty][(4u * v_x)] = ((uint8_t)((((uint32_t)(v_acc0 + 8u)) / 16u)));
         self->private_data.f_buffers[1u][v_dsty][((4u * v_x) + 1u)] = ((uint8_t)((((uint32_t)(v_acc1 + 8u)) / 16u)));
         self->private_data.f_buffers[1u][v_dsty][((4u * v_x) + 2u)] = ((uint8_t)((((uint32_t)(v_acc2 + 8u)) / 16u)));
         self->private_data.f_buffers[1u][v_dsty][((4u * v_x) + 3u)] = ((uint8_t)((((uint32_t)(v_acc3 + 8u)) / 16u)));
@@ -56905,9 +56905,9 @@ wuffs_jpeg__decoder__prepare_scan(
     }
     v_i = 0u;
     while (v_i < self->private_impl.f_scan_num_components) {
-      if ((self->private_impl.f_scan_ss == 0u) &&  ! self->private_impl.f_seen_dht[((uint8_t)(0u | self->private_impl.f_scan_comps_td[v_i]))]) {
+      if ((self->private_impl.f_scan_ss == 0u) &&  ! self->private_impl.f_seen_dht[self->private_impl.f_scan_comps_td[v_i]]) {
         WUFFS_BASE__COROUTINE_SUSPENSION_POINT(8);
-        status = wuffs_jpeg__decoder__use_default_huffman_table(self, ((uint8_t)(0u | self->private_impl.f_scan_comps_td[v_i])));
+        status = wuffs_jpeg__decoder__use_default_huffman_table(self, self->private_impl.f_scan_comps_td[v_i]);
         if (status.repr) {
           goto suspend;
         }
@@ -57043,7 +57043,7 @@ wuffs_jpeg__decoder__calculate_single_component_scan_fields(
   self->private_impl.f_mcu_blocks_offset[0u] = self->private_impl.f_components_workbuf_offsets[v_csel];
   self->private_impl.f_mcu_blocks_mx_mul[0u] = 8u;
   self->private_impl.f_mcu_blocks_my_mul[0u] = (8u * self->private_impl.f_components_workbuf_widths[v_csel]);
-  self->private_impl.f_mcu_blocks_dc_hselector[0u] = ((uint8_t)(0u | self->private_impl.f_scan_comps_td[0u]));
+  self->private_impl.f_mcu_blocks_dc_hselector[0u] = self->private_impl.f_scan_comps_td[0u];
   self->private_impl.f_mcu_blocks_ac_hselector[0u] = ((uint8_t)(4u | self->private_impl.f_scan_comps_ta[0u]));
   self->private_impl.f_scan_width_in_mcus = wuffs_jpeg__decoder__quantize_dimension(self, self->private_impl.f_width, self->private_impl.f_components_h[v_csel], self->private_impl.f_max_incl_components_h);
   self->private_impl.f_scan_height_in_mcus = wuffs_jpeg__decoder__quantize_dimension(self, self->private_impl.f_height, self->private_impl.f_components_v[v_csel], self->private_impl.f_max_incl_components_v);
@@ -57108,7 +57108,7 @@ wuffs_jpeg__decoder__calculate_multiple_component_scan_fields(
     self->private_impl.f_mcu_blocks_offset[v_b] = (self->private_impl.f_components_workbuf_offsets[v_csel] + (8u * ((uint64_t)(self->private_impl.f_scan_comps_bx_offset[v_b]))) + (8u * ((uint64_t)(self->private_impl.f_scan_comps_by_offset[v_b])) * ((uint64_t)(self->private_impl.f_components_workbuf_widths[v_csel]))));
     self->private_impl.f_mcu_blocks_mx_mul[v_b] = (8u * ((uint32_t)(self->private_impl.f_components_h[v_csel])));
     self->private_impl.f_mcu_blocks_my_mul[v_b] = (8u * ((uint32_t)(self->private_impl.f_components_v[v_csel])) * self->private_impl.f_components_workbuf_widths[v_csel]);
-    self->private_impl.f_mcu_blocks_dc_hselector[v_b] = ((uint8_t)(0u | self->private_impl.f_scan_comps_td[v_ssel]));
+    self->private_impl.f_mcu_blocks_dc_hselector[v_b] = self->private_impl.f_scan_comps_td[v_ssel];
     self->private_impl.f_mcu_blocks_ac_hselector[v_b] = ((uint8_t)(4u | self->private_impl.f_scan_comps_ta[v_ssel]));
     v_sibo = ((uint32_t)(self->private_impl.f_swizzle_immediately_c_offsets[v_csel] + ((8u * ((uint32_t)(self->private_impl.f_scan_comps_bx_offset[v_b]))) + (64u * ((uint32_t)(self->private_impl.f_scan_comps_by_offset[v_b])) * ((uint32_t)(self->private_impl.f_components_h[v_csel]))))));
     self->private_impl.f_swizzle_immediately_b_offsets[v_b] = wuffs_base__u32__min(v_sibo, 576u);
@@ -58691,9 +58691,9 @@ wuffs_jpeg__decoder__decode_mcu__choosy_default(
           self->private_impl.f_swizzle_immediately_status = wuffs_jpeg__decoder__swizzle_gray(self,
               a_dst,
               wuffs_base__make_slice_u8(self->private_data.f_swizzle_immediately_buffer, 64),
-              ((a_mx + 0u) * 8u),
+              (a_mx * 8u),
               ((a_mx + 1u) * 8u),
-              ((a_my + 0u) * 8u),
+              (a_my * 8u),
               ((a_my + 1u) * 8u),
               8u);
           if ( ! wuffs_base__status__is_ok(&self->private_impl.f_swizzle_immediately_status)) {
@@ -58711,9 +58711,9 @@ wuffs_jpeg__decoder__decode_mcu__choosy_default(
           self->private_impl.f_swizzle_immediately_status = wuffs_jpeg__decoder__swizzle_colorful(self,
               a_dst,
               wuffs_base__utility__empty_slice_u8(),
-              ((a_mx + 0u) * 8u * ((uint32_t)(self->private_impl.f_max_incl_components_h))),
+              (a_mx * 8u * ((uint32_t)(self->private_impl.f_max_incl_components_h))),
               ((a_mx + 1u) * 8u * ((uint32_t)(self->private_impl.f_max_incl_components_h))),
-              ((a_my + 0u) * 8u * ((uint32_t)(self->private_impl.f_max_incl_components_v))),
+              (a_my * 8u * ((uint32_t)(self->private_impl.f_max_incl_components_v))),
               ((a_my + 1u) * 8u * ((uint32_t)(self->private_impl.f_max_incl_components_v))));
           if ( ! wuffs_base__status__is_ok(&self->private_impl.f_swizzle_immediately_status)) {
             v_ret = 3u;
@@ -60069,7 +60069,7 @@ wuffs_json__decoder__decode_tokens(
               }
               while (((uint64_t)(io2_a_src - iop_a_src)) > 4u) {
                 v_c32 = wuffs_base__peek_u32le__no_bounds_check(iop_a_src);
-                if (0u != (WUFFS_JSON__LUT_CHARS[(255u & (v_c32 >> 0u))] |
+                if (0u != (WUFFS_JSON__LUT_CHARS[(255u & v_c32)] |
                     WUFFS_JSON__LUT_CHARS[(255u & (v_c32 >> 8u))] |
                     WUFFS_JSON__LUT_CHARS[(255u & (v_c32 >> 16u))] |
                     WUFFS_JSON__LUT_CHARS[(255u & (v_c32 >> 24u))])) {
@@ -60160,7 +60160,7 @@ wuffs_json__decoder__decode_tokens(
                   v_uni4_string = (((uint64_t)(wuffs_base__peek_u48le__no_bounds_check(iop_a_src))) >> 16u);
                   v_uni4_value = 0u;
                   v_uni4_ok = 128u;
-                  v_c8 = WUFFS_JSON__LUT_HEXADECIMAL_DIGITS[(255u & (v_uni4_string >> 0u))];
+                  v_c8 = WUFFS_JSON__LUT_HEXADECIMAL_DIGITS[(255u & v_uni4_string)];
                   v_uni4_ok &= v_c8;
                   v_uni4_value |= (((uint32_t)(((uint8_t)(v_c8 & 15u)))) << 12u);
                   v_c8 = WUFFS_JSON__LUT_HEXADECIMAL_DIGITS[(255u & (v_uni4_string >> 8u))];
@@ -60171,7 +60171,7 @@ wuffs_json__decoder__decode_tokens(
                   v_uni4_value |= (((uint32_t)(((uint8_t)(v_c8 & 15u)))) << 4u);
                   v_c8 = WUFFS_JSON__LUT_HEXADECIMAL_DIGITS[(255u & (v_uni4_string >> 24u))];
                   v_uni4_ok &= v_c8;
-                  v_uni4_value |= (((uint32_t)(((uint8_t)(v_c8 & 15u)))) << 0u);
+                  v_uni4_value |= ((uint32_t)(((uint8_t)(v_c8 & 15u))));
                   if (v_uni4_ok == 0u) {
                   } else if ((v_uni4_value < 55296u) || (57343u < v_uni4_value)) {
                     iop_a_src += 6u;
@@ -60200,7 +60200,7 @@ wuffs_json__decoder__decode_tokens(
                       goto label__string_loop_outer__continue;
                     }
                     v_uni4_string = (wuffs_base__peek_u64le__no_bounds_check(iop_a_src + 4u) >> 16u);
-                    if (((255u & (v_uni4_string >> 0u)) != 92u) || ((255u & (v_uni4_string >> 8u)) != 117u)) {
+                    if (((255u & v_uni4_string) != 92u) || ((255u & (v_uni4_string >> 8u)) != 117u)) {
                       v_uni4_high_surrogate = 0u;
                       v_uni4_value = 0u;
                       v_uni4_ok = 0u;
@@ -60209,7 +60209,7 @@ wuffs_json__decoder__decode_tokens(
                       v_uni4_value = 0u;
                       v_uni4_ok = 128u;
                       v_uni4_string >>= 16u;
-                      v_c8 = WUFFS_JSON__LUT_HEXADECIMAL_DIGITS[(255u & (v_uni4_string >> 0u))];
+                      v_c8 = WUFFS_JSON__LUT_HEXADECIMAL_DIGITS[(255u & v_uni4_string)];
                       v_uni4_ok &= v_c8;
                       v_uni4_value |= (((uint32_t)(((uint8_t)(v_c8 & 15u)))) << 12u);
                       v_c8 = WUFFS_JSON__LUT_HEXADECIMAL_DIGITS[(255u & (v_uni4_string >> 8u))];
@@ -60220,7 +60220,7 @@ wuffs_json__decoder__decode_tokens(
                       v_uni4_value |= (((uint32_t)(((uint8_t)(v_c8 & 15u)))) << 4u);
                       v_c8 = WUFFS_JSON__LUT_HEXADECIMAL_DIGITS[(255u & (v_uni4_string >> 24u))];
                       v_uni4_ok &= v_c8;
-                      v_uni4_value |= (((uint32_t)(((uint8_t)(v_c8 & 15u)))) << 0u);
+                      v_uni4_value |= ((uint32_t)(((uint8_t)(v_c8 & 15u))));
                     }
                     if ((v_uni4_ok != 0u) && (56320u <= v_uni4_value) && (v_uni4_value <= 57343u)) {
                       v_uni4_value -= 56320u;
@@ -60257,7 +60257,7 @@ wuffs_json__decoder__decode_tokens(
                   v_uni8_string = wuffs_base__peek_u64le__no_bounds_check(iop_a_src + 2u);
                   v_uni8_value = 0u;
                   v_uni8_ok = 128u;
-                  v_c8 = WUFFS_JSON__LUT_HEXADECIMAL_DIGITS[(255u & (v_uni8_string >> 0u))];
+                  v_c8 = WUFFS_JSON__LUT_HEXADECIMAL_DIGITS[(255u & v_uni8_string)];
                   v_uni8_ok &= v_c8;
                   v_uni8_value |= (((uint32_t)(((uint8_t)(v_c8 & 15u)))) << 28u);
                   v_c8 = WUFFS_JSON__LUT_HEXADECIMAL_DIGITS[(255u & (v_uni8_string >> 8u))];
@@ -60280,7 +60280,7 @@ wuffs_json__decoder__decode_tokens(
                   v_uni8_value |= (((uint32_t)(((uint8_t)(v_c8 & 15u)))) << 4u);
                   v_c8 = WUFFS_JSON__LUT_HEXADECIMAL_DIGITS[(255u & (v_uni8_string >> 56u))];
                   v_uni8_ok &= v_c8;
-                  v_uni8_value |= (((uint32_t)(((uint8_t)(v_c8 & 15u)))) << 0u);
+                  v_uni8_value |= ((uint32_t)(((uint8_t)(v_c8 & 15u))));
                   if (v_uni8_ok == 0u) {
                   } else if ((v_uni8_value < 55296u) || ((57343u < v_uni8_value) && (v_uni8_value <= 1114111u))) {
                     iop_a_src += 10u;
@@ -67014,8 +67014,8 @@ wuffs_netpbm__decoder__swizzle_easy(
         v_j -= 8u;
       }
       while (v_j > 0u) {
-        if (((uint64_t)(io2_a_src - iop_a_src)) >= ((uint64_t)((v_src_bytes_per_pixel * 1u)))) {
-          iop_a_src += (v_src_bytes_per_pixel * 1u);
+        if (((uint64_t)(io2_a_src - iop_a_src)) >= ((uint64_t)(v_src_bytes_per_pixel))) {
+          iop_a_src += v_src_bytes_per_pixel;
         }
         v_j -= 1u;
       }
@@ -68532,8 +68532,8 @@ wuffs_nie__decoder__swizzle(
         v_j -= 8u;
       }
       while (v_j > 0u) {
-        if (((uint64_t)(io2_a_src - iop_a_src)) >= ((uint64_t)((v_src_bytes_per_pixel * 1u)))) {
-          iop_a_src += (v_src_bytes_per_pixel * 1u);
+        if (((uint64_t)(io2_a_src - iop_a_src)) >= ((uint64_t)(v_src_bytes_per_pixel))) {
+          iop_a_src += v_src_bytes_per_pixel;
         }
         v_j -= 1u;
       }
@@ -71583,7 +71583,7 @@ wuffs_png__decoder__do_decode_image_config(
       }
       iop_a_src += 8u;
       if ( ! self->private_impl.f_ignore_checksum && ((self->private_impl.f_chunk_type & 32u) == 0u)) {
-        self->private_impl.f_chunk_type_array[0u] = ((uint8_t)((self->private_impl.f_chunk_type >> 0u)));
+        self->private_impl.f_chunk_type_array[0u] = ((uint8_t)(self->private_impl.f_chunk_type));
         self->private_impl.f_chunk_type_array[1u] = ((uint8_t)((self->private_impl.f_chunk_type >> 8u)));
         self->private_impl.f_chunk_type_array[2u] = ((uint8_t)((self->private_impl.f_chunk_type >> 16u)));
         self->private_impl.f_chunk_type_array[3u] = ((uint8_t)((self->private_impl.f_chunk_type >> 24u)));
@@ -72472,7 +72472,7 @@ wuffs_png__decoder__decode_chrm(
       }
       v_u = t_0;
     }
-    self->private_impl.f_metadata_x |= ((16777215u & v_u) << 0u);
+    self->private_impl.f_metadata_x |= (16777215u & v_u);
     {
       WUFFS_BASE__COROUTINE_SUSPENSION_POINT(3);
       uint64_t t_1;
@@ -73325,14 +73325,14 @@ wuffs_png__decoder__decode_plte(
         v_argb = t_0;
       }
       v_argb |= 4278190080u;
-      self->private_data.f_src_palette[((4u * v_i) + 0u)] = ((uint8_t)((v_argb >> 0u)));
+      self->private_data.f_src_palette[(4u * v_i)] = ((uint8_t)(v_argb));
       self->private_data.f_src_palette[((4u * v_i) + 1u)] = ((uint8_t)((v_argb >> 8u)));
       self->private_data.f_src_palette[((4u * v_i) + 2u)] = ((uint8_t)((v_argb >> 16u)));
       self->private_data.f_src_palette[((4u * v_i) + 3u)] = ((uint8_t)((v_argb >> 24u)));
       v_i += 1u;
     }
     while (v_i < 256u) {
-      self->private_data.f_src_palette[((4u * v_i) + 0u)] = 0u;
+      self->private_data.f_src_palette[(4u * v_i)] = 0u;
       self->private_data.f_src_palette[((4u * v_i) + 1u)] = 0u;
       self->private_data.f_src_palette[((4u * v_i) + 2u)] = 0u;
       self->private_data.f_src_palette[((4u * v_i) + 3u)] = 255u;
@@ -73554,7 +73554,7 @@ wuffs_png__decoder__decode_trns(
         v_u = t_1;
       }
       if (self->private_impl.f_depth <= 8u) {
-        self->private_impl.f_remap_transparency = ((255u & (v_u >> 0u)) |
+        self->private_impl.f_remap_transparency = ((255u & v_u) |
             (65280u & (v_u >> 8u)) |
             (16711680u & (v_u >> 16u)) |
             4278190080u);
@@ -75669,7 +75669,7 @@ wuffs_png__decoder__filter_and_swizzle_tricky(
                 v_bits_unpacked[2u] = v_s.ptr[0u];
                 v_bits_unpacked[3u] = 255u;
                 v_s = wuffs_base__slice_u8__subslice_i(v_s, 1u);
-                if (((uint32_t)(self->private_impl.f_remap_transparency)) == ((((uint32_t)(v_bits_unpacked[0u])) << 0u) |
+                if (((uint32_t)(self->private_impl.f_remap_transparency)) == (((uint32_t)(v_bits_unpacked[0u])) |
                     (((uint32_t)(v_bits_unpacked[1u])) << 8u) |
                     (((uint32_t)(v_bits_unpacked[2u])) << 16u) |
                     (((uint32_t)(v_bits_unpacked[3u])) << 24u))) {
@@ -75687,7 +75687,7 @@ wuffs_png__decoder__filter_and_swizzle_tricky(
                 v_bits_unpacked[2u] = v_s.ptr[0u];
                 v_bits_unpacked[3u] = 255u;
                 v_s = wuffs_base__slice_u8__subslice_i(v_s, 3u);
-                if (((uint32_t)(self->private_impl.f_remap_transparency)) == ((((uint32_t)(v_bits_unpacked[0u])) << 0u) |
+                if (((uint32_t)(self->private_impl.f_remap_transparency)) == (((uint32_t)(v_bits_unpacked[0u])) |
                     (((uint32_t)(v_bits_unpacked[1u])) << 8u) |
                     (((uint32_t)(v_bits_unpacked[2u])) << 16u) |
                     (((uint32_t)(v_bits_unpacked[3u])) << 24u))) {
@@ -75728,7 +75728,7 @@ wuffs_png__decoder__filter_and_swizzle_tricky(
             v_bits_unpacked[1u] = v_bits_unpacked[0u];
             v_bits_unpacked[2u] = v_bits_unpacked[0u];
             v_bits_unpacked[3u] = 255u;
-            if (((uint32_t)(self->private_impl.f_remap_transparency)) == ((((uint32_t)(v_bits_unpacked[0u])) << 0u) |
+            if (((uint32_t)(self->private_impl.f_remap_transparency)) == (((uint32_t)(v_bits_unpacked[0u])) |
                 (((uint32_t)(v_bits_unpacked[1u])) << 8u) |
                 (((uint32_t)(v_bits_unpacked[2u])) << 16u) |
                 (((uint32_t)(v_bits_unpacked[3u])) << 24u))) {
@@ -75759,7 +75759,7 @@ wuffs_png__decoder__filter_and_swizzle_tricky(
               v_bits_unpacked[6u] = 255u;
               v_bits_unpacked[7u] = 255u;
               v_s = wuffs_base__slice_u8__subslice_i(v_s, 2u);
-              if (self->private_impl.f_remap_transparency == ((((uint64_t)(v_bits_unpacked[0u])) << 0u) |
+              if (self->private_impl.f_remap_transparency == (((uint64_t)(v_bits_unpacked[0u])) |
                   (((uint64_t)(v_bits_unpacked[1u])) << 8u) |
                   (((uint64_t)(v_bits_unpacked[2u])) << 16u) |
                   (((uint64_t)(v_bits_unpacked[3u])) << 24u) |
@@ -75788,7 +75788,7 @@ wuffs_png__decoder__filter_and_swizzle_tricky(
               v_bits_unpacked[6u] = 255u;
               v_bits_unpacked[7u] = 255u;
               v_s = wuffs_base__slice_u8__subslice_i(v_s, 6u);
-              if (self->private_impl.f_remap_transparency == ((((uint64_t)(v_bits_unpacked[0u])) << 0u) |
+              if (self->private_impl.f_remap_transparency == (((uint64_t)(v_bits_unpacked[0u])) |
                   (((uint64_t)(v_bits_unpacked[1u])) << 8u) |
                   (((uint64_t)(v_bits_unpacked[2u])) << 16u) |
                   (((uint64_t)(v_bits_unpacked[3u])) << 24u) |
@@ -76796,11 +76796,11 @@ wuffs_qoi__decoder__from_src_to_buffer(
         }
       } else if (((uint8_t)(v_c8 >> 6u)) == 0u) {
         v_ci = (4u * ((uint32_t)(((uint8_t)(v_c8 & 63u)))));
-        self->private_data.f_pixel[0u] = self->private_data.f_cache[(v_ci + 0u)];
+        self->private_data.f_pixel[0u] = self->private_data.f_cache[v_ci];
         self->private_data.f_pixel[1u] = self->private_data.f_cache[(v_ci + 1u)];
         self->private_data.f_pixel[2u] = self->private_data.f_cache[(v_ci + 2u)];
         self->private_data.f_pixel[3u] = self->private_data.f_cache[(v_ci + 3u)];
-        self->private_data.f_buffer[(v_bi + 0u)] = self->private_data.f_pixel[0u];
+        self->private_data.f_buffer[v_bi] = self->private_data.f_pixel[0u];
         self->private_data.f_buffer[(v_bi + 1u)] = self->private_data.f_pixel[1u];
         self->private_data.f_buffer[(v_bi + 2u)] = self->private_data.f_pixel[2u];
         self->private_data.f_buffer[(v_bi + 3u)] = self->private_data.f_pixel[3u];
@@ -76813,7 +76813,7 @@ wuffs_qoi__decoder__from_src_to_buffer(
 #endif
         self->private_data.f_pixel[2u] += ((uint8_t)(((uint8_t)(((uint8_t)(v_c8 >> 4u)) & 3u)) + 254u));
         self->private_data.f_pixel[1u] += ((uint8_t)(((uint8_t)(((uint8_t)(v_c8 >> 2u)) & 3u)) + 254u));
-        self->private_data.f_pixel[0u] += ((uint8_t)(((uint8_t)(((uint8_t)(v_c8 >> 0u)) & 3u)) + 254u));
+        self->private_data.f_pixel[0u] += ((uint8_t)(((uint8_t)(v_c8 & 3u)) + 254u));
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
 #endif
@@ -76834,14 +76834,14 @@ wuffs_qoi__decoder__from_src_to_buffer(
 #endif
         self->private_data.f_pixel[2u] += ((uint8_t)(((uint8_t)(v_dg + 248u)) + ((uint8_t)(15u & ((uint8_t)(v_c8 >> 4u))))));
         self->private_data.f_pixel[1u] += v_dg;
-        self->private_data.f_pixel[0u] += ((uint8_t)(((uint8_t)(v_dg + 248u)) + ((uint8_t)(15u & ((uint8_t)(v_c8 >> 0u))))));
+        self->private_data.f_pixel[0u] += ((uint8_t)(((uint8_t)(v_dg + 248u)) + ((uint8_t)(15u & v_c8))));
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
 #endif
       } else {
         v_bj = (v_bi + (4u * (63u & (1u + ((uint32_t)(v_c8))))));
         while (v_bi < v_bj) {
-          self->private_data.f_buffer[(v_bi + 0u)] = self->private_data.f_pixel[0u];
+          self->private_data.f_buffer[v_bi] = self->private_data.f_pixel[0u];
           self->private_data.f_buffer[(v_bi + 1u)] = self->private_data.f_pixel[1u];
           self->private_data.f_buffer[(v_bi + 2u)] = self->private_data.f_pixel[2u];
           self->private_data.f_buffer[(v_bi + 3u)] = self->private_data.f_pixel[3u];
@@ -76853,11 +76853,11 @@ wuffs_qoi__decoder__from_src_to_buffer(
           (((uint32_t)(self->private_data.f_pixel[1u])) * 5u) +
           (((uint32_t)(self->private_data.f_pixel[0u])) * 7u) +
           (((uint32_t)(self->private_data.f_pixel[3u])) * 11u))));
-      self->private_data.f_cache[(v_hash4 + 0u)] = self->private_data.f_pixel[0u];
+      self->private_data.f_cache[v_hash4] = self->private_data.f_pixel[0u];
       self->private_data.f_cache[(v_hash4 + 1u)] = self->private_data.f_pixel[1u];
       self->private_data.f_cache[(v_hash4 + 2u)] = self->private_data.f_pixel[2u];
       self->private_data.f_cache[(v_hash4 + 3u)] = self->private_data.f_pixel[3u];
-      self->private_data.f_buffer[(v_bi + 0u)] = self->private_data.f_pixel[0u];
+      self->private_data.f_buffer[v_bi] = self->private_data.f_pixel[0u];
       self->private_data.f_buffer[(v_bi + 1u)] = self->private_data.f_pixel[1u];
       self->private_data.f_buffer[(v_bi + 2u)] = self->private_data.f_pixel[2u];
       self->private_data.f_buffer[(v_bi + 3u)] = self->private_data.f_pixel[3u];
@@ -78315,7 +78315,7 @@ wuffs_targa__decoder__do_decode_image_config(
             }
             v_c32 = t_10;
           }
-          self->private_data.f_src_palette[(((v_i & 255u) * 4u) + 0u)] = ((uint8_t)((v_c32 >> 0u)));
+          self->private_data.f_src_palette[((v_i & 255u) * 4u)] = ((uint8_t)(v_c32));
           self->private_data.f_src_palette[(((v_i & 255u) * 4u) + 1u)] = ((uint8_t)((v_c32 >> 8u)));
           self->private_data.f_src_palette[(((v_i & 255u) * 4u) + 2u)] = ((uint8_t)((v_c32 >> 16u)));
           self->private_data.f_src_palette[(((v_i & 255u) * 4u) + 3u)] = 255u;
@@ -78349,7 +78349,7 @@ wuffs_targa__decoder__do_decode_image_config(
             }
             v_c32 = t_11;
           }
-          self->private_data.f_src_palette[(((v_i & 255u) * 4u) + 0u)] = ((uint8_t)((v_c32 >> 0u)));
+          self->private_data.f_src_palette[((v_i & 255u) * 4u)] = ((uint8_t)(v_c32));
           self->private_data.f_src_palette[(((v_i & 255u) * 4u) + 1u)] = ((uint8_t)((v_c32 >> 8u)));
           self->private_data.f_src_palette[(((v_i & 255u) * 4u) + 2u)] = ((uint8_t)((v_c32 >> 16u)));
           self->private_data.f_src_palette[(((v_i & 255u) * 4u) + 3u)] = ((uint8_t)((v_c32 >> 24u)));
@@ -78383,8 +78383,8 @@ wuffs_targa__decoder__do_decode_image_config(
             }
             v_c32 = t_12;
           }
-          v_c5 = (31u & (v_c32 >> 0u));
-          self->private_data.f_src_palette[(((v_i & 255u) * 4u) + 0u)] = ((uint8_t)(((v_c5 << 3u) | (v_c5 >> 2u))));
+          v_c5 = (31u & v_c32);
+          self->private_data.f_src_palette[((v_i & 255u) * 4u)] = ((uint8_t)(((v_c5 << 3u) | (v_c5 >> 2u))));
           v_c5 = (31u & (v_c32 >> 5u));
           self->private_data.f_src_palette[(((v_i & 255u) * 4u) + 1u)] = ((uint8_t)(((v_c5 << 3u) | (v_c5 >> 2u))));
           v_c5 = (31u & (v_c32 >> 10u));
@@ -78394,7 +78394,7 @@ wuffs_targa__decoder__do_decode_image_config(
         v_i += 1u;
       }
       while (v_i < 256u) {
-        self->private_data.f_src_palette[((v_i * 4u) + 0u)] = 0u;
+        self->private_data.f_src_palette[(v_i * 4u)] = 0u;
         self->private_data.f_src_palette[((v_i * 4u) + 1u)] = 0u;
         self->private_data.f_src_palette[((v_i * 4u) + 2u)] = 0u;
         self->private_data.f_src_palette[((v_i * 4u) + 3u)] = 255u;
@@ -78891,7 +78891,7 @@ wuffs_targa__decoder__do_decode_frame(
               }
               v_c32 = ((uint32_t)(wuffs_base__peek_u16le__no_bounds_check(iop_a_src)));
               iop_a_src += 2u;
-              v_c5 = (31u & (v_c32 >> 0u));
+              v_c5 = (31u & v_c32);
               self->private_data.f_scratch[0u] = ((uint8_t)(((v_c5 << 3u) | (v_c5 >> 2u))));
               v_c5 = (31u & (v_c32 >> 5u));
               self->private_data.f_scratch[1u] = ((uint8_t)(((v_c5 << 3u) | (v_c5 >> 2u))));
@@ -78934,7 +78934,7 @@ wuffs_targa__decoder__do_decode_frame(
                 iop_a_src += 1u;
                 v_c32 = ((uint32_t)(wuffs_base__peek_u16le__no_bounds_check(iop_a_src)));
                 iop_a_src += 2u;
-                v_c5 = (31u & (v_c32 >> 0u));
+                v_c5 = (31u & v_c32);
                 self->private_data.f_scratch[0u] = ((uint8_t)(((v_c5 << 3u) | (v_c5 >> 2u))));
                 v_c5 = (31u & (v_c32 >> 5u));
                 self->private_data.f_scratch[1u] = ((uint8_t)(((v_c5 << 3u) | (v_c5 >> 2u))));
@@ -79915,7 +79915,7 @@ wuffs_thumbhash__decoder__do_decode_image_config(
       }
       v_c32 = t_1;
     }
-    self->private_impl.f_l_dc = (((uint64_t)(((v_c32 >> 0u) & 63u))) * 136339441844224u);
+    self->private_impl.f_l_dc = (((uint64_t)((v_c32 & 63u))) * 136339441844224u);
     self->private_impl.f_p_dc = ((uint64_t)((((uint64_t)(((v_c32 >> 6u) & 63u))) * 272678883688448u) - 8589384836186112u));
     self->private_impl.f_q_dc = ((uint64_t)((((uint64_t)(((v_c32 >> 12u) & 63u))) * 272678883688448u) - 8589384836186112u));
     self->private_impl.f_l_scale = ((uint8_t)(((v_c32 >> 18u) & 31u)));
@@ -79949,12 +79949,12 @@ wuffs_thumbhash__decoder__do_decode_image_config(
       }
       v_c32 = t_2;
     }
-    self->private_impl.f_l_count = ((uint8_t)(((v_c32 >> 0u) & 7u)));
+    self->private_impl.f_l_count = ((uint8_t)((v_c32 & 7u)));
     self->private_impl.f_p_scale = ((uint8_t)(((v_c32 >> 3u) & 63u)));
     self->private_impl.f_q_scale = ((uint8_t)(((v_c32 >> 9u) & 63u)));
     self->private_impl.f_is_landscape = ((uint8_t)(((v_c32 >> 15u) & 1u)));
     self->private_impl.f_w_dimension_code = ((uint8_t)(((uint8_t)(WUFFS_THUMBHASH__DIMENSION_CODES_FROM_HAS_ALPHA_AND_L_COUNT[self->private_impl.f_has_alpha][self->private_impl.f_l_count] >> 4u)) & 7u));
-    self->private_impl.f_h_dimension_code = ((uint8_t)(((uint8_t)(WUFFS_THUMBHASH__DIMENSION_CODES_FROM_HAS_ALPHA_AND_L_COUNT[self->private_impl.f_has_alpha][self->private_impl.f_l_count] >> 0u)) & 7u));
+    self->private_impl.f_h_dimension_code = ((uint8_t)(WUFFS_THUMBHASH__DIMENSION_CODES_FROM_HAS_ALPHA_AND_L_COUNT[self->private_impl.f_has_alpha][self->private_impl.f_l_count] & 7u));
     if (self->private_impl.f_is_landscape != 0u) {
       v_swap = self->private_impl.f_w_dimension_code;
       self->private_impl.f_w_dimension_code = self->private_impl.f_h_dimension_code;
@@ -79978,7 +79978,7 @@ wuffs_thumbhash__decoder__do_decode_image_config(
         uint32_t t_3 = *iop_a_src++;
         v_c32 = t_3;
       }
-      self->private_impl.f_a_dc = (((uint64_t)(((v_c32 >> 0u) & 15u))) << 42u);
+      self->private_impl.f_a_dc = (((uint64_t)((v_c32 & 15u))) << 42u);
       self->private_impl.f_a_scale = ((uint8_t)(((v_c32 >> 4u) & 15u)));
       self->private_impl.f_frame_config_io_position = 9u;
     }
@@ -80654,7 +80654,7 @@ wuffs_thumbhash__decoder__from_coeffs_to_pixels(
           v_a /= 258708618300u;
         }
       }
-      self->private_data.f_pixels[v_y][((4u * v_x) + 0u)] = ((uint8_t)(v_b));
+      self->private_data.f_pixels[v_y][(4u * v_x)] = ((uint8_t)(v_b));
       self->private_data.f_pixels[v_y][((4u * v_x) + 1u)] = ((uint8_t)(v_g));
       self->private_data.f_pixels[v_y][((4u * v_x) + 2u)] = ((uint8_t)(v_r));
       self->private_data.f_pixels[v_y][((4u * v_x) + 3u)] = ((uint8_t)(v_a));
@@ -82334,7 +82334,7 @@ wuffs_vp8__decoder__decode_other_partition_lengths(
     if (v_o >= ((uint64_t)(a_workbuf.len))) {
       return wuffs_base__make_status(wuffs_vp8__error__bad_header);
     }
-    v_v32 |= (((uint32_t)(a_workbuf.ptr[v_o])) << 0u);
+    v_v32 |= ((uint32_t)(a_workbuf.ptr[v_o]));
     v_o += 1u;
     if (v_o >= ((uint64_t)(a_workbuf.len))) {
       return wuffs_base__make_status(wuffs_vp8__error__bad_header);
@@ -82525,12 +82525,12 @@ wuffs_vp8__decoder__decode_subblock_modes(
     v_i += 1u;
   }
   self->private_data.f_mb_states_top[a_mbx] = ((self->private_data.f_mb_states_top[a_mbx] & 4294901760u) |
-      (((uint32_t)(self->private_impl.f_mb_subblock_modes[12u])) << 0u) |
+      ((uint32_t)(self->private_impl.f_mb_subblock_modes[12u])) |
       (((uint32_t)(self->private_impl.f_mb_subblock_modes[13u])) << 4u) |
       (((uint32_t)(self->private_impl.f_mb_subblock_modes[14u])) << 8u) |
       (((uint32_t)(self->private_impl.f_mb_subblock_modes[15u])) << 12u));
   self->private_data.f_mb_states_left = ((self->private_data.f_mb_states_left & 4294901760u) |
-      (((uint32_t)(self->private_impl.f_mb_subblock_modes[3u])) << 0u) |
+      ((uint32_t)(self->private_impl.f_mb_subblock_modes[3u])) |
       (((uint32_t)(self->private_impl.f_mb_subblock_modes[7u])) << 4u) |
       (((uint32_t)(self->private_impl.f_mb_subblock_modes[11u])) << 8u) |
       (((uint32_t)(self->private_impl.f_mb_subblock_modes[15u])) << 12u));
@@ -82734,7 +82734,7 @@ wuffs_vp8__decoder__decode_block_coefficients(
   }
   v_part = (1u + (a_mby & self->private_impl.f_num_other_partitions_m1));
   v_prob_base = ((a_plane * 264u) + WUFFS_VP8__COEFF_BANDS_33[v_i] + (a_context * 11u));
-  v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, v_part, ((uint32_t)(self->private_data.f_coeff_probs[(v_prob_base + 0u)])));
+  v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, v_part, ((uint32_t)(self->private_data.f_coeff_probs[v_prob_base])));
   if (v_v1 == 0u) {
     return 0u;
   }
@@ -82745,7 +82745,7 @@ wuffs_vp8__decoder__decode_block_coefficients(
       if (v_i >= 16u) {
         break;
       }
-      v_prob_base = ((a_plane * 264u) + WUFFS_VP8__COEFF_BANDS_33[(v_i + 0u)] + 0u);
+      v_prob_base = ((a_plane * 264u) + WUFFS_VP8__COEFF_BANDS_33[v_i]);
       continue;
     }
     v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, v_part, ((uint32_t)(self->private_data.f_coeff_probs[(v_prob_base + 2u)])));
@@ -82769,7 +82769,7 @@ wuffs_vp8__decoder__decode_block_coefficients(
     if (v_i >= 15u) {
       break;
     }
-    v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, v_part, ((uint32_t)(self->private_data.f_coeff_probs[(v_prob_base + 0u)])));
+    v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, v_part, ((uint32_t)(self->private_data.f_coeff_probs[v_prob_base])));
     if (v_v1 == 0u) {
       break;
     }
@@ -83085,7 +83085,7 @@ wuffs_vp8__decoder__do_decode_image_config(
       }
       v_c32 = t_2;
     }
-    self->private_impl.f_width = (16383u & (v_c32 >> 0u));
+    self->private_impl.f_width = (16383u & v_c32);
     self->private_impl.f_height = (16383u & (v_c32 >> 16u));
     self->private_impl.f_mbw = ((self->private_impl.f_width + 15u) / 16u);
     self->private_impl.f_mbh = ((self->private_impl.f_height + 15u) / 16u);
@@ -85285,7 +85285,7 @@ wuffs_webp__decoder__decode_huffman_tree_simple(
       v_symbol1 = (self->private_impl.f_bits & 255u);
       self->private_impl.f_bits >>= 8u;
       self->private_impl.f_n_bits -= 8u;
-      self->private_data.f_huffman_nodes[a_hg][(v_base_offset + 0u)] = ((uint16_t)((v_base_offset + 1u)));
+      self->private_data.f_huffman_nodes[a_hg][v_base_offset] = ((uint16_t)((v_base_offset + 1u)));
       self->private_data.f_huffman_nodes[a_hg][(v_base_offset + 1u)] = ((uint16_t)((v_symbol0 | 32768u)));
       self->private_data.f_huffman_nodes[a_hg][(v_base_offset + 2u)] = ((uint16_t)((v_symbol1 | 32768u)));
     } else {
@@ -85486,7 +85486,7 @@ wuffs_webp__decoder__build_code_lengths_huffman_nodes(
           v_children = ((uint32_t)(1u + ((uint32_t)(2u * v_n_branches))));
           v_children = wuffs_base__u32__min(v_children, 35u);
           self->private_data.f_code_lengths_huffman_nodes[v_h] = ((uint16_t)(v_children));
-          self->private_data.f_code_lengths_huffman_nodes[(v_children + 0u)] = 0u;
+          self->private_data.f_code_lengths_huffman_nodes[v_children] = 0u;
           self->private_data.f_code_lengths_huffman_nodes[(v_children + 1u)] = 0u;
           v_h = (v_children + (v_code_bits >> 31u));
           v_n_branches += 1u;
@@ -85577,7 +85577,7 @@ wuffs_webp__decoder__build_huffman_nodes(
           v_children = ((uint32_t)(v_base_offset + ((uint32_t)(1u + ((uint32_t)(2u * v_n_branches))))));
           v_children = wuffs_base__u32__min(v_children, 6265u);
           self->private_data.f_huffman_nodes[a_hg][v_h] = ((uint16_t)(v_children));
-          self->private_data.f_huffman_nodes[a_hg][(v_children + 0u)] = 0u;
+          self->private_data.f_huffman_nodes[a_hg][v_children] = 0u;
           self->private_data.f_huffman_nodes[a_hg][(v_children + 1u)] = 0u;
           v_h = (v_children + (v_code_bits >> 31u));
           v_n_branches += 1u;
@@ -85982,7 +85982,7 @@ wuffs_webp__decoder__decode_pixels_slow(
           self->private_impl.f_bits >>= 1u;
           self->private_impl.f_n_bits -= 1u;
         }
-        v_color |= (((uint32_t)(((uint16_t)(v_node & 255u)))) << 0u);
+        v_color |= ((uint32_t)(((uint16_t)(v_node & 255u))));
         v_h = ((uint32_t)(WUFFS_WEBP__HUFFMAN_TABLE_BASE_OFFSETS[3u]));
         while (true) {
           v_node = self->private_data.f_huffman_nodes[v_hg][v_h];
@@ -86695,7 +86695,7 @@ wuffs_webp__decoder__apply_transform_color_indexing(
       const uint8_t* i_end0_dst = wuffs_private_impl__ptr_u8_plus_len(v_dst.ptr, (((i_slice_dst.len - (size_t)(v_dst.ptr - i_slice_dst.ptr)) / 4) * 4));
       while (v_dst.ptr < i_end0_dst) {
         v_p = (((uint32_t)(v_dst.ptr[1u])) * 4u);
-        v_p0 = self->private_data.f_palette[(v_p + 0u)];
+        v_p0 = self->private_data.f_palette[v_p];
         v_p1 = self->private_data.f_palette[(v_p + 1u)];
         v_p2 = self->private_data.f_palette[(v_p + 2u)];
         v_p3 = self->private_data.f_palette[(v_p + 3u)];
@@ -86715,7 +86715,7 @@ wuffs_webp__decoder__apply_transform_color_indexing(
   v_src_index = ((uint64_t)((self->private_impl.f_workbuf_offset_for_color_indexing + 1u)));
   v_y = 0u;
   while (v_y < self->private_impl.f_height) {
-    v_di = ((uint64_t)((4u * (v_y + 0u) * self->private_impl.f_width)));
+    v_di = ((uint64_t)((4u * v_y * self->private_impl.f_width)));
     v_dj = ((uint64_t)((4u * (v_y + 1u) * self->private_impl.f_width)));
     if ((v_di > v_dj) || (v_dj > ((uint64_t)(a_pix.len)))) {
       break;
@@ -86729,7 +86729,7 @@ wuffs_webp__decoder__apply_transform_color_indexing(
       }
       v_p = ((v_s & v_s_mask) * 4u);
       v_s >>= v_bits_per_pixel;
-      v_p0 = self->private_data.f_palette[(v_p + 0u)];
+      v_p0 = self->private_data.f_palette[v_p];
       v_p1 = self->private_data.f_palette[(v_p + 1u)];
       v_p2 = self->private_data.f_palette[(v_p + 2u)];
       v_p3 = self->private_data.f_palette[(v_p + 3u)];
@@ -87327,8 +87327,8 @@ wuffs_webp__decoder__do_decode_image_config_limited_vp8l(
       goto exit;
     }
     v_transform_size = (4u * ((self->private_impl.f_width + 3u) >> 2u) * ((self->private_impl.f_height + 3u) >> 2u));
-    self->private_impl.f_workbuf_offset_for_transform[0u] = ((4u * self->private_impl.f_width * self->private_impl.f_height) + (0u * v_transform_size));
-    self->private_impl.f_workbuf_offset_for_transform[1u] = ((4u * self->private_impl.f_width * self->private_impl.f_height) + (1u * v_transform_size));
+    self->private_impl.f_workbuf_offset_for_transform[0u] = ((4u * self->private_impl.f_width * self->private_impl.f_height) + 0u);
+    self->private_impl.f_workbuf_offset_for_transform[1u] = ((4u * self->private_impl.f_width * self->private_impl.f_height) + v_transform_size);
     self->private_impl.f_workbuf_offset_for_transform[2u] = ((4u * self->private_impl.f_width * self->private_impl.f_height) + (2u * v_transform_size));
     self->private_impl.f_workbuf_offset_for_transform[3u] = ((4u * self->private_impl.f_width * self->private_impl.f_height) + (3u * v_transform_size));
 
@@ -89542,7 +89542,7 @@ wuffs_xxhash64__hasher__checksum_u64(
   }
   if ((v_n & 4u) != 0u) {
     v_i8 = (v_i & 24u);
-    v_buf_u32 = (((uint32_t)(self->private_impl.f_buf_data[(v_i8 + 0u)])) |
+    v_buf_u32 = (((uint32_t)(self->private_impl.f_buf_data[v_i8])) |
         (((uint32_t)(self->private_impl.f_buf_data[(v_i8 + 1u)])) << 8u) |
         (((uint32_t)(self->private_impl.f_buf_data[(v_i8 + 2u)])) << 16u) |
         (((uint32_t)(self->private_impl.f_buf_data[(v_i8 + 3u)])) << 24u));
@@ -89956,7 +89956,7 @@ wuffs_xz__decoder__apply_filter_04_x86(
       v_s = wuffs_base__slice_u8__subslice_i(v_s, 1u);
       continue;
     }
-    v_src = ((((uint32_t)(v_s.ptr[1u])) << 0u) |
+    v_src = (((uint32_t)(v_s.ptr[1u])) |
         (((uint32_t)(v_s.ptr[2u])) << 8u) |
         (((uint32_t)(v_s.ptr[3u])) << 16u) |
         (((uint32_t)(v_s.ptr[4u])) << 24u));
@@ -89974,7 +89974,7 @@ wuffs_xz__decoder__apply_filter_04_x86(
     }
     v_dst &= 33554431u;
     v_dst |= ((uint32_t)(0u - (v_dst & 16777216u)));
-    v_s.ptr[1u] = ((uint8_t)((v_dst >> 0u)));
+    v_s.ptr[1u] = ((uint8_t)(v_dst));
     v_s.ptr[2u] = ((uint8_t)((v_dst >> 8u)));
     v_s.ptr[3u] = ((uint8_t)((v_dst >> 16u)));
     v_s.ptr[4u] = ((uint8_t)((v_dst >> 24u)));
@@ -90009,13 +90009,13 @@ wuffs_xz__decoder__apply_filter_05_powerpc(
     v_x = ((((uint32_t)(v_s.ptr[0u])) << 24u) |
         (((uint32_t)(v_s.ptr[1u])) << 16u) |
         (((uint32_t)(v_s.ptr[2u])) << 8u) |
-        (((uint32_t)(v_s.ptr[3u])) << 0u));
+        ((uint32_t)(v_s.ptr[3u])));
     if ((v_x & 4227858435u) == 1207959553u) {
       v_x = ((((uint32_t)((v_x & 67108860u) - v_p)) & 67108860u) | 1207959553u);
       v_s.ptr[0u] = ((uint8_t)((v_x >> 24u)));
       v_s.ptr[1u] = ((uint8_t)((v_x >> 16u)));
       v_s.ptr[2u] = ((uint8_t)((v_x >> 8u)));
-      v_s.ptr[3u] = ((uint8_t)((v_x >> 0u)));
+      v_s.ptr[3u] = ((uint8_t)(v_x));
     }
     v_p += 4u;
     v_s = wuffs_base__slice_u8__subslice_i(v_s, 4u);
@@ -90109,12 +90109,12 @@ wuffs_xz__decoder__apply_filter_07_arm(
   v_p = ((uint32_t)(self->private_impl.f_bcj_pos + 8u));
   while (((uint64_t)(v_s.len)) >= 4u) {
     if (v_s.ptr[3u] == 235u) {
-      v_x = ((((uint32_t)(v_s.ptr[0u])) << 0u) |
+      v_x = (((uint32_t)(v_s.ptr[0u])) |
           (((uint32_t)(v_s.ptr[1u])) << 8u) |
           (((uint32_t)(v_s.ptr[2u])) << 16u) |
           (((uint32_t)(v_s.ptr[3u])) << 24u));
       v_x = (((uint32_t)(((v_x & 16777215u) << 2u) - v_p)) >> 2u);
-      v_s.ptr[0u] = ((uint8_t)((v_x >> 0u)));
+      v_s.ptr[0u] = ((uint8_t)(v_x));
       v_s.ptr[1u] = ((uint8_t)((v_x >> 8u)));
       v_s.ptr[2u] = ((uint8_t)((v_x >> 16u)));
     }
@@ -90140,7 +90140,7 @@ wuffs_xz__decoder__apply_filter_08_armthumb(
   v_s = a_dst_slice;
   v_p = ((uint32_t)(self->private_impl.f_bcj_pos + 4u));
   while (((uint64_t)(v_s.len)) >= 4u) {
-    v_x = ((((uint32_t)(v_s.ptr[0u])) << 0u) |
+    v_x = (((uint32_t)(v_s.ptr[0u])) |
         (((uint32_t)(v_s.ptr[1u])) << 8u) |
         (((uint32_t)(v_s.ptr[2u])) << 16u) |
         (((uint32_t)(v_s.ptr[3u])) << 24u));
@@ -90151,12 +90151,12 @@ wuffs_xz__decoder__apply_filter_08_armthumb(
     }
     v_y = ((((uint32_t)(((uint8_t)(v_s.ptr[0u] & 255u)))) << 11u) |
         (((uint32_t)(((uint8_t)(v_s.ptr[1u] & 7u)))) << 19u) |
-        (((uint32_t)(((uint8_t)(v_s.ptr[2u] & 255u)))) << 0u) |
+        ((uint32_t)(((uint8_t)(v_s.ptr[2u] & 255u)))) |
         (((uint32_t)(((uint8_t)(v_s.ptr[3u] & 7u)))) << 8u));
     v_y = (((uint32_t)(((uint32_t)(v_y << 1u)) - v_p)) >> 1u);
     v_s.ptr[0u] = ((uint8_t)((v_y >> 11u)));
     v_s.ptr[1u] = ((uint8_t)((((v_y >> 19u) & 7u) | 240u)));
-    v_s.ptr[2u] = ((uint8_t)((v_y >> 0u)));
+    v_s.ptr[2u] = ((uint8_t)(v_y));
     v_s.ptr[3u] = ((uint8_t)((((v_y >> 8u) & 7u) | 248u)));
     v_p += 4u;
     v_s = wuffs_base__slice_u8__subslice_i(v_s, 4u);
@@ -90182,14 +90182,14 @@ wuffs_xz__decoder__apply_filter_09_sparc(
     v_x = ((((uint32_t)(v_s.ptr[0u])) << 24u) |
         (((uint32_t)(v_s.ptr[1u])) << 16u) |
         (((uint32_t)(v_s.ptr[2u])) << 8u) |
-        (((uint32_t)(v_s.ptr[3u])) << 0u));
+        ((uint32_t)(v_s.ptr[3u])));
     if (((v_x >> 22u) == 256u) || ((v_x >> 22u) == 511u)) {
       v_x = (((uint32_t)(((uint32_t)(v_x << 2u)) - v_p)) >> 2u);
       v_x = ((1073741824u - (v_x & 4194304u)) | 1073741824u | (v_x & 4194303u));
       v_s.ptr[0u] = ((uint8_t)((v_x >> 24u)));
       v_s.ptr[1u] = ((uint8_t)((v_x >> 16u)));
       v_s.ptr[2u] = ((uint8_t)((v_x >> 8u)));
-      v_s.ptr[3u] = ((uint8_t)((v_x >> 0u)));
+      v_s.ptr[3u] = ((uint8_t)(v_x));
     }
     v_p += 4u;
     v_s = wuffs_base__slice_u8__subslice_i(v_s, 4u);
@@ -90213,14 +90213,14 @@ wuffs_xz__decoder__apply_filter_0a_arm64(
   v_s = a_dst_slice;
   v_p = self->private_impl.f_bcj_pos;
   while (((uint64_t)(v_s.len)) >= 4u) {
-    v_x = ((((uint32_t)(v_s.ptr[0u])) << 0u) |
+    v_x = (((uint32_t)(v_s.ptr[0u])) |
         (((uint32_t)(v_s.ptr[1u])) << 8u) |
         (((uint32_t)(v_s.ptr[2u])) << 16u) |
         (((uint32_t)(v_s.ptr[3u])) << 24u));
     if ((v_x >> 26u) == 37u) {
       v_y = ((uint32_t)(v_x - (v_p >> 2u)));
       v_x = (2483027968u | (v_y & 67108863u));
-      v_s.ptr[0u] = ((uint8_t)((v_x >> 0u)));
+      v_s.ptr[0u] = ((uint8_t)(v_x));
       v_s.ptr[1u] = ((uint8_t)((v_x >> 8u)));
       v_s.ptr[2u] = ((uint8_t)((v_x >> 16u)));
       v_s.ptr[3u] = ((uint8_t)((v_x >> 24u)));
@@ -90232,7 +90232,7 @@ wuffs_xz__decoder__apply_filter_0a_arm64(
         v_x |= ((v_y & 3u) << 29u);
         v_x |= ((v_y & 262140u) << 3u);
         v_x |= (((uint32_t)(0u - (v_y & 131072u))) & 14680064u);
-        v_s.ptr[0u] = ((uint8_t)((v_x >> 0u)));
+        v_s.ptr[0u] = ((uint8_t)(v_x));
         v_s.ptr[1u] = ((uint8_t)((v_x >> 8u)));
         v_s.ptr[2u] = ((uint8_t)((v_x >> 16u)));
         v_s.ptr[3u] = ((uint8_t)((v_x >> 24u)));
@@ -90277,12 +90277,12 @@ wuffs_xz__decoder__apply_filter_0b_riscv(
       v_s = wuffs_base__slice_u8__subslice_i(v_s, 4u);
       continue;
     } else if (((uint8_t)(v_s.ptr[0u] & 127u)) == 23u) {
-      v_x = ((((uint32_t)(v_s.ptr[0u])) << 0u) |
+      v_x = (((uint32_t)(v_s.ptr[0u])) |
           (((uint32_t)(v_s.ptr[1u])) << 8u) |
           (((uint32_t)(v_s.ptr[2u])) << 16u) |
           (((uint32_t)(v_s.ptr[3u])) << 24u));
       if ((v_x & 3712u) != 0u) {
-        v_y = ((((uint32_t)(v_s.ptr[4u])) << 0u) |
+        v_y = (((uint32_t)(v_s.ptr[4u])) |
             (((uint32_t)(v_s.ptr[5u])) << 8u) |
             (((uint32_t)(v_s.ptr[6u])) << 16u) |
             (((uint32_t)(v_s.ptr[7u])) << 24u));
@@ -90293,11 +90293,11 @@ wuffs_xz__decoder__apply_filter_0b_riscv(
         }
         v_addr = ((v_x & 4294963200u) | (v_y >> 20u));
         v_x = (279u | ((uint32_t)(v_y << 12u)));
-        v_s.ptr[0u] = ((uint8_t)((v_x >> 0u)));
+        v_s.ptr[0u] = ((uint8_t)(v_x));
         v_s.ptr[1u] = ((uint8_t)((v_x >> 8u)));
         v_s.ptr[2u] = ((uint8_t)((v_x >> 16u)));
         v_s.ptr[3u] = ((uint8_t)((v_x >> 24u)));
-        v_s.ptr[4u] = ((uint8_t)((v_addr >> 0u)));
+        v_s.ptr[4u] = ((uint8_t)(v_addr));
         v_s.ptr[5u] = ((uint8_t)((v_addr >> 8u)));
         v_s.ptr[6u] = ((uint8_t)((v_addr >> 16u)));
         v_s.ptr[7u] = ((uint8_t)((v_addr >> 24u)));
@@ -90314,15 +90314,15 @@ wuffs_xz__decoder__apply_filter_0b_riscv(
       v_addr = ((((uint32_t)(v_s.ptr[4u])) << 24u) |
           (((uint32_t)(v_s.ptr[5u])) << 16u) |
           (((uint32_t)(v_s.ptr[6u])) << 8u) |
-          (((uint32_t)(v_s.ptr[7u])) << 0u));
+          ((uint32_t)(v_s.ptr[7u])));
       v_addr -= v_p;
       v_y = ((v_x >> 12u) | ((uint32_t)(v_addr << 20u)));
       v_x = (23u | (v_x27 << 7u) | (((uint32_t)(v_addr + 2048u)) & 4294963200u));
-      v_s.ptr[0u] = ((uint8_t)((v_x >> 0u)));
+      v_s.ptr[0u] = ((uint8_t)(v_x));
       v_s.ptr[1u] = ((uint8_t)((v_x >> 8u)));
       v_s.ptr[2u] = ((uint8_t)((v_x >> 16u)));
       v_s.ptr[3u] = ((uint8_t)((v_x >> 24u)));
-      v_s.ptr[4u] = ((uint8_t)((v_y >> 0u)));
+      v_s.ptr[4u] = ((uint8_t)(v_y));
       v_s.ptr[5u] = ((uint8_t)((v_y >> 8u)));
       v_s.ptr[6u] = ((uint8_t)((v_y >> 16u)));
       v_s.ptr[7u] = ((uint8_t)((v_y >> 24u)));
