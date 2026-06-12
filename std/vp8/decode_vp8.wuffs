@@ -88,13 +88,17 @@ pub struct decoder? implements base.image_decoder(
         quant_uvdc_delta : base.u32,
         quant_uvac_delta : base.u32,
 
+        // Look-up tables derived from the dequantization parameters.
+        //
+        // The first index is the segment. The second index is Y/Y2/UV. The
+        // third index is DC/AC.
+        dequants : array[4] array[3] array[2] base.u16,
+
         // These 9 bits combine what RFC 6386 calls mb_no_skip_coeff (which we
         // hold in the 0x100 bit) and prob_skip_false (in the low 8 bits).
         prob_skip : base.u32[..= 0x1FF],
 
         mb_subblock_modes : array[16] base.u8[..= 9],
-        mb_left_modes     : array[4] base.u8[..= 9],
-        mb_top_modes      : array[0x400] array[4] base.u8[..= 9],
 
         dst_x : base.u32,
         dst_y : base.u32,
@@ -104,6 +108,25 @@ pub struct decoder? implements base.image_decoder(
 ) + (
         // 1056 is (4 planes, 8 bands, 3 contexts, 11 tokens) flattened.
         coeff_probs : array[1056] base.u8,
+
+        mb_coeffs : array[25] array[16] base.u16,
+
+        // Macroblock states are a u32 whose bits are packed like this:
+        //
+        //  - 28 ..= 31 are Chroma (UV)  HNZC bits.
+        //  - 24 ..= 27 are Luma4  (Y4)  HNZC bits.
+        //  - 23        is  Luma16 (Y16) HNZC bit.
+        //  - 16 ..= 22 are unused.
+        //  - 12 ..= 15 are the 3rd predictor mode.
+        //  -  8 ..= 12 are the 2nd predictor mode.
+        //  -  4 ..=  7 are the 1st predictor mode.
+        //  -  0 ..=  3 are the 0th predictor mode.
+        //
+        // HNZC stands for has-non-zero-coefficients.
+        //
+        // The mb_states_top array is indexed by mbx.
+        mb_states_left : base.u32,
+        mb_states_top  : array[0x400] base.u32,
 )
 
 pub func decoder.get_quirk(key: base.u32) base.u64 {

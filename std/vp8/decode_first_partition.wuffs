@@ -74,6 +74,7 @@ pri func decoder.decode_first_partition!(workbuf: roslice base.u8) base.status {
     this.quant_y2ac_delta = this.read_signed!(workbuf: args.workbuf, part: 0, n: 4)
     this.quant_uvdc_delta = this.read_signed!(workbuf: args.workbuf, part: 0, n: 4)
     this.quant_uvac_delta = this.read_signed!(workbuf: args.workbuf, part: 0, n: 4)
+    this.calculate_dequants!()
 
     // RFC 6386 Section 9.7. Refresh Golden Frame and Altref Frame.
     if not this.is_key_frame {
@@ -201,6 +202,47 @@ pri func decoder.decode_coeff_probs!(workbuf: roslice base.u8) {
         }
         i += 1
     }
+}
+
+pri func decoder.calculate_dequants!() {
+    var seg : base.u32
+    var q   : base.u32
+
+    seg = 0
+    while seg < 4 {
+        q = this.quant_yac_qi
+        if not this.seg_enabled {
+            // No-op.
+        } else if this.seg_absolute {
+            q = this.util.sign_extend_convert_u8_u32(a: this.seg_quants[seg])
+        } else {
+            q ~mod+= this.util.sign_extend_convert_u8_u32(a: this.seg_quants[seg])
+        }
+
+        this.dequants[seg][0][0] = DEQUANTS[0][this.clip_127(a: q ~mod+ this.quant_ydc_delta)]
+        this.dequants[seg][0][1] = DEQUANTS[1][this.clip_127(a: q)]
+        this.dequants[seg][1][0] = DEQUANTS[0][this.clip_127(a: q ~mod+ this.quant_y2dc_delta)] * 2
+        this.dequants[seg][1][1] = (DEQUANTS[1][this.clip_127(a: q ~mod+ this.quant_y2ac_delta)] * 155) / 100
+        if this.dequants[seg][1][1] < 8 {
+            this.dequants[seg][1][1] = 8
+        }
+        this.dequants[seg][2][0] = DEQUANTS[0][this.clip_127(a: q ~mod+ this.quant_uvdc_delta)]
+        if this.dequants[seg][2][0] > 132 {
+            this.dequants[seg][2][0] = 132
+        }
+        this.dequants[seg][2][1] = DEQUANTS[1][this.clip_127(a: q ~mod+ this.quant_uvac_delta)]
+
+        seg += 1
+    }
+}
+
+pri func decoder.clip_127(a: base.u32) base.u32[..= 127] {
+    if args.a >= 0x8000_0000 {
+        return 0
+    } else if args.a >= 127 {
+        return 127
+    }
+    return args.a
 }
 
 pri func decoder.decode_other_partition_lengths!(workbuf: roslice base.u8) base.status {

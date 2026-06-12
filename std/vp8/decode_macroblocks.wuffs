@@ -16,10 +16,7 @@ pri func decoder.decode_macroblocks!(workbuf: slice base.u8) base.status {
     while mbx < this.mbw {
         assert mbx < 0x400 via "a < b: a < c; c <= b"(c: this.mbw)
 
-        this.mb_top_modes[mbx][0] = 0
-        this.mb_top_modes[mbx][1] = 0
-        this.mb_top_modes[mbx][2] = 0
-        this.mb_top_modes[mbx][3] = 0
+        this.mb_states_top[mbx] = 0
 
         mbx += 1
     }
@@ -28,10 +25,7 @@ pri func decoder.decode_macroblocks!(workbuf: slice base.u8) base.status {
     while mby < this.mbh {
         assert mby < 0x400 via "a < b: a < c; c <= b"(c: this.mbh)
 
-        this.mb_left_modes[0] = 0
-        this.mb_left_modes[1] = 0
-        this.mb_left_modes[2] = 0
-        this.mb_left_modes[3] = 0
+        this.mb_states_left = 0
 
         mbx = 0
         while mbx < this.mbw,
@@ -81,8 +75,14 @@ pri func decoder.decode_one_macroblock!(workbuf: slice base.u8, mbx: base.u32[..
     chroma_mode = this.decode_chroma_mode!(workbuf: args.workbuf)
 
     if skip {
-        // TODO.
+        // Clear the HNZC bits.
+        this.mb_states_left &= 0x0000_FFFF
+        this.mb_states_top[args.mbx] &= 0x0000_FFFF
+
     } else {
+        this.decode_residuals!(
+                workbuf: args.workbuf, mbx: args.mbx, mby: args.mby,
+                seg: seg, luma_mode: luma_mode, chroma_mode: chroma_mode)
     }
 }
 
@@ -93,6 +93,11 @@ pri func decoder.decode_one_macroblock!(workbuf: slice base.u8, mbx: base.u32[..
 // 2 = B_VE_PRED = predict rows using row above.
 // 3 = B_HE_PRED = predict columns using column to the left.
 // 4 = B_PRED    = each Y subblock is independently predicted.
+//
+// Returning (as luma_mode) at least 4 (equivalently, returning B_PRED) means
+// that we use "intra4x4 prediction" (as opposed to "intra16x16 prediction").
+// (luma_mode >= 4) here is equivalent to libwebp's "is_i4x4 == true" and
+// golang.org/x/image/vp8's "usePredY16 == false".
 //
 // The RFC gives an enum in (DC_PRED, V_PRED, H_PRED, TM_PRED, B_PRED) order
 // but the libwebp implementation uses a different one, (B_DC_PRED, B_TM_PRED,
@@ -106,8 +111,10 @@ pri func decoder.decode_luma_mode!(workbuf: slice base.u8) base.u32[..= 4] {
 
     v1 = this.read_bit!(workbuf: args.workbuf, part: 0, prob: 145)
     if v1 == 0 {
-        return 4  // 4=B_PRED.
+        return 4  // 4=B_PRED. is_i4x4 == true. usePredY16 == false.
     }
+
+    // Otherwise, is_i4x4 == false. usePredY16 == true.
 
     v1 = this.read_bit!(workbuf: args.workbuf, part: 0, prob: 156)
     if v1 == 0 {
@@ -144,33 +151,27 @@ pri func decoder.decode_subblock_modes!(
         workbuf: slice base.u8,
         mbx: base.u32[..= 0x3FF],
         luma_mode: base.u32[..= 4]) {
-    var i          : base.u32
-    var top_mode : base.u8[..= 9]
-    var left_mode  : base.u8[..= 9]
-    var mode       : base.u8[..= 9]
+    var i         : base.u32
+    var top_mode  : base.u8[..= 9]
+    var left_mode : base.u8[..= 9]
+    var mode      : base.u8[..= 9]
 
     if args.luma_mode < 4 {
-        this.mb_top_modes[args.mbx][0] = mode
-        this.mb_top_modes[args.mbx][1] = mode
-        this.mb_top_modes[args.mbx][2] = mode
-        this.mb_top_modes[args.mbx][3] = mode
-        this.mb_left_modes[0] = mode
-        this.mb_left_modes[1] = mode
-        this.mb_left_modes[2] = mode
-        this.mb_left_modes[3] = mode
+        this.mb_states_top[args.mbx] = (mode as base.u32) * 0x1111
+        this.mb_states_left = (mode as base.u32) * 0x1111
         return nothing
     }
 
     i = 0
     while i < 16 {
         if i < 4 {
-            top_mode = this.mb_top_modes[args.mbx][i]
+            top_mode = CLIP_9[15 & (this.mb_states_top[args.mbx] >> (i * 4))]
         } else {
             top_mode = this.mb_subblock_modes[i - 4]
         }
 
         if (i & 3) == 0 {
-            left_mode = this.mb_left_modes[i >> 2]
+            left_mode = CLIP_9[15 & (this.mb_states_left >> (i & 12))]
         } else {
             left_mode = this.mb_subblock_modes[(i ~mod+ 15) & 15]
         }
@@ -181,14 +182,16 @@ pri func decoder.decode_subblock_modes!(
         i += 1
     }
 
-    this.mb_top_modes[args.mbx][0] = this.mb_subblock_modes[0xC]
-    this.mb_top_modes[args.mbx][1] = this.mb_subblock_modes[0xD]
-    this.mb_top_modes[args.mbx][2] = this.mb_subblock_modes[0xE]
-    this.mb_top_modes[args.mbx][3] = this.mb_subblock_modes[0xF]
-    this.mb_left_modes[0] = this.mb_subblock_modes[0x3]
-    this.mb_left_modes[1] = this.mb_subblock_modes[0x7]
-    this.mb_left_modes[2] = this.mb_subblock_modes[0xB]
-    this.mb_left_modes[3] = this.mb_subblock_modes[0xF]
+    this.mb_states_top[args.mbx] = (this.mb_states_top[args.mbx] & 0xFFFF_0000) |
+            ((this.mb_subblock_modes[0xC] as base.u32) << 0x0) |
+            ((this.mb_subblock_modes[0xD] as base.u32) << 0x4) |
+            ((this.mb_subblock_modes[0xE] as base.u32) << 0x8) |
+            ((this.mb_subblock_modes[0xF] as base.u32) << 0xC)
+    this.mb_states_left = (this.mb_states_left & 0xFFFF_0000) |
+            ((this.mb_subblock_modes[0x3] as base.u32) << 0x0) |
+            ((this.mb_subblock_modes[0x7] as base.u32) << 0x4) |
+            ((this.mb_subblock_modes[0xB] as base.u32) << 0x8) |
+            ((this.mb_subblock_modes[0xF] as base.u32) << 0xC)
 }
 
 // RFC 6386 Section 11.3. Subblock Mode Contexts.
