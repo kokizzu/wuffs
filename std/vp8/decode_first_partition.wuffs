@@ -239,12 +239,12 @@ pri func decoder.calculate_dequants!() {
 }
 
 pri func decoder.clip_127(a: base.u32) base.u32[..= 127] {
-    if args.a >= 0x8000_0000 {
-        return 0
-    } else if args.a >= 127 {
+    if args.a <= 127 {
+        return args.a
+    } else if args.a < 0x8000_0000 {
         return 127
     }
-    return args.a
+    return 0
 }
 
 pri func decoder.decode_other_partition_lengths!(workbuf: roslice base.u8) base.status {
