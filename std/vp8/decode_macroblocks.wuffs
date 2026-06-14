@@ -165,13 +165,13 @@ pri func decoder.decode_subblock_modes!(
     i = 0
     while i < 16 {
         if i < 4 {
-            top_mode = CLIP_9[15 & (this.mb_states_top[args.mbx] >> (i * 4))]
+            top_mode = CLAMP_NO_MORE_THAN_9[15 & (this.mb_states_top[args.mbx] >> (i * 4))]
         } else {
             top_mode = this.mb_subblock_modes[i - 4]
         }
 
         if (i & 3) == 0 {
-            left_mode = CLIP_9[15 & (this.mb_states_left >> (i & 12))]
+            left_mode = CLAMP_NO_MORE_THAN_9[15 & (this.mb_states_left >> (i & 12))]
         } else {
             left_mode = this.mb_subblock_modes[(i ~mod+ 15) & 15]
         }

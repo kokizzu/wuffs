@@ -107,7 +107,7 @@ pri const RENORM_RANGE_M1 : roarray[256] base.u8[127 ..= 254] = [
         254,
 ]
 
-pri const CLIP_9 : roarray[16] base.u8[..= 9] = [
+pri const CLAMP_NO_MORE_THAN_9 : roarray[16] base.u8[..= 9] = [
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9, 9, 9, 9, 9,
 ]
 

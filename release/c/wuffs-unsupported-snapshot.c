@@ -37938,7 +37938,7 @@ const char wuffs_bzip2__error__internal_error_inconsistent_huffman_decoder_state
 // ---------------- Private Consts
 
 static const uint8_t
-WUFFS_BZIP2__CLAMP_TO_5[8] WUFFS_BASE__POTENTIALLY_UNUSED = {
+WUFFS_BZIP2__CLAMP_NO_MORE_THAN_5[8] WUFFS_BASE__POTENTIALLY_UNUSED = {
   0u, 1u, 2u, 3u, 4u, 5u, 5u, 5u,
 };
 
@@ -38410,7 +38410,7 @@ wuffs_bzip2__decoder__do_transform_io(
       }
       self->private_impl.f_block_size = 0u;
       self->private_impl.f_decode_huffman_finished = false;
-      self->private_impl.f_decode_huffman_which = WUFFS_BZIP2__CLAMP_TO_5[((uint8_t)(self->private_data.f_huffman_selectors[0u] & 7u))];
+      self->private_impl.f_decode_huffman_which = WUFFS_BZIP2__CLAMP_NO_MORE_THAN_5[((uint8_t)(self->private_data.f_huffman_selectors[0u] & 7u))];
       self->private_impl.f_decode_huffman_ticks = 50u;
       self->private_impl.f_decode_huffman_section = 0u;
       self->private_impl.f_decode_huffman_run_shift = 0u;
@@ -39364,7 +39364,7 @@ wuffs_bzip2__decoder__decode_huffman_fast(
         status = wuffs_base__make_status(wuffs_bzip2__error__bad_number_of_sections);
         goto exit;
       }
-      v_which = WUFFS_BZIP2__CLAMP_TO_5[((uint8_t)(self->private_data.f_huffman_selectors[(v_section & 32767u)] & 7u))];
+      v_which = WUFFS_BZIP2__CLAMP_NO_MORE_THAN_5[((uint8_t)(self->private_data.f_huffman_selectors[(v_section & 32767u)] & 7u))];
     }
     v_bits |= (wuffs_base__peek_u32be__no_bounds_check(iop_a_src) >> v_n_bits);
     iop_a_src += ((31u - v_n_bits) >> 3u);
@@ -39487,7 +39487,7 @@ wuffs_bzip2__decoder__decode_huffman_slow(
           status = wuffs_base__make_status(wuffs_bzip2__error__bad_number_of_sections);
           goto exit;
         }
-        self->private_impl.f_decode_huffman_which = WUFFS_BZIP2__CLAMP_TO_5[((uint8_t)(self->private_data.f_huffman_selectors[(self->private_impl.f_decode_huffman_section & 32767u)] & 7u))];
+        self->private_impl.f_decode_huffman_which = WUFFS_BZIP2__CLAMP_NO_MORE_THAN_5[((uint8_t)(self->private_data.f_huffman_selectors[(self->private_impl.f_decode_huffman_section & 32767u)] & 7u))];
       }
       v_node_index = 0u;
       while (true) {
@@ -80970,7 +80970,7 @@ WUFFS_VP8__RENORM_RANGE_M1[256] WUFFS_BASE__POTENTIALLY_UNUSED = {
 };
 
 static const uint8_t
-WUFFS_VP8__CLIP_9[16] WUFFS_BASE__POTENTIALLY_UNUSED = {
+WUFFS_VP8__CLAMP_NO_MORE_THAN_9[16] WUFFS_BASE__POTENTIALLY_UNUSED = {
   0u, 1u, 2u, 3u, 4u, 5u, 6u, 7u,
   8u, 9u, 9u, 9u, 9u, 9u, 9u, 9u,
 };
@@ -82511,12 +82511,12 @@ wuffs_vp8__decoder__decode_subblock_modes(
   v_i = 0u;
   while (v_i < 16u) {
     if (v_i < 4u) {
-      v_top_mode = WUFFS_VP8__CLIP_9[(15u & (self->private_data.f_mb_states_top[a_mbx] >> (v_i * 4u)))];
+      v_top_mode = WUFFS_VP8__CLAMP_NO_MORE_THAN_9[(15u & (self->private_data.f_mb_states_top[a_mbx] >> (v_i * 4u)))];
     } else {
       v_top_mode = self->private_impl.f_mb_subblock_modes[(v_i - 4u)];
     }
     if ((v_i & 3u) == 0u) {
-      v_left_mode = WUFFS_VP8__CLIP_9[(15u & (self->private_data.f_mb_states_left >> (v_i & 12u)))];
+      v_left_mode = WUFFS_VP8__CLAMP_NO_MORE_THAN_9[(15u & (self->private_data.f_mb_states_left >> (v_i & 12u)))];
     } else {
       v_left_mode = self->private_impl.f_mb_subblock_modes[(((uint32_t)(v_i + 15u)) & 15u)];
     }
