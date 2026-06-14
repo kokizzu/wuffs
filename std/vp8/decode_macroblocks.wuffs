@@ -80,7 +80,7 @@ pri func decoder.decode_one_macroblock!(workbuf: slice base.u8, mbx: base.u32[..
         this.mb_states_top[args.mbx] &= 0x0000_FFFF
 
     } else {
-        this.decode_residuals!(
+        this.decode_coefficients!(
                 workbuf: args.workbuf, mbx: args.mbx, mby: args.mby,
                 seg: seg, luma_mode: luma_mode, chroma_mode: chroma_mode)
     }

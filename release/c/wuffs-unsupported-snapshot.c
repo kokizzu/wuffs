@@ -81681,6 +81681,41 @@ wuffs_vp8__decoder__read_signed(
     uint32_t a_n);
 
 WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_vp8__decoder__decode_coefficients(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf,
+    uint32_t a_mbx,
+    uint32_t a_mby,
+    uint32_t a_seg,
+    uint32_t a_luma_mode,
+    uint32_t a_chroma_mode);
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_vp8__decoder__initialize_mb_coeffs(
+    wuffs_vp8__decoder* self);
+
+WUFFS_BASE__GENERATED_C_CODE
+static uint32_t
+wuffs_vp8__decoder__decode_block_coefficients(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf,
+    uint32_t a_mby,
+    uint32_t a_seg,
+    uint32_t a_b,
+    uint32_t a_plane,
+    uint32_t a_context);
+
+WUFFS_BASE__GENERATED_C_CODE
+static uint32_t
+wuffs_vp8__decoder__decode_large_value(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf,
+    uint32_t a_part,
+    uint32_t a_prob_base);
+
+WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__status
 wuffs_vp8__decoder__copy_partitions_to_workbuf(
     wuffs_vp8__decoder* self,
@@ -81769,41 +81804,6 @@ wuffs_vp8__decoder__decode_one_subblock_mode(
     wuffs_base__slice_u8 a_workbuf,
     uint8_t a_top_mode,
     uint8_t a_left_mode);
-
-WUFFS_BASE__GENERATED_C_CODE
-static wuffs_base__empty_struct
-wuffs_vp8__decoder__decode_residuals(
-    wuffs_vp8__decoder* self,
-    wuffs_base__slice_u8 a_workbuf,
-    uint32_t a_mbx,
-    uint32_t a_mby,
-    uint32_t a_seg,
-    uint32_t a_luma_mode,
-    uint32_t a_chroma_mode);
-
-WUFFS_BASE__GENERATED_C_CODE
-static wuffs_base__empty_struct
-wuffs_vp8__decoder__initialize_mb_coeffs(
-    wuffs_vp8__decoder* self);
-
-WUFFS_BASE__GENERATED_C_CODE
-static uint32_t
-wuffs_vp8__decoder__decode_block_coefficients(
-    wuffs_vp8__decoder* self,
-    wuffs_base__slice_u8 a_workbuf,
-    uint32_t a_mby,
-    uint32_t a_seg,
-    uint32_t a_b,
-    uint32_t a_plane,
-    uint32_t a_context);
-
-WUFFS_BASE__GENERATED_C_CODE
-static uint32_t
-wuffs_vp8__decoder__decode_large_value(
-    wuffs_vp8__decoder* self,
-    wuffs_base__slice_u8 a_workbuf,
-    uint32_t a_part,
-    uint32_t a_prob_base);
 
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__status
@@ -82028,6 +82028,245 @@ wuffs_vp8__decoder__read_signed(
     return v_v32;
   }
   return ((uint32_t)(0u - v_v32));
+}
+
+// -------- func vp8.decoder.decode_coefficients
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_vp8__decoder__decode_coefficients(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf,
+    uint32_t a_mbx,
+    uint32_t a_mby,
+    uint32_t a_seg,
+    uint32_t a_luma_mode,
+    uint32_t a_chroma_mode) {
+  uint32_t v_bc = 0;
+  uint32_t v_by = 0;
+  uint32_t v_bx = 0;
+  uint32_t v_plane = 0;
+  uint32_t v_lnz = 0;
+  uint32_t v_tnz = 0;
+
+  wuffs_vp8__decoder__initialize_mb_coeffs(self);
+  v_plane = 3u;
+  if (a_luma_mode < 4u) {
+    v_lnz = (1u & (self->private_data.f_mb_states_left >> 23u));
+    self->private_data.f_mb_states_left &= 4286578687u;
+    v_tnz = (1u & (self->private_data.f_mb_states_top[a_mbx] >> 23u));
+    self->private_data.f_mb_states_top[a_mbx] &= 4286578687u;
+    v_lnz = wuffs_vp8__decoder__decode_block_coefficients(self,
+        a_workbuf,
+        a_mby,
+        a_seg,
+        24u,
+        1u,
+        (v_lnz + v_tnz));
+    self->private_data.f_mb_states_top[a_mbx] |= (v_lnz << 23u);
+    self->private_data.f_mb_states_left |= (v_lnz << 23u);
+    v_plane = 0u;
+  }
+  v_by = 0u;
+  while (v_by < 4u) {
+    v_lnz = (1u & (self->private_data.f_mb_states_left >> (24u + v_by)));
+    self->private_data.f_mb_states_left &= (4294967295u ^ (((uint32_t)(1u)) << (24u + v_by)));
+    v_bx = 0u;
+    while (v_bx < 4u) {
+      v_tnz = (1u & (self->private_data.f_mb_states_top[a_mbx] >> (24u + v_bx)));
+      self->private_data.f_mb_states_top[a_mbx] &= (4294967295u ^ (((uint32_t)(1u)) << (24u + v_bx)));
+      v_lnz = wuffs_vp8__decoder__decode_block_coefficients(self,
+          a_workbuf,
+          a_mby,
+          a_seg,
+          ((4u * v_by) + v_bx),
+          v_plane,
+          (v_lnz + v_tnz));
+      self->private_data.f_mb_states_top[a_mbx] |= (v_lnz << (24u + v_bx));
+      v_bx += 1u;
+    }
+    self->private_data.f_mb_states_left |= (v_lnz << (24u + v_by));
+    v_by += 1u;
+  }
+  v_bc = 0u;
+  while (v_bc <= 2u) {
+    v_by = 0u;
+    while (v_by < 2u) {
+      v_lnz = (1u & (self->private_data.f_mb_states_left >> (28u + v_bc + v_by)));
+      self->private_data.f_mb_states_left &= (4294967295u ^ (((uint32_t)(1u)) << (28u + v_bc + v_by)));
+      v_bx = 0u;
+      while (v_bx < 2u) {
+        v_tnz = (1u & (self->private_data.f_mb_states_top[a_mbx] >> (28u + v_bc + v_bx)));
+        self->private_data.f_mb_states_top[a_mbx] &= (4294967295u ^ (((uint32_t)(1u)) << (28u + v_bc + v_bx)));
+        v_lnz = wuffs_vp8__decoder__decode_block_coefficients(self,
+            a_workbuf,
+            a_mby,
+            a_seg,
+            ((2u * v_bc) +
+            (2u * v_by) +
+            v_bx +
+            16u),
+            2u,
+            (v_lnz + v_tnz));
+        self->private_data.f_mb_states_top[a_mbx] |= (v_lnz << (28u + v_bc + v_bx));
+        v_bx += 1u;
+      }
+      self->private_data.f_mb_states_left |= (v_lnz << (28u + v_bc + v_by));
+      v_by += 1u;
+    }
+    v_bc += 2u;
+  }
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func vp8.decoder.initialize_mb_coeffs
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_vp8__decoder__initialize_mb_coeffs(
+    wuffs_vp8__decoder* self) {
+  uint32_t v_i = 0;
+  uint32_t v_j = 0;
+
+  v_i = 0u;
+  while (v_i < 25u) {
+    v_j = 0u;
+    while (v_j < 16u) {
+      self->private_data.f_mb_coeffs[v_i][v_j] = 0u;
+      v_j += 1u;
+    }
+    v_i += 1u;
+  }
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func vp8.decoder.decode_block_coefficients
+
+WUFFS_BASE__GENERATED_C_CODE
+static uint32_t
+wuffs_vp8__decoder__decode_block_coefficients(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf,
+    uint32_t a_mby,
+    uint32_t a_seg,
+    uint32_t a_b,
+    uint32_t a_plane,
+    uint32_t a_context) {
+  uint32_t v_q1 = 0;
+  uint32_t v_q2 = 0;
+  uint32_t v_quant = 0;
+  uint32_t v_i = 0;
+  uint32_t v_part = 0;
+  uint32_t v_prob_base = 0;
+  uint32_t v_v1 = 0;
+  uint32_t v_value = 0;
+
+  v_q1 = 0u;
+  if (a_b == 24u) {
+    v_q1 = 1u;
+  } else if (a_b >= 16u) {
+    v_q1 = 2u;
+  }
+  v_i = 0u;
+  if (a_plane == 0u) {
+    v_i = 1u;
+  }
+  v_part = (1u + (a_mby & self->private_impl.f_num_other_partitions_m1));
+  v_prob_base = ((a_plane * 264u) + WUFFS_VP8__COEFF_BANDS_33[v_i] + (a_context * 11u));
+  v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, v_part, ((uint32_t)(self->private_data.f_coeff_probs[v_prob_base])));
+  if (v_v1 == 0u) {
+    return 0u;
+  }
+  while (true) {
+    v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, v_part, ((uint32_t)(self->private_data.f_coeff_probs[(v_prob_base + 1u)])));
+    if (v_v1 == 0u) {
+      v_i += 1u;
+      if (v_i >= 16u) {
+        break;
+      }
+      v_prob_base = ((a_plane * 264u) + WUFFS_VP8__COEFF_BANDS_33[v_i]);
+      continue;
+    }
+    v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, v_part, ((uint32_t)(self->private_data.f_coeff_probs[(v_prob_base + 2u)])));
+    if (v_v1 == 0u) {
+      v_value = 1u;
+      v_prob_base = ((a_plane * 264u) + WUFFS_VP8__COEFF_BANDS_33[(v_i + 1u)] + 11u);
+    } else {
+      v_value = wuffs_vp8__decoder__decode_large_value(self, a_workbuf, v_part, v_prob_base);
+      v_prob_base = ((a_plane * 264u) + WUFFS_VP8__COEFF_BANDS_33[(v_i + 1u)] + 22u);
+    }
+    v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, v_part, 128u);
+    if (v_v1 != 0u) {
+      v_value = ((uint32_t)(0u - v_value));
+    }
+    v_q2 = 0u;
+    if (v_i != 0u) {
+      v_q2 = 1u;
+    }
+    v_quant = ((uint32_t)(self->private_impl.f_dequants[a_seg][v_q1][v_q2]));
+    self->private_data.f_mb_coeffs[a_b][WUFFS_VP8__ZIGZAG[v_i]] = ((uint16_t)(((uint32_t)(v_value * v_quant))));
+    if (v_i >= 15u) {
+      break;
+    }
+    v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, v_part, ((uint32_t)(self->private_data.f_coeff_probs[v_prob_base])));
+    if (v_v1 == 0u) {
+      break;
+    }
+    v_i += 1u;
+  }
+  return 1u;
+}
+
+// -------- func vp8.decoder.decode_large_value
+
+WUFFS_BASE__GENERATED_C_CODE
+static uint32_t
+wuffs_vp8__decoder__decode_large_value(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf,
+    uint32_t a_part,
+    uint32_t a_prob_base) {
+  uint32_t v_v1 = 0;
+  uint32_t v_w1 = 0;
+  uint32_t v_category = 0;
+  uint32_t v_value = 0;
+  uint32_t v_i = 0;
+
+  v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, a_part, ((uint32_t)(self->private_data.f_coeff_probs[(a_prob_base + 3u)])));
+  if (v_v1 == 0u) {
+    v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, a_part, ((uint32_t)(self->private_data.f_coeff_probs[(a_prob_base + 4u)])));
+    if (v_v1 == 0u) {
+      return 2u;
+    }
+    v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, a_part, ((uint32_t)(self->private_data.f_coeff_probs[(a_prob_base + 5u)])));
+    return (3u + v_v1);
+  }
+  v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, a_part, ((uint32_t)(self->private_data.f_coeff_probs[(a_prob_base + 6u)])));
+  if (v_v1 == 0u) {
+    v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, a_part, ((uint32_t)(self->private_data.f_coeff_probs[(a_prob_base + 7u)])));
+    if (v_v1 == 0u) {
+      v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, a_part, 159u);
+      return (5u + v_v1);
+    }
+    v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, a_part, 165u);
+    v_w1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, a_part, 145u);
+    return (7u + (2u * v_v1) + v_w1);
+  }
+  v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, a_part, ((uint32_t)(self->private_data.f_coeff_probs[(a_prob_base + 8u)])));
+  v_w1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, a_part, ((uint32_t)(self->private_data.f_coeff_probs[(a_prob_base + 9u + v_v1)])));
+  v_category = ((2u * v_v1) + v_w1);
+  v_value = 0u;
+  v_i = 0u;
+  while (true) {
+    v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, a_part, ((uint32_t)(WUFFS_VP8__CATEGORY_PROBS[v_category][v_i])));
+    v_value <<= 1u;
+    v_value += v_v1;
+    v_i = ((v_i + 1u) & 15u);
+    if (WUFFS_VP8__CATEGORY_PROBS[v_category][v_i] == 0u) {
+      break;
+    }
+  }
+  return ((v_value & 2047u) + (((uint32_t)(8u)) << v_category) + 3u);
 }
 
 // -------- func vp8.decoder.copy_partitions_to_workbuf
@@ -82435,7 +82674,7 @@ wuffs_vp8__decoder__decode_one_macroblock(
     self->private_data.f_mb_states_left &= 65535u;
     self->private_data.f_mb_states_top[a_mbx] &= 65535u;
   } else {
-    wuffs_vp8__decoder__decode_residuals(self,
+    wuffs_vp8__decoder__decode_coefficients(self,
         a_workbuf,
         a_mbx,
         a_mby,
@@ -82589,245 +82828,6 @@ wuffs_vp8__decoder__decode_one_subblock_mode(
     return 8u;
   }
   return 9u;
-}
-
-// -------- func vp8.decoder.decode_residuals
-
-WUFFS_BASE__GENERATED_C_CODE
-static wuffs_base__empty_struct
-wuffs_vp8__decoder__decode_residuals(
-    wuffs_vp8__decoder* self,
-    wuffs_base__slice_u8 a_workbuf,
-    uint32_t a_mbx,
-    uint32_t a_mby,
-    uint32_t a_seg,
-    uint32_t a_luma_mode,
-    uint32_t a_chroma_mode) {
-  uint32_t v_bc = 0;
-  uint32_t v_by = 0;
-  uint32_t v_bx = 0;
-  uint32_t v_plane = 0;
-  uint32_t v_lnz = 0;
-  uint32_t v_tnz = 0;
-
-  wuffs_vp8__decoder__initialize_mb_coeffs(self);
-  v_plane = 3u;
-  if (a_luma_mode < 4u) {
-    v_lnz = (1u & (self->private_data.f_mb_states_left >> 23u));
-    self->private_data.f_mb_states_left &= 4286578687u;
-    v_tnz = (1u & (self->private_data.f_mb_states_top[a_mbx] >> 23u));
-    self->private_data.f_mb_states_top[a_mbx] &= 4286578687u;
-    v_lnz = wuffs_vp8__decoder__decode_block_coefficients(self,
-        a_workbuf,
-        a_mby,
-        a_seg,
-        24u,
-        1u,
-        (v_lnz + v_tnz));
-    self->private_data.f_mb_states_top[a_mbx] |= (v_lnz << 23u);
-    self->private_data.f_mb_states_left |= (v_lnz << 23u);
-    v_plane = 0u;
-  }
-  v_by = 0u;
-  while (v_by < 4u) {
-    v_lnz = (1u & (self->private_data.f_mb_states_left >> (24u + v_by)));
-    self->private_data.f_mb_states_left &= (4294967295u ^ (((uint32_t)(1u)) << (24u + v_by)));
-    v_bx = 0u;
-    while (v_bx < 4u) {
-      v_tnz = (1u & (self->private_data.f_mb_states_top[a_mbx] >> (24u + v_bx)));
-      self->private_data.f_mb_states_top[a_mbx] &= (4294967295u ^ (((uint32_t)(1u)) << (24u + v_bx)));
-      v_lnz = wuffs_vp8__decoder__decode_block_coefficients(self,
-          a_workbuf,
-          a_mby,
-          a_seg,
-          ((4u * v_by) + v_bx),
-          v_plane,
-          (v_lnz + v_tnz));
-      self->private_data.f_mb_states_top[a_mbx] |= (v_lnz << (24u + v_bx));
-      v_bx += 1u;
-    }
-    self->private_data.f_mb_states_left |= (v_lnz << (24u + v_by));
-    v_by += 1u;
-  }
-  v_bc = 0u;
-  while (v_bc <= 2u) {
-    v_by = 0u;
-    while (v_by < 2u) {
-      v_lnz = (1u & (self->private_data.f_mb_states_left >> (28u + v_bc + v_by)));
-      self->private_data.f_mb_states_left &= (4294967295u ^ (((uint32_t)(1u)) << (28u + v_bc + v_by)));
-      v_bx = 0u;
-      while (v_bx < 2u) {
-        v_tnz = (1u & (self->private_data.f_mb_states_top[a_mbx] >> (28u + v_bc + v_bx)));
-        self->private_data.f_mb_states_top[a_mbx] &= (4294967295u ^ (((uint32_t)(1u)) << (28u + v_bc + v_bx)));
-        v_lnz = wuffs_vp8__decoder__decode_block_coefficients(self,
-            a_workbuf,
-            a_mby,
-            a_seg,
-            ((2u * v_bc) +
-            (2u * v_by) +
-            v_bx +
-            16u),
-            2u,
-            (v_lnz + v_tnz));
-        self->private_data.f_mb_states_top[a_mbx] |= (v_lnz << (28u + v_bc + v_bx));
-        v_bx += 1u;
-      }
-      self->private_data.f_mb_states_left |= (v_lnz << (28u + v_bc + v_by));
-      v_by += 1u;
-    }
-    v_bc += 2u;
-  }
-  return wuffs_base__make_empty_struct();
-}
-
-// -------- func vp8.decoder.initialize_mb_coeffs
-
-WUFFS_BASE__GENERATED_C_CODE
-static wuffs_base__empty_struct
-wuffs_vp8__decoder__initialize_mb_coeffs(
-    wuffs_vp8__decoder* self) {
-  uint32_t v_i = 0;
-  uint32_t v_j = 0;
-
-  v_i = 0u;
-  while (v_i < 25u) {
-    v_j = 0u;
-    while (v_j < 16u) {
-      self->private_data.f_mb_coeffs[v_i][v_j] = 0u;
-      v_j += 1u;
-    }
-    v_i += 1u;
-  }
-  return wuffs_base__make_empty_struct();
-}
-
-// -------- func vp8.decoder.decode_block_coefficients
-
-WUFFS_BASE__GENERATED_C_CODE
-static uint32_t
-wuffs_vp8__decoder__decode_block_coefficients(
-    wuffs_vp8__decoder* self,
-    wuffs_base__slice_u8 a_workbuf,
-    uint32_t a_mby,
-    uint32_t a_seg,
-    uint32_t a_b,
-    uint32_t a_plane,
-    uint32_t a_context) {
-  uint32_t v_q1 = 0;
-  uint32_t v_q2 = 0;
-  uint32_t v_quant = 0;
-  uint32_t v_i = 0;
-  uint32_t v_part = 0;
-  uint32_t v_prob_base = 0;
-  uint32_t v_v1 = 0;
-  uint32_t v_value = 0;
-
-  v_q1 = 0u;
-  if (a_b == 24u) {
-    v_q1 = 1u;
-  } else if (a_b >= 16u) {
-    v_q1 = 2u;
-  }
-  v_i = 0u;
-  if (a_plane == 0u) {
-    v_i = 1u;
-  }
-  v_part = (1u + (a_mby & self->private_impl.f_num_other_partitions_m1));
-  v_prob_base = ((a_plane * 264u) + WUFFS_VP8__COEFF_BANDS_33[v_i] + (a_context * 11u));
-  v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, v_part, ((uint32_t)(self->private_data.f_coeff_probs[v_prob_base])));
-  if (v_v1 == 0u) {
-    return 0u;
-  }
-  while (true) {
-    v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, v_part, ((uint32_t)(self->private_data.f_coeff_probs[(v_prob_base + 1u)])));
-    if (v_v1 == 0u) {
-      v_i += 1u;
-      if (v_i >= 16u) {
-        break;
-      }
-      v_prob_base = ((a_plane * 264u) + WUFFS_VP8__COEFF_BANDS_33[v_i]);
-      continue;
-    }
-    v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, v_part, ((uint32_t)(self->private_data.f_coeff_probs[(v_prob_base + 2u)])));
-    if (v_v1 == 0u) {
-      v_value = 1u;
-      v_prob_base = ((a_plane * 264u) + WUFFS_VP8__COEFF_BANDS_33[(v_i + 1u)] + 11u);
-    } else {
-      v_value = wuffs_vp8__decoder__decode_large_value(self, a_workbuf, v_part, v_prob_base);
-      v_prob_base = ((a_plane * 264u) + WUFFS_VP8__COEFF_BANDS_33[(v_i + 1u)] + 22u);
-    }
-    v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, v_part, 128u);
-    if (v_v1 != 0u) {
-      v_value = ((uint32_t)(0u - v_value));
-    }
-    v_q2 = 0u;
-    if (v_i != 0u) {
-      v_q2 = 1u;
-    }
-    v_quant = ((uint32_t)(self->private_impl.f_dequants[a_seg][v_q1][v_q2]));
-    self->private_data.f_mb_coeffs[a_b][WUFFS_VP8__ZIGZAG[v_i]] = ((uint16_t)(((uint32_t)(v_value * v_quant))));
-    if (v_i >= 15u) {
-      break;
-    }
-    v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, v_part, ((uint32_t)(self->private_data.f_coeff_probs[v_prob_base])));
-    if (v_v1 == 0u) {
-      break;
-    }
-    v_i += 1u;
-  }
-  return 1u;
-}
-
-// -------- func vp8.decoder.decode_large_value
-
-WUFFS_BASE__GENERATED_C_CODE
-static uint32_t
-wuffs_vp8__decoder__decode_large_value(
-    wuffs_vp8__decoder* self,
-    wuffs_base__slice_u8 a_workbuf,
-    uint32_t a_part,
-    uint32_t a_prob_base) {
-  uint32_t v_v1 = 0;
-  uint32_t v_w1 = 0;
-  uint32_t v_category = 0;
-  uint32_t v_value = 0;
-  uint32_t v_i = 0;
-
-  v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, a_part, ((uint32_t)(self->private_data.f_coeff_probs[(a_prob_base + 3u)])));
-  if (v_v1 == 0u) {
-    v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, a_part, ((uint32_t)(self->private_data.f_coeff_probs[(a_prob_base + 4u)])));
-    if (v_v1 == 0u) {
-      return 2u;
-    }
-    v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, a_part, ((uint32_t)(self->private_data.f_coeff_probs[(a_prob_base + 5u)])));
-    return (3u + v_v1);
-  }
-  v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, a_part, ((uint32_t)(self->private_data.f_coeff_probs[(a_prob_base + 6u)])));
-  if (v_v1 == 0u) {
-    v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, a_part, ((uint32_t)(self->private_data.f_coeff_probs[(a_prob_base + 7u)])));
-    if (v_v1 == 0u) {
-      v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, a_part, 159u);
-      return (5u + v_v1);
-    }
-    v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, a_part, 165u);
-    v_w1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, a_part, 145u);
-    return (7u + (2u * v_v1) + v_w1);
-  }
-  v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, a_part, ((uint32_t)(self->private_data.f_coeff_probs[(a_prob_base + 8u)])));
-  v_w1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, a_part, ((uint32_t)(self->private_data.f_coeff_probs[(a_prob_base + 9u + v_v1)])));
-  v_category = ((2u * v_v1) + v_w1);
-  v_value = 0u;
-  v_i = 0u;
-  while (true) {
-    v_v1 = wuffs_vp8__decoder__read_bit(self, a_workbuf, a_part, ((uint32_t)(WUFFS_VP8__CATEGORY_PROBS[v_category][v_i])));
-    v_value <<= 1u;
-    v_value += v_v1;
-    v_i = ((v_i + 1u) & 15u);
-    if (WUFFS_VP8__CATEGORY_PROBS[v_category][v_i] == 0u) {
-      break;
-    }
-  }
-  return ((v_value & 2047u) + (((uint32_t)(8u)) << v_category) + 3u);
 }
 
 // -------- func vp8.decoder.get_quirk

@@ -8,7 +8,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pri func decoder.decode_residuals!(
+pri func decoder.decode_coefficients!(
         workbuf: slice base.u8,
         mbx: base.u32[..= 0x3FF],
         mby: base.u32[..= 0x3FF],
