@@ -13,8 +13,7 @@ pri func decoder.decode_coefficients!(
         mbx: base.u32[..= 0x3FF],
         mby: base.u32[..= 0x3FF],
         seg: base.u32[..= 3],
-        luma_mode: base.u32[..= 4],
-        chroma_mode: base.u32[..= 3]) {
+        luma_mode: base.u32[..= 4]) {
     var bc    : base.u32
     var by    : base.u32
     var bx    : base.u32

@@ -1,0 +1,176 @@
+// Copyright 2026 The Wuffs Authors.
+//
+// Licensed under the Apache License, Version 2.0 <LICENSE-APACHE or
+// https://www.apache.org/licenses/LICENSE-2.0> or the MIT license
+// <LICENSE-MIT or https://opensource.org/licenses/MIT>, at your
+// option. This file may not be copied, modified, or distributed
+// except according to those terms.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+pri func decoder.reconstruct!(
+        workbuf: slice base.u8,
+        mbx: base.u32[..= 0x3FF],
+        mby: base.u32[..= 0x3FF],
+        luma_mode: base.u32[..= 4],
+        chroma_mode: base.u32[..= 3]) {
+    var mode : base.u32[..= 12]
+    var b    : base.u32
+
+    this.prepare_yuv_cache!(workbuf: args.workbuf, mbx: args.mbx, mby: args.mby)
+
+    if args.luma_mode < 4 {
+        mode = this.substitute_dc_top_left(mode: args.luma_mode, mbx: args.mbx, mby: args.mby)
+        this.predict_y16!(mode: mode)
+
+    } else {
+        b = 0
+        while b < 16 {
+            this.predict_y4!(b: b)
+            b += 1
+        }
+    }
+
+    mode = this.substitute_dc_top_left(mode: args.chroma_mode, mbx: args.mbx, mby: args.mby)
+
+    this.predict_uv8!(b: 0, mode: mode)
+
+    this.predict_uv8!(b: 1, mode: mode)
+}
+
+pri func decoder.substitute_dc_top_left(
+        mode: base.u32[..= 3],
+        mbx: base.u32[..= 0x3FF],
+        mby: base.u32[..= 0x3FF]) base.u32[..= 12] {
+    if args.mode == 0 {  // DC.
+        if args.mby == 0 {
+            if args.mbx == 0 {
+                return 11  // DCLeft.
+            } else {
+                return 12  // DCTopLeft.
+            }
+        } else if args.mby == 0 {
+            return 10  // DCTop.
+        }
+    }
+    return args.mode
+}
+
+pri func decoder.prepare_yuv_cache!(
+        workbuf: roslice base.u8,
+        mbx: base.u32[..= 0x3FF],
+        mby: base.u32[..= 0x3FF]) {
+    var i      : base.u32
+    var j      : base.u32
+    var offset : base.u64[..= 0x17FE_1FF8]
+    var o      : base.u64
+
+    if args.mbx <= 0 {
+        j = 0x00
+        while j < 0x11 {
+            this.yuv_cache[j][0x07] = 0x81
+            j += 1
+        }
+        while j < 0x1A {
+            this.yuv_cache[j][0x07] = 0x81
+            this.yuv_cache[j][0x17] = 0x81
+            j += 1
+        }
+
+    } else {
+        j = 0x00
+        while j < 0x11 {
+            this.yuv_cache[j][0x07] = this.yuv_cache[j][0x17]
+            j += 1
+        }
+        while j < 0x1A {
+            this.yuv_cache[j][0x07] = this.yuv_cache[j][0x0F]
+            this.yuv_cache[j][0x17] = this.yuv_cache[j][0x1F]
+            j += 1
+        }
+    }
+
+    if args.mby <= 0 {
+        i = 0x00
+        while i < 0x20 {
+            this.yuv_cache[0x00][i] = 0x7F
+            i += 1
+        }
+        i = 0x00
+        while i < 0x20 {
+            this.yuv_cache[0x11][i] = 0x7F
+            i += 1
+        }
+
+    } else {
+        offset = 0 +
+                (((((args.mby - 1) * this.workbuf_yuv_y_stride) + args.mbx) * 16) as base.u64)
+        i = 0x00
+        while i < 0x10,
+                inv args.mby > 0,
+        {
+            o = offset + (i as base.u64)
+            if o < args.workbuf.length() {
+                this.yuv_cache[0x00][0x08 + i] = args.workbuf[o]
+            }
+            i += 1
+        }
+
+        if (args.mbx + 1) < this.mbw {
+            while i < 0x14,
+                    inv args.mby > 0,
+            {
+                o = offset + (i as base.u64)
+                if o < args.workbuf.length() {
+                    this.yuv_cache[0x00][0x08 + i] = args.workbuf[o]
+                }
+                i += 1
+            }
+        } else {
+            while i < 0x14,
+                    inv args.mby > 0,
+            {
+                o = offset + (0x0F as base.u64)
+                if o < args.workbuf.length() {
+                    this.yuv_cache[0x00][0x08 + i] = args.workbuf[o]
+                }
+                i += 1
+            }
+        }
+
+        offset = this.workbuf_yuv_y_end +
+                (((((args.mby - 1) * this.workbuf_yuv_uv_stride) + args.mbx) * 8) as base.u64)
+        i = 0x00
+        while i < 0x08,
+                inv args.mby > 0,
+        {
+            o = offset + (i as base.u64)
+            if o < args.workbuf.length() {
+                this.yuv_cache[0x11][0x08 + i] = args.workbuf[o]
+            }
+            i += 1
+        }
+
+        offset = this.workbuf_yuv_u_end +
+                (((((args.mby - 1) * this.workbuf_yuv_uv_stride) + args.mbx) * 8) as base.u64)
+        i = 0x00
+        while i < 0x08,
+                inv args.mby > 0,
+        {
+            o = offset + (i as base.u64)
+            if o < args.workbuf.length() {
+                this.yuv_cache[0x11][0x18 + i] = args.workbuf[o]
+            }
+            i += 1
+        }
+    }
+
+    j = 0x04
+    while j < 0x10 {
+        this.yuv_cache[j][0x18] = this.yuv_cache[0][0x18]
+        this.yuv_cache[j][0x19] = this.yuv_cache[0][0x19]
+        this.yuv_cache[j][0x1A] = this.yuv_cache[0][0x1A]
+        this.yuv_cache[j][0x1B] = this.yuv_cache[0][0x1B]
+        j += 4
+    }
+}

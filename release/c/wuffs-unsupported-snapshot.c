@@ -15532,6 +15532,7 @@ struct wuffs_vp8__decoder__struct {
     uint16_t f_dequants[4][3][2];
     uint32_t f_prob_skip;
     uint8_t f_mb_subblock_modes[16];
+    uint8_t f_yuv_cache[26][32];
     uint32_t f_dst_x;
     uint32_t f_dst_y;
     wuffs_base__pixel_swizzler f_swizzler;
@@ -80976,6 +80977,138 @@ WUFFS_VP8__CLAMP_NO_MORE_THAN_9[16] WUFFS_BASE__POTENTIALLY_UNUSED = {
 };
 
 static const uint8_t
+WUFFS_VP8__CLAMP[1024] WUFFS_BASE__POTENTIALLY_UNUSED = {
+  0u, 1u, 2u, 3u, 4u, 5u, 6u, 7u,
+  8u, 9u, 10u, 11u, 12u, 13u, 14u, 15u,
+  16u, 17u, 18u, 19u, 20u, 21u, 22u, 23u,
+  24u, 25u, 26u, 27u, 28u, 29u, 30u, 31u,
+  32u, 33u, 34u, 35u, 36u, 37u, 38u, 39u,
+  40u, 41u, 42u, 43u, 44u, 45u, 46u, 47u,
+  48u, 49u, 50u, 51u, 52u, 53u, 54u, 55u,
+  56u, 57u, 58u, 59u, 60u, 61u, 62u, 63u,
+  64u, 65u, 66u, 67u, 68u, 69u, 70u, 71u,
+  72u, 73u, 74u, 75u, 76u, 77u, 78u, 79u,
+  80u, 81u, 82u, 83u, 84u, 85u, 86u, 87u,
+  88u, 89u, 90u, 91u, 92u, 93u, 94u, 95u,
+  96u, 97u, 98u, 99u, 100u, 101u, 102u, 103u,
+  104u, 105u, 106u, 107u, 108u, 109u, 110u, 111u,
+  112u, 113u, 114u, 115u, 116u, 117u, 118u, 119u,
+  120u, 121u, 122u, 123u, 124u, 125u, 126u, 127u,
+  128u, 129u, 130u, 131u, 132u, 133u, 134u, 135u,
+  136u, 137u, 138u, 139u, 140u, 141u, 142u, 143u,
+  144u, 145u, 146u, 147u, 148u, 149u, 150u, 151u,
+  152u, 153u, 154u, 155u, 156u, 157u, 158u, 159u,
+  160u, 161u, 162u, 163u, 164u, 165u, 166u, 167u,
+  168u, 169u, 170u, 171u, 172u, 173u, 174u, 175u,
+  176u, 177u, 178u, 179u, 180u, 181u, 182u, 183u,
+  184u, 185u, 186u, 187u, 188u, 189u, 190u, 191u,
+  192u, 193u, 194u, 195u, 196u, 197u, 198u, 199u,
+  200u, 201u, 202u, 203u, 204u, 205u, 206u, 207u,
+  208u, 209u, 210u, 211u, 212u, 213u, 214u, 215u,
+  216u, 217u, 218u, 219u, 220u, 221u, 222u, 223u,
+  224u, 225u, 226u, 227u, 228u, 229u, 230u, 231u,
+  232u, 233u, 234u, 235u, 236u, 237u, 238u, 239u,
+  240u, 241u, 242u, 243u, 244u, 245u, 246u, 247u,
+  248u, 249u, 250u, 251u, 252u, 253u, 254u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  255u, 255u, 255u, 255u, 255u, 255u, 255u, 255u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+  0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+};
+
+static const uint8_t
 WUFFS_VP8__SUBBLOCK_MODE_PROBS[10][10][9] WUFFS_BASE__POTENTIALLY_UNUSED = {
   {
     {
@@ -81688,8 +81821,7 @@ wuffs_vp8__decoder__decode_coefficients(
     uint32_t a_mbx,
     uint32_t a_mby,
     uint32_t a_seg,
-    uint32_t a_luma_mode,
-    uint32_t a_chroma_mode);
+    uint32_t a_luma_mode);
 
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
@@ -81804,6 +81936,51 @@ wuffs_vp8__decoder__decode_one_subblock_mode(
     wuffs_base__slice_u8 a_workbuf,
     uint8_t a_top_mode,
     uint8_t a_left_mode);
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_vp8__decoder__predict_y4(
+    wuffs_vp8__decoder* self,
+    uint32_t a_b);
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_vp8__decoder__predict_y16(
+    wuffs_vp8__decoder* self,
+    uint32_t a_mode);
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_vp8__decoder__predict_uv8(
+    wuffs_vp8__decoder* self,
+    uint32_t a_b,
+    uint32_t a_mode);
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_vp8__decoder__reconstruct(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf,
+    uint32_t a_mbx,
+    uint32_t a_mby,
+    uint32_t a_luma_mode,
+    uint32_t a_chroma_mode);
+
+WUFFS_BASE__GENERATED_C_CODE
+static uint32_t
+wuffs_vp8__decoder__substitute_dc_top_left(
+    const wuffs_vp8__decoder* self,
+    uint32_t a_mode,
+    uint32_t a_mbx,
+    uint32_t a_mby);
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_vp8__decoder__prepare_yuv_cache(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf,
+    uint32_t a_mbx,
+    uint32_t a_mby);
 
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__status
@@ -82040,8 +82217,7 @@ wuffs_vp8__decoder__decode_coefficients(
     uint32_t a_mbx,
     uint32_t a_mby,
     uint32_t a_seg,
-    uint32_t a_luma_mode,
-    uint32_t a_chroma_mode) {
+    uint32_t a_luma_mode) {
   uint32_t v_bc = 0;
   uint32_t v_by = 0;
   uint32_t v_bx = 0;
@@ -82679,9 +82855,14 @@ wuffs_vp8__decoder__decode_one_macroblock(
         a_mbx,
         a_mby,
         v_seg,
-        v_luma_mode,
-        v_chroma_mode);
+        v_luma_mode);
   }
+  wuffs_vp8__decoder__reconstruct(self,
+      a_workbuf,
+      a_mbx,
+      a_mby,
+      v_luma_mode,
+      v_chroma_mode);
   return wuffs_base__make_empty_struct();
 }
 
@@ -82828,6 +83009,869 @@ wuffs_vp8__decoder__decode_one_subblock_mode(
     return 8u;
   }
   return 9u;
+}
+
+// -------- func vp8.decoder.predict_y4
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_vp8__decoder__predict_y4(
+    wuffs_vp8__decoder* self,
+    uint32_t a_b) {
+  uint32_t v_cachey = 0;
+  uint32_t v_cachex = 0;
+  uint32_t v_mode = 0;
+  uint32_t v_z = 0;
+  uint8_t v_avg = 0;
+  uint32_t v_tm0 = 0;
+  uint32_t v_tm1 = 0;
+  uint32_t v_tm2 = 0;
+  uint32_t v_a = 0;
+  uint32_t v_b = 0;
+  uint32_t v_c = 0;
+  uint32_t v_d = 0;
+  uint32_t v_e = 0;
+  uint32_t v_f = 0;
+  uint32_t v_g = 0;
+  uint32_t v_h = 0;
+  uint32_t v_i = 0;
+  uint32_t v_p = 0;
+  uint32_t v_q = 0;
+  uint32_t v_r = 0;
+  uint32_t v_s = 0;
+  uint8_t v_ab = 0;
+  uint8_t v_bc = 0;
+  uint8_t v_cd = 0;
+  uint8_t v_de = 0;
+  uint8_t v_ef = 0;
+  uint8_t v_pa = 0;
+  uint8_t v_qp = 0;
+  uint8_t v_rq = 0;
+  uint8_t v_sr = 0;
+  uint8_t v_abc = 0;
+  uint8_t v_bcd = 0;
+  uint8_t v_cde = 0;
+  uint8_t v_def = 0;
+  uint8_t v_efg = 0;
+  uint8_t v_fgh = 0;
+  uint8_t v_ghi = 0;
+  uint8_t v_hii = 0;
+  uint8_t v_pab = 0;
+  uint8_t v_qpa = 0;
+  uint8_t v_rqp = 0;
+  uint8_t v_srq = 0;
+  uint8_t v_ssr = 0;
+  uint8_t v_sss = 0;
+
+  v_cachey = ((a_b & 12u) + 1u);
+  v_cachex = (((a_b & 3u) * 4u) + 8u);
+  v_mode = ((uint32_t)(self->private_impl.f_mb_subblock_modes[a_b]));
+  if (v_mode == 0u) {
+    v_avg = ((uint8_t)(((4u +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][v_cachex])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 1u)])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 2u)])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 3u)])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[v_cachey][(v_cachex - 1u)])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey + 1u)][(v_cachex - 1u)])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey + 2u)][(v_cachex - 1u)])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey + 3u)][(v_cachex - 1u)]))) / 8u)));
+    v_z = 0u;
+    while (v_z < 16u) {
+      self->private_impl.f_yuv_cache[(v_cachey + (v_z >> 2u))][(v_cachex + (v_z & 3u))] = v_avg;
+      v_z += 1u;
+    }
+  } else if (v_mode == 1u) {
+    v_tm0 = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex - 1u)]));
+    v_z = 0u;
+    while (v_z < 16u) {
+      v_tm1 = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey + (v_z >> 2u))][(v_cachex - 1u)]));
+      v_tm2 = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + (v_z & 3u))]));
+      self->private_impl.f_yuv_cache[(v_cachey + (v_z >> 2u))][(v_cachex + (v_z & 3u))] = WUFFS_VP8__CLAMP[(((uint32_t)((v_tm1 + v_tm2) - v_tm0)) & 1023u)];
+      v_z += 1u;
+    }
+  } else if (v_mode == 2u) {
+    v_a = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex - 1u)]));
+    v_b = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][v_cachex]));
+    v_c = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 1u)]));
+    v_d = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 2u)]));
+    v_e = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 3u)]));
+    v_f = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 4u)]));
+    v_def = ((uint8_t)(((v_d +
+        (2u * v_e) +
+        v_f +
+        2u) / 4u)));
+    v_cde = ((uint8_t)(((v_c +
+        (2u * v_d) +
+        v_e +
+        2u) / 4u)));
+    v_bcd = ((uint8_t)(((v_b +
+        (2u * v_c) +
+        v_d +
+        2u) / 4u)));
+    v_abc = ((uint8_t)(((v_a +
+        (2u * v_b) +
+        v_c +
+        2u) / 4u)));
+    v_z = 0u;
+    while (v_z < 4u) {
+      self->private_impl.f_yuv_cache[(v_cachey + v_z)][v_cachex] = v_abc;
+      self->private_impl.f_yuv_cache[(v_cachey + v_z)][(v_cachex + 1u)] = v_bcd;
+      self->private_impl.f_yuv_cache[(v_cachey + v_z)][(v_cachex + 2u)] = v_cde;
+      self->private_impl.f_yuv_cache[(v_cachey + v_z)][(v_cachex + 3u)] = v_def;
+      v_z += 1u;
+    }
+  } else if (v_mode == 3u) {
+    v_s = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey + 3u)][(v_cachex - 1u)]));
+    v_r = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey + 2u)][(v_cachex - 1u)]));
+    v_q = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey + 1u)][(v_cachex - 1u)]));
+    v_p = ((uint32_t)(self->private_impl.f_yuv_cache[v_cachey][(v_cachex - 1u)]));
+    v_a = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex - 1u)]));
+    v_qpa = ((uint8_t)(((v_q +
+        (2u * v_p) +
+        v_a +
+        2u) / 4u)));
+    v_rqp = ((uint8_t)(((v_r +
+        (2u * v_q) +
+        v_p +
+        2u) / 4u)));
+    v_srq = ((uint8_t)(((v_s +
+        (2u * v_r) +
+        v_q +
+        2u) / 4u)));
+    v_ssr = ((uint8_t)(((v_s +
+        (2u * v_s) +
+        v_r +
+        2u) / 4u)));
+    v_z = 0u;
+    while (v_z < 4u) {
+      self->private_impl.f_yuv_cache[v_cachey][(v_cachex + v_z)] = v_qpa;
+      self->private_impl.f_yuv_cache[(v_cachey + 1u)][(v_cachex + v_z)] = v_rqp;
+      self->private_impl.f_yuv_cache[(v_cachey + 2u)][(v_cachex + v_z)] = v_srq;
+      self->private_impl.f_yuv_cache[(v_cachey + 3u)][(v_cachex + v_z)] = v_ssr;
+      v_z += 1u;
+    }
+  } else if (v_mode == 4u) {
+    v_s = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey + 3u)][(v_cachex - 1u)]));
+    v_r = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey + 2u)][(v_cachex - 1u)]));
+    v_q = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey + 1u)][(v_cachex - 1u)]));
+    v_p = ((uint32_t)(self->private_impl.f_yuv_cache[v_cachey][(v_cachex - 1u)]));
+    v_a = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex - 1u)]));
+    v_b = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][v_cachex]));
+    v_c = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 1u)]));
+    v_d = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 2u)]));
+    v_e = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 3u)]));
+    v_cde = ((uint8_t)(((v_c +
+        (2u * v_d) +
+        v_e +
+        2u) / 4u)));
+    v_bcd = ((uint8_t)(((v_b +
+        (2u * v_c) +
+        v_d +
+        2u) / 4u)));
+    v_abc = ((uint8_t)(((v_a +
+        (2u * v_b) +
+        v_c +
+        2u) / 4u)));
+    v_pab = ((uint8_t)(((v_p +
+        (2u * v_a) +
+        v_b +
+        2u) / 4u)));
+    v_qpa = ((uint8_t)(((v_q +
+        (2u * v_p) +
+        v_a +
+        2u) / 4u)));
+    v_rqp = ((uint8_t)(((v_r +
+        (2u * v_q) +
+        v_p +
+        2u) / 4u)));
+    v_srq = ((uint8_t)(((v_s +
+        (2u * v_r) +
+        v_q +
+        2u) / 4u)));
+    self->private_impl.f_yuv_cache[v_cachey][v_cachex] = v_pab;
+    self->private_impl.f_yuv_cache[v_cachey][(v_cachex + 1u)] = v_abc;
+    self->private_impl.f_yuv_cache[v_cachey][(v_cachex + 2u)] = v_bcd;
+    self->private_impl.f_yuv_cache[v_cachey][(v_cachex + 3u)] = v_cde;
+    self->private_impl.f_yuv_cache[(v_cachey + 1u)][v_cachex] = v_qpa;
+    self->private_impl.f_yuv_cache[(v_cachey + 1u)][(v_cachex + 1u)] = v_pab;
+    self->private_impl.f_yuv_cache[(v_cachey + 1u)][(v_cachex + 2u)] = v_abc;
+    self->private_impl.f_yuv_cache[(v_cachey + 1u)][(v_cachex + 3u)] = v_bcd;
+    self->private_impl.f_yuv_cache[(v_cachey + 2u)][v_cachex] = v_rqp;
+    self->private_impl.f_yuv_cache[(v_cachey + 2u)][(v_cachex + 1u)] = v_qpa;
+    self->private_impl.f_yuv_cache[(v_cachey + 2u)][(v_cachex + 2u)] = v_pab;
+    self->private_impl.f_yuv_cache[(v_cachey + 2u)][(v_cachex + 3u)] = v_abc;
+    self->private_impl.f_yuv_cache[(v_cachey + 3u)][v_cachex] = v_srq;
+    self->private_impl.f_yuv_cache[(v_cachey + 3u)][(v_cachex + 1u)] = v_rqp;
+    self->private_impl.f_yuv_cache[(v_cachey + 3u)][(v_cachex + 2u)] = v_qpa;
+    self->private_impl.f_yuv_cache[(v_cachey + 3u)][(v_cachex + 3u)] = v_pab;
+  } else if (v_mode == 5u) {
+    v_r = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey + 2u)][(v_cachex - 1u)]));
+    v_q = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey + 1u)][(v_cachex - 1u)]));
+    v_p = ((uint32_t)(self->private_impl.f_yuv_cache[v_cachey][(v_cachex - 1u)]));
+    v_a = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex - 1u)]));
+    v_b = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][v_cachex]));
+    v_c = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 1u)]));
+    v_d = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 2u)]));
+    v_e = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 3u)]));
+    v_ab = ((uint8_t)(((v_a + v_b + 1u) / 2u)));
+    v_bc = ((uint8_t)(((v_b + v_c + 1u) / 2u)));
+    v_cd = ((uint8_t)(((v_c + v_d + 1u) / 2u)));
+    v_de = ((uint8_t)(((v_d + v_e + 1u) / 2u)));
+    v_cde = ((uint8_t)(((v_c +
+        (2u * v_d) +
+        v_e +
+        2u) / 4u)));
+    v_bcd = ((uint8_t)(((v_b +
+        (2u * v_c) +
+        v_d +
+        2u) / 4u)));
+    v_abc = ((uint8_t)(((v_a +
+        (2u * v_b) +
+        v_c +
+        2u) / 4u)));
+    v_pab = ((uint8_t)(((v_p +
+        (2u * v_a) +
+        v_b +
+        2u) / 4u)));
+    v_qpa = ((uint8_t)(((v_q +
+        (2u * v_p) +
+        v_a +
+        2u) / 4u)));
+    v_rqp = ((uint8_t)(((v_r +
+        (2u * v_q) +
+        v_p +
+        2u) / 4u)));
+    self->private_impl.f_yuv_cache[v_cachey][v_cachex] = v_ab;
+    self->private_impl.f_yuv_cache[v_cachey][(v_cachex + 1u)] = v_bc;
+    self->private_impl.f_yuv_cache[v_cachey][(v_cachex + 2u)] = v_cd;
+    self->private_impl.f_yuv_cache[v_cachey][(v_cachex + 3u)] = v_de;
+    self->private_impl.f_yuv_cache[(v_cachey + 1u)][v_cachex] = v_pab;
+    self->private_impl.f_yuv_cache[(v_cachey + 1u)][(v_cachex + 1u)] = v_abc;
+    self->private_impl.f_yuv_cache[(v_cachey + 1u)][(v_cachex + 2u)] = v_bcd;
+    self->private_impl.f_yuv_cache[(v_cachey + 1u)][(v_cachex + 3u)] = v_cde;
+    self->private_impl.f_yuv_cache[(v_cachey + 2u)][v_cachex] = v_qpa;
+    self->private_impl.f_yuv_cache[(v_cachey + 2u)][(v_cachex + 1u)] = v_ab;
+    self->private_impl.f_yuv_cache[(v_cachey + 2u)][(v_cachex + 2u)] = v_bc;
+    self->private_impl.f_yuv_cache[(v_cachey + 2u)][(v_cachex + 3u)] = v_cd;
+    self->private_impl.f_yuv_cache[(v_cachey + 3u)][v_cachex] = v_rqp;
+    self->private_impl.f_yuv_cache[(v_cachey + 3u)][(v_cachex + 1u)] = v_pab;
+    self->private_impl.f_yuv_cache[(v_cachey + 3u)][(v_cachex + 2u)] = v_abc;
+    self->private_impl.f_yuv_cache[(v_cachey + 3u)][(v_cachex + 3u)] = v_bcd;
+  } else if (v_mode == 6u) {
+    v_b = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][v_cachex]));
+    v_c = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 1u)]));
+    v_d = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 2u)]));
+    v_e = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 3u)]));
+    v_f = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 4u)]));
+    v_g = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 5u)]));
+    v_h = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 6u)]));
+    v_i = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 7u)]));
+    v_hii = ((uint8_t)(((v_h +
+        (2u * v_i) +
+        v_i +
+        2u) / 4u)));
+    v_ghi = ((uint8_t)(((v_g +
+        (2u * v_h) +
+        v_i +
+        2u) / 4u)));
+    v_fgh = ((uint8_t)(((v_f +
+        (2u * v_g) +
+        v_h +
+        2u) / 4u)));
+    v_efg = ((uint8_t)(((v_e +
+        (2u * v_f) +
+        v_g +
+        2u) / 4u)));
+    v_def = ((uint8_t)(((v_d +
+        (2u * v_e) +
+        v_f +
+        2u) / 4u)));
+    v_cde = ((uint8_t)(((v_c +
+        (2u * v_d) +
+        v_e +
+        2u) / 4u)));
+    v_bcd = ((uint8_t)(((v_b +
+        (2u * v_c) +
+        v_d +
+        2u) / 4u)));
+    self->private_impl.f_yuv_cache[v_cachey][v_cachex] = v_bcd;
+    self->private_impl.f_yuv_cache[v_cachey][(v_cachex + 1u)] = v_cde;
+    self->private_impl.f_yuv_cache[v_cachey][(v_cachex + 2u)] = v_def;
+    self->private_impl.f_yuv_cache[v_cachey][(v_cachex + 3u)] = v_efg;
+    self->private_impl.f_yuv_cache[(v_cachey + 1u)][v_cachex] = v_cde;
+    self->private_impl.f_yuv_cache[(v_cachey + 1u)][(v_cachex + 1u)] = v_def;
+    self->private_impl.f_yuv_cache[(v_cachey + 1u)][(v_cachex + 2u)] = v_efg;
+    self->private_impl.f_yuv_cache[(v_cachey + 1u)][(v_cachex + 3u)] = v_fgh;
+    self->private_impl.f_yuv_cache[(v_cachey + 2u)][v_cachex] = v_def;
+    self->private_impl.f_yuv_cache[(v_cachey + 2u)][(v_cachex + 1u)] = v_efg;
+    self->private_impl.f_yuv_cache[(v_cachey + 2u)][(v_cachex + 2u)] = v_fgh;
+    self->private_impl.f_yuv_cache[(v_cachey + 2u)][(v_cachex + 3u)] = v_ghi;
+    self->private_impl.f_yuv_cache[(v_cachey + 3u)][v_cachex] = v_efg;
+    self->private_impl.f_yuv_cache[(v_cachey + 3u)][(v_cachex + 1u)] = v_fgh;
+    self->private_impl.f_yuv_cache[(v_cachey + 3u)][(v_cachex + 2u)] = v_ghi;
+    self->private_impl.f_yuv_cache[(v_cachey + 3u)][(v_cachex + 3u)] = v_hii;
+  } else if (v_mode == 7u) {
+    v_b = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][v_cachex]));
+    v_c = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 1u)]));
+    v_d = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 2u)]));
+    v_e = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 3u)]));
+    v_f = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 4u)]));
+    v_g = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 5u)]));
+    v_h = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 6u)]));
+    v_i = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 7u)]));
+    v_ef = ((uint8_t)(((v_e + v_f + 1u) / 2u)));
+    v_de = ((uint8_t)(((v_d + v_e + 1u) / 2u)));
+    v_cd = ((uint8_t)(((v_c + v_d + 1u) / 2u)));
+    v_bc = ((uint8_t)(((v_b + v_c + 1u) / 2u)));
+    v_ghi = ((uint8_t)(((v_g +
+        (2u * v_h) +
+        v_i +
+        2u) / 4u)));
+    v_fgh = ((uint8_t)(((v_f +
+        (2u * v_g) +
+        v_h +
+        2u) / 4u)));
+    v_efg = ((uint8_t)(((v_e +
+        (2u * v_f) +
+        v_g +
+        2u) / 4u)));
+    v_def = ((uint8_t)(((v_d +
+        (2u * v_e) +
+        v_f +
+        2u) / 4u)));
+    v_cde = ((uint8_t)(((v_c +
+        (2u * v_d) +
+        v_e +
+        2u) / 4u)));
+    v_bcd = ((uint8_t)(((v_b +
+        (2u * v_c) +
+        v_d +
+        2u) / 4u)));
+    self->private_impl.f_yuv_cache[v_cachey][v_cachex] = v_bc;
+    self->private_impl.f_yuv_cache[v_cachey][(v_cachex + 1u)] = v_cd;
+    self->private_impl.f_yuv_cache[v_cachey][(v_cachex + 2u)] = v_de;
+    self->private_impl.f_yuv_cache[v_cachey][(v_cachex + 3u)] = v_ef;
+    self->private_impl.f_yuv_cache[(v_cachey + 1u)][v_cachex] = v_bcd;
+    self->private_impl.f_yuv_cache[(v_cachey + 1u)][(v_cachex + 1u)] = v_cde;
+    self->private_impl.f_yuv_cache[(v_cachey + 1u)][(v_cachex + 2u)] = v_def;
+    self->private_impl.f_yuv_cache[(v_cachey + 1u)][(v_cachex + 3u)] = v_efg;
+    self->private_impl.f_yuv_cache[(v_cachey + 2u)][v_cachex] = v_cd;
+    self->private_impl.f_yuv_cache[(v_cachey + 2u)][(v_cachex + 1u)] = v_de;
+    self->private_impl.f_yuv_cache[(v_cachey + 2u)][(v_cachex + 2u)] = v_ef;
+    self->private_impl.f_yuv_cache[(v_cachey + 2u)][(v_cachex + 3u)] = v_fgh;
+    self->private_impl.f_yuv_cache[(v_cachey + 3u)][v_cachex] = v_cde;
+    self->private_impl.f_yuv_cache[(v_cachey + 3u)][(v_cachex + 1u)] = v_def;
+    self->private_impl.f_yuv_cache[(v_cachey + 3u)][(v_cachex + 2u)] = v_efg;
+    self->private_impl.f_yuv_cache[(v_cachey + 3u)][(v_cachex + 3u)] = v_ghi;
+  } else if (v_mode == 8u) {
+    v_s = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey + 3u)][(v_cachex - 1u)]));
+    v_r = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey + 2u)][(v_cachex - 1u)]));
+    v_q = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey + 1u)][(v_cachex - 1u)]));
+    v_p = ((uint32_t)(self->private_impl.f_yuv_cache[v_cachey][(v_cachex - 1u)]));
+    v_a = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex - 1u)]));
+    v_b = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][v_cachex]));
+    v_c = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 1u)]));
+    v_d = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 2u)]));
+    v_sr = ((uint8_t)(((v_s + v_r + 1u) / 2u)));
+    v_rq = ((uint8_t)(((v_r + v_q + 1u) / 2u)));
+    v_qp = ((uint8_t)(((v_q + v_p + 1u) / 2u)));
+    v_pa = ((uint8_t)(((v_p + v_a + 1u) / 2u)));
+    v_bcd = ((uint8_t)(((v_b +
+        (2u * v_c) +
+        v_d +
+        2u) / 4u)));
+    v_abc = ((uint8_t)(((v_a +
+        (2u * v_b) +
+        v_c +
+        2u) / 4u)));
+    v_pab = ((uint8_t)(((v_p +
+        (2u * v_a) +
+        v_b +
+        2u) / 4u)));
+    v_qpa = ((uint8_t)(((v_q +
+        (2u * v_p) +
+        v_a +
+        2u) / 4u)));
+    v_rqp = ((uint8_t)(((v_r +
+        (2u * v_q) +
+        v_p +
+        2u) / 4u)));
+    v_srq = ((uint8_t)(((v_s +
+        (2u * v_r) +
+        v_q +
+        2u) / 4u)));
+    self->private_impl.f_yuv_cache[v_cachey][v_cachex] = v_pa;
+    self->private_impl.f_yuv_cache[v_cachey][(v_cachex + 1u)] = v_pab;
+    self->private_impl.f_yuv_cache[v_cachey][(v_cachex + 2u)] = v_abc;
+    self->private_impl.f_yuv_cache[v_cachey][(v_cachex + 3u)] = v_bcd;
+    self->private_impl.f_yuv_cache[(v_cachey + 1u)][v_cachex] = v_qp;
+    self->private_impl.f_yuv_cache[(v_cachey + 1u)][(v_cachex + 1u)] = v_qpa;
+    self->private_impl.f_yuv_cache[(v_cachey + 1u)][(v_cachex + 2u)] = v_pa;
+    self->private_impl.f_yuv_cache[(v_cachey + 1u)][(v_cachex + 3u)] = v_pab;
+    self->private_impl.f_yuv_cache[(v_cachey + 2u)][v_cachex] = v_rq;
+    self->private_impl.f_yuv_cache[(v_cachey + 2u)][(v_cachex + 1u)] = v_rqp;
+    self->private_impl.f_yuv_cache[(v_cachey + 2u)][(v_cachex + 2u)] = v_qp;
+    self->private_impl.f_yuv_cache[(v_cachey + 2u)][(v_cachex + 3u)] = v_qpa;
+    self->private_impl.f_yuv_cache[(v_cachey + 3u)][v_cachex] = v_sr;
+    self->private_impl.f_yuv_cache[(v_cachey + 3u)][(v_cachex + 1u)] = v_srq;
+    self->private_impl.f_yuv_cache[(v_cachey + 3u)][(v_cachex + 2u)] = v_rq;
+    self->private_impl.f_yuv_cache[(v_cachey + 3u)][(v_cachex + 3u)] = v_rqp;
+  } else {
+    v_s = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey + 3u)][(v_cachex - 1u)]));
+    v_r = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey + 2u)][(v_cachex - 1u)]));
+    v_q = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey + 1u)][(v_cachex - 1u)]));
+    v_p = ((uint32_t)(self->private_impl.f_yuv_cache[v_cachey][(v_cachex - 1u)]));
+    v_sr = ((uint8_t)(((v_s + v_r + 1u) / 2u)));
+    v_rq = ((uint8_t)(((v_r + v_q + 1u) / 2u)));
+    v_qp = ((uint8_t)(((v_q + v_p + 1u) / 2u)));
+    v_rqp = ((uint8_t)(((v_r +
+        (2u * v_q) +
+        v_p +
+        2u) / 4u)));
+    v_srq = ((uint8_t)(((v_s +
+        (2u * v_r) +
+        v_q +
+        2u) / 4u)));
+    v_ssr = ((uint8_t)(((v_s +
+        (2u * v_s) +
+        v_r +
+        2u) / 4u)));
+    v_sss = ((uint8_t)(v_s));
+    self->private_impl.f_yuv_cache[v_cachey][v_cachex] = v_qp;
+    self->private_impl.f_yuv_cache[v_cachey][(v_cachex + 1u)] = v_rqp;
+    self->private_impl.f_yuv_cache[v_cachey][(v_cachex + 2u)] = v_rq;
+    self->private_impl.f_yuv_cache[v_cachey][(v_cachex + 3u)] = v_srq;
+    self->private_impl.f_yuv_cache[(v_cachey + 1u)][v_cachex] = v_rq;
+    self->private_impl.f_yuv_cache[(v_cachey + 1u)][(v_cachex + 1u)] = v_srq;
+    self->private_impl.f_yuv_cache[(v_cachey + 1u)][(v_cachex + 2u)] = v_sr;
+    self->private_impl.f_yuv_cache[(v_cachey + 1u)][(v_cachex + 3u)] = v_ssr;
+    self->private_impl.f_yuv_cache[(v_cachey + 2u)][v_cachex] = v_sr;
+    self->private_impl.f_yuv_cache[(v_cachey + 2u)][(v_cachex + 1u)] = v_ssr;
+    self->private_impl.f_yuv_cache[(v_cachey + 2u)][(v_cachex + 2u)] = v_sss;
+    self->private_impl.f_yuv_cache[(v_cachey + 2u)][(v_cachex + 3u)] = v_sss;
+    self->private_impl.f_yuv_cache[(v_cachey + 3u)][v_cachex] = v_sss;
+    self->private_impl.f_yuv_cache[(v_cachey + 3u)][(v_cachex + 1u)] = v_sss;
+    self->private_impl.f_yuv_cache[(v_cachey + 3u)][(v_cachex + 2u)] = v_sss;
+    self->private_impl.f_yuv_cache[(v_cachey + 3u)][(v_cachex + 3u)] = v_sss;
+  }
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func vp8.decoder.predict_y16
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_vp8__decoder__predict_y16(
+    wuffs_vp8__decoder* self,
+    uint32_t a_mode) {
+  uint32_t v_x = 0;
+  uint32_t v_y = 0;
+  uint32_t v_z = 0;
+  uint8_t v_avg = 0;
+  uint8_t v_val = 0;
+  uint32_t v_tm0 = 0;
+  uint32_t v_tm1 = 0;
+  uint32_t v_tm2 = 0;
+
+  if (a_mode == 0u) {
+    v_avg = ((uint8_t)(((16u +
+        ((uint32_t)(self->private_impl.f_yuv_cache[0u][8u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[0u][9u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[0u][10u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[0u][11u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[0u][12u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[0u][13u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[0u][14u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[0u][15u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[0u][16u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[0u][17u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[0u][18u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[0u][19u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[0u][20u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[0u][21u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[0u][22u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[0u][23u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[1u][7u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[2u][7u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[3u][7u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[4u][7u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[5u][7u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[6u][7u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[7u][7u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[8u][7u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[9u][7u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[10u][7u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[11u][7u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[12u][7u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[13u][7u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[14u][7u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[15u][7u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[16u][7u]))) / 32u)));
+    v_z = 0u;
+    while (v_z < 256u) {
+      self->private_impl.f_yuv_cache[(1u + (v_z >> 4u))][(8u + (v_z & 15u))] = v_avg;
+      v_z += 1u;
+    }
+  } else if (a_mode == 1u) {
+    v_tm0 = ((uint32_t)(self->private_impl.f_yuv_cache[0u][7u]));
+    v_z = 0u;
+    while (v_z < 256u) {
+      v_tm1 = ((uint32_t)(self->private_impl.f_yuv_cache[(1u + (v_z >> 4u))][7u]));
+      v_tm2 = ((uint32_t)(self->private_impl.f_yuv_cache[0u][(8u + (v_z & 15u))]));
+      self->private_impl.f_yuv_cache[(1u + (v_z >> 4u))][(8u + (v_z & 15u))] = WUFFS_VP8__CLAMP[(((uint32_t)((v_tm1 + v_tm2) - v_tm0)) & 1023u)];
+      v_z += 1u;
+    }
+  } else if (a_mode == 2u) {
+    v_x = 0u;
+    while (v_x < 16u) {
+      v_val = self->private_impl.f_yuv_cache[0u][(8u + v_x)];
+      v_y = 0u;
+      while (v_y < 16u) {
+        self->private_impl.f_yuv_cache[(1u + v_y)][(8u + v_x)] = v_val;
+        v_y += 1u;
+      }
+      v_x += 1u;
+    }
+  } else if (a_mode == 3u) {
+    v_y = 0u;
+    while (v_y < 16u) {
+      v_val = self->private_impl.f_yuv_cache[(1u + v_y)][7u];
+      v_x = 0u;
+      while (v_x < 16u) {
+        self->private_impl.f_yuv_cache[(1u + v_y)][(8u + v_x)] = v_val;
+        v_x += 1u;
+      }
+      v_y += 1u;
+    }
+  } else if (a_mode <= 10u) {
+    v_avg = ((uint8_t)(((8u +
+        ((uint32_t)(self->private_impl.f_yuv_cache[1u][7u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[2u][7u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[3u][7u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[4u][7u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[5u][7u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[6u][7u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[7u][7u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[8u][7u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[9u][7u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[10u][7u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[11u][7u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[12u][7u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[13u][7u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[14u][7u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[15u][7u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[16u][7u]))) / 16u)));
+    v_z = 0u;
+    while (v_z < 256u) {
+      self->private_impl.f_yuv_cache[(1u + (v_z >> 4u))][(8u + (v_z & 15u))] = v_avg;
+      v_z += 1u;
+    }
+  } else if (a_mode == 11u) {
+    v_avg = ((uint8_t)(((8u +
+        ((uint32_t)(self->private_impl.f_yuv_cache[0u][8u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[0u][9u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[0u][10u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[0u][11u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[0u][12u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[0u][13u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[0u][14u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[0u][15u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[0u][16u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[0u][17u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[0u][18u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[0u][19u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[0u][20u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[0u][21u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[0u][22u])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[0u][23u]))) / 16u)));
+    v_z = 0u;
+    while (v_z < 256u) {
+      self->private_impl.f_yuv_cache[(1u + (v_z >> 4u))][(8u + (v_z & 15u))] = v_avg;
+      v_z += 1u;
+    }
+  } else {
+    v_z = 0u;
+    while (v_z < 256u) {
+      self->private_impl.f_yuv_cache[(1u + (v_z >> 4u))][(8u + (v_z & 15u))] = 128u;
+      v_z += 1u;
+    }
+  }
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func vp8.decoder.predict_uv8
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_vp8__decoder__predict_uv8(
+    wuffs_vp8__decoder* self,
+    uint32_t a_b,
+    uint32_t a_mode) {
+  uint32_t v_cachey = 0;
+  uint32_t v_cachex = 0;
+  uint32_t v_x = 0;
+  uint32_t v_y = 0;
+  uint32_t v_z = 0;
+  uint8_t v_avg = 0;
+  uint8_t v_val = 0;
+  uint32_t v_tm0 = 0;
+  uint32_t v_tm1 = 0;
+  uint32_t v_tm2 = 0;
+
+  v_cachey = 18u;
+  v_cachex = ((a_b * 16u) + 8u);
+  if (a_mode == 0u) {
+    v_avg = ((uint8_t)(((8u +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][v_cachex])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 1u)])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 2u)])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 3u)])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 4u)])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 5u)])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 6u)])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 7u)])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[v_cachey][(v_cachex - 1u)])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey + 1u)][(v_cachex - 1u)])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey + 2u)][(v_cachex - 1u)])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey + 3u)][(v_cachex - 1u)])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey + 4u)][(v_cachex - 1u)])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey + 5u)][(v_cachex - 1u)])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey + 6u)][(v_cachex - 1u)])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey + 7u)][(v_cachex - 1u)]))) / 16u)));
+    v_z = 0u;
+    while (v_z < 64u) {
+      self->private_impl.f_yuv_cache[(v_cachey + (v_z >> 3u))][(v_cachex + (v_z & 7u))] = v_avg;
+      v_z += 1u;
+    }
+  } else if (a_mode == 1u) {
+    v_tm0 = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex - 1u)]));
+    v_z = 0u;
+    while (v_z < 64u) {
+      v_tm1 = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey + (v_z >> 3u))][(v_cachex - 1u)]));
+      v_tm2 = ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + (v_z & 7u))]));
+      self->private_impl.f_yuv_cache[(v_cachey + (v_z >> 3u))][(v_cachex + (v_z & 7u))] = WUFFS_VP8__CLAMP[(((uint32_t)((v_tm1 + v_tm2) - v_tm0)) & 1023u)];
+      v_z += 1u;
+    }
+  } else if (a_mode == 2u) {
+    v_x = 0u;
+    while (v_x < 8u) {
+      v_val = self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + v_x)];
+      v_y = 0u;
+      while (v_y < 8u) {
+        self->private_impl.f_yuv_cache[(v_cachey + v_y)][(v_cachex + v_x)] = v_val;
+        v_y += 1u;
+      }
+      v_x += 1u;
+    }
+  } else if (a_mode == 3u) {
+    v_y = 0u;
+    while (v_y < 8u) {
+      v_val = self->private_impl.f_yuv_cache[(v_cachey + v_y)][(v_cachex - 1u)];
+      v_x = 0u;
+      while (v_x < 8u) {
+        self->private_impl.f_yuv_cache[(v_cachey + v_y)][(v_cachex + v_x)] = v_val;
+        v_x += 1u;
+      }
+      v_y += 1u;
+    }
+  } else if (a_mode <= 10u) {
+    v_avg = ((uint8_t)(((4u +
+        ((uint32_t)(self->private_impl.f_yuv_cache[v_cachey][(v_cachex - 1u)])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey + 1u)][(v_cachex - 1u)])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey + 2u)][(v_cachex - 1u)])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey + 3u)][(v_cachex - 1u)])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey + 4u)][(v_cachex - 1u)])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey + 5u)][(v_cachex - 1u)])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey + 6u)][(v_cachex - 1u)])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey + 7u)][(v_cachex - 1u)]))) / 8u)));
+    v_z = 0u;
+    while (v_z < 64u) {
+      self->private_impl.f_yuv_cache[(v_cachey + (v_z >> 3u))][(v_cachex + (v_z & 7u))] = v_avg;
+      v_z += 1u;
+    }
+  } else if (a_mode == 11u) {
+    v_avg = ((uint8_t)(((4u +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][v_cachex])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 1u)])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 2u)])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 3u)])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 4u)])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 5u)])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 6u)])) +
+        ((uint32_t)(self->private_impl.f_yuv_cache[(v_cachey - 1u)][(v_cachex + 7u)]))) / 8u)));
+    v_z = 0u;
+    while (v_z < 64u) {
+      self->private_impl.f_yuv_cache[(v_cachey + (v_z >> 3u))][(v_cachex + (v_z & 7u))] = v_avg;
+      v_z += 1u;
+    }
+  } else {
+    v_z = 0u;
+    while (v_z < 64u) {
+      self->private_impl.f_yuv_cache[(v_cachey + (v_z >> 3u))][(v_cachex + (v_z & 7u))] = 128u;
+      v_z += 1u;
+    }
+  }
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func vp8.decoder.reconstruct
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_vp8__decoder__reconstruct(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf,
+    uint32_t a_mbx,
+    uint32_t a_mby,
+    uint32_t a_luma_mode,
+    uint32_t a_chroma_mode) {
+  uint32_t v_mode = 0;
+  uint32_t v_b = 0;
+
+  wuffs_vp8__decoder__prepare_yuv_cache(self, a_workbuf, a_mbx, a_mby);
+  if (a_luma_mode < 4u) {
+    v_mode = wuffs_vp8__decoder__substitute_dc_top_left(self, a_luma_mode, a_mbx, a_mby);
+    wuffs_vp8__decoder__predict_y16(self, v_mode);
+  } else {
+    v_b = 0u;
+    while (v_b < 16u) {
+      wuffs_vp8__decoder__predict_y4(self, v_b);
+      v_b += 1u;
+    }
+  }
+  v_mode = wuffs_vp8__decoder__substitute_dc_top_left(self, a_chroma_mode, a_mbx, a_mby);
+  wuffs_vp8__decoder__predict_uv8(self, 0u, v_mode);
+  wuffs_vp8__decoder__predict_uv8(self, 1u, v_mode);
+  return wuffs_base__make_empty_struct();
+}
+
+// -------- func vp8.decoder.substitute_dc_top_left
+
+WUFFS_BASE__GENERATED_C_CODE
+static uint32_t
+wuffs_vp8__decoder__substitute_dc_top_left(
+    const wuffs_vp8__decoder* self,
+    uint32_t a_mode,
+    uint32_t a_mbx,
+    uint32_t a_mby) {
+  if (a_mode == 0u) {
+    if (a_mby == 0u) {
+      if (a_mbx == 0u) {
+        return 11u;
+      } else {
+        return 12u;
+      }
+    } else if (a_mby == 0u) {
+      return 10u;
+    }
+  }
+  return a_mode;
+}
+
+// -------- func vp8.decoder.prepare_yuv_cache
+
+WUFFS_BASE__GENERATED_C_CODE
+static wuffs_base__empty_struct
+wuffs_vp8__decoder__prepare_yuv_cache(
+    wuffs_vp8__decoder* self,
+    wuffs_base__slice_u8 a_workbuf,
+    uint32_t a_mbx,
+    uint32_t a_mby) {
+  uint32_t v_i = 0;
+  uint32_t v_j = 0;
+  uint64_t v_offset = 0;
+  uint64_t v_o = 0;
+
+  if (a_mbx <= 0u) {
+    v_j = 0u;
+    while (v_j < 17u) {
+      self->private_impl.f_yuv_cache[v_j][7u] = 129u;
+      v_j += 1u;
+    }
+    while (v_j < 26u) {
+      self->private_impl.f_yuv_cache[v_j][7u] = 129u;
+      self->private_impl.f_yuv_cache[v_j][23u] = 129u;
+      v_j += 1u;
+    }
+  } else {
+    v_j = 0u;
+    while (v_j < 17u) {
+      self->private_impl.f_yuv_cache[v_j][7u] = self->private_impl.f_yuv_cache[v_j][23u];
+      v_j += 1u;
+    }
+    while (v_j < 26u) {
+      self->private_impl.f_yuv_cache[v_j][7u] = self->private_impl.f_yuv_cache[v_j][15u];
+      self->private_impl.f_yuv_cache[v_j][23u] = self->private_impl.f_yuv_cache[v_j][31u];
+      v_j += 1u;
+    }
+  }
+  if (a_mby <= 0u) {
+    v_i = 0u;
+    while (v_i < 32u) {
+      self->private_impl.f_yuv_cache[0u][v_i] = 127u;
+      v_i += 1u;
+    }
+    v_i = 0u;
+    while (v_i < 32u) {
+      self->private_impl.f_yuv_cache[17u][v_i] = 127u;
+      v_i += 1u;
+    }
+  } else {
+    v_offset = ((uint64_t)(((((a_mby - 1u) * self->private_impl.f_workbuf_yuv_y_stride) + a_mbx) * 16u)));
+    v_i = 0u;
+    while (v_i < 16u) {
+      v_o = (v_offset + ((uint64_t)(v_i)));
+      if (v_o < ((uint64_t)(a_workbuf.len))) {
+        self->private_impl.f_yuv_cache[0u][(8u + v_i)] = a_workbuf.ptr[v_o];
+      }
+      v_i += 1u;
+    }
+    if ((a_mbx + 1u) < self->private_impl.f_mbw) {
+      while (v_i < 20u) {
+        v_o = (v_offset + ((uint64_t)(v_i)));
+        if (v_o < ((uint64_t)(a_workbuf.len))) {
+          self->private_impl.f_yuv_cache[0u][(8u + v_i)] = a_workbuf.ptr[v_o];
+        }
+        v_i += 1u;
+      }
+    } else {
+      while (v_i < 20u) {
+        v_o = (v_offset + ((uint64_t)(15u)));
+        if (v_o < ((uint64_t)(a_workbuf.len))) {
+          self->private_impl.f_yuv_cache[0u][(8u + v_i)] = a_workbuf.ptr[v_o];
+        }
+        v_i += 1u;
+      }
+    }
+    v_offset = (self->private_impl.f_workbuf_yuv_y_end + ((uint64_t)(((((a_mby - 1u) * self->private_impl.f_workbuf_yuv_uv_stride) + a_mbx) * 8u))));
+    v_i = 0u;
+    while (v_i < 8u) {
+      v_o = (v_offset + ((uint64_t)(v_i)));
+      if (v_o < ((uint64_t)(a_workbuf.len))) {
+        self->private_impl.f_yuv_cache[17u][(8u + v_i)] = a_workbuf.ptr[v_o];
+      }
+      v_i += 1u;
+    }
+    v_offset = (self->private_impl.f_workbuf_yuv_u_end + ((uint64_t)(((((a_mby - 1u) * self->private_impl.f_workbuf_yuv_uv_stride) + a_mbx) * 8u))));
+    v_i = 0u;
+    while (v_i < 8u) {
+      v_o = (v_offset + ((uint64_t)(v_i)));
+      if (v_o < ((uint64_t)(a_workbuf.len))) {
+        self->private_impl.f_yuv_cache[17u][(24u + v_i)] = a_workbuf.ptr[v_o];
+      }
+      v_i += 1u;
+    }
+  }
+  v_j = 4u;
+  while (v_j < 16u) {
+    self->private_impl.f_yuv_cache[v_j][24u] = self->private_impl.f_yuv_cache[0u][24u];
+    self->private_impl.f_yuv_cache[v_j][25u] = self->private_impl.f_yuv_cache[0u][25u];
+    self->private_impl.f_yuv_cache[v_j][26u] = self->private_impl.f_yuv_cache[0u][26u];
+    self->private_impl.f_yuv_cache[v_j][27u] = self->private_impl.f_yuv_cache[0u][27u];
+    v_j += 4u;
+  }
+  return wuffs_base__make_empty_struct();
 }
 
 // -------- func vp8.decoder.get_quirk

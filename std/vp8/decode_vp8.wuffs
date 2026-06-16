@@ -100,6 +100,8 @@ pub struct decoder? implements base.image_decoder(
 
         mb_subblock_modes : array[16] base.u8[..= 9],
 
+        yuv_cache : array[26] array[32] base.u8,
+
         dst_x : base.u32,
         dst_y : base.u32,
 

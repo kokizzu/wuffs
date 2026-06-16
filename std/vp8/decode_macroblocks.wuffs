@@ -82,8 +82,12 @@ pri func decoder.decode_one_macroblock!(workbuf: slice base.u8, mbx: base.u32[..
     } else {
         this.decode_coefficients!(
                 workbuf: args.workbuf, mbx: args.mbx, mby: args.mby,
-                seg: seg, luma_mode: luma_mode, chroma_mode: chroma_mode)
+                seg: seg, luma_mode: luma_mode)
     }
+
+    this.reconstruct!(
+            workbuf: args.workbuf, mbx: args.mbx, mby: args.mby,
+            luma_mode: luma_mode, chroma_mode: chroma_mode)
 }
 
 // RFC 6386 Section 11.2. Luma Modes.
