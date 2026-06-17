@@ -84264,11 +84264,11 @@ wuffs_vp8__decoder__substitute_dc_top_left(
     uint32_t a_mbx,
     uint32_t a_mby) {
   if (a_mode == 0u) {
-    if (a_mby == 0u) {
-      if (a_mbx == 0u) {
-        return 11u;
-      } else {
+    if (a_mbx == 0u) {
+      if (a_mby == 0u) {
         return 12u;
+      } else {
+        return 11u;
       }
     } else if (a_mby == 0u) {
       return 10u;
@@ -84326,7 +84326,7 @@ wuffs_vp8__decoder__prepare_yuv_cache(
       v_i += 1u;
     }
   } else {
-    v_offset = ((uint64_t)(((((a_mby - 1u) * self->private_impl.f_workbuf_yuv_y_stride) + a_mbx) * 16u)));
+    v_offset = ((uint64_t)(((((a_mby * 16u) - 1u) * self->private_impl.f_workbuf_yuv_y_stride) + (a_mbx * 16u))));
     v_i = 0u;
     while (v_i < 16u) {
       v_o = (v_offset + ((uint64_t)(v_i)));
@@ -84352,7 +84352,7 @@ wuffs_vp8__decoder__prepare_yuv_cache(
         v_i += 1u;
       }
     }
-    v_offset = (self->private_impl.f_workbuf_yuv_y_end + ((uint64_t)(((((a_mby - 1u) * self->private_impl.f_workbuf_yuv_uv_stride) + a_mbx) * 8u))));
+    v_offset = (self->private_impl.f_workbuf_yuv_y_end + ((uint64_t)(((((a_mby * 8u) - 1u) * self->private_impl.f_workbuf_yuv_uv_stride) + (a_mbx * 8u)))));
     v_i = 0u;
     while (v_i < 8u) {
       v_o = (v_offset + ((uint64_t)(v_i)));
@@ -84361,7 +84361,7 @@ wuffs_vp8__decoder__prepare_yuv_cache(
       }
       v_i += 1u;
     }
-    v_offset = (self->private_impl.f_workbuf_yuv_u_end + ((uint64_t)(((((a_mby - 1u) * self->private_impl.f_workbuf_yuv_uv_stride) + a_mbx) * 8u))));
+    v_offset = (self->private_impl.f_workbuf_yuv_u_end + ((uint64_t)(((((a_mby * 8u) - 1u) * self->private_impl.f_workbuf_yuv_uv_stride) + (a_mbx * 8u)))));
     v_i = 0u;
     while (v_i < 8u) {
       v_o = (v_offset + ((uint64_t)(v_i)));

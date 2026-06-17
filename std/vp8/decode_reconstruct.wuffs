@@ -98,11 +98,11 @@ pri func decoder.substitute_dc_top_left(
         mbx: base.u32[..= 0x3FF],
         mby: base.u32[..= 0x3FF]) base.u32[..= 12] {
     if args.mode == 0 {  // DC.
-        if args.mby == 0 {
-            if args.mbx == 0 {
-                return 11  // DCLeft.
-            } else {
+        if args.mbx == 0 {
+            if args.mby == 0 {
                 return 12  // DCTopLeft.
+            } else {
+                return 11  // DCLeft.
             }
         } else if args.mby == 0 {
             return 10  // DCTop.
@@ -117,7 +117,7 @@ pri func decoder.prepare_yuv_cache!(
         mby: base.u32[..= 0x3FF]) {
     var i      : base.u32
     var j      : base.u32
-    var offset : base.u64[..= 0x17FE_1FF8]
+    var offset : base.u64[..= 0x17FE_FFF8]
     var o      : base.u64
 
     if args.mbx <= 0 {
@@ -159,7 +159,7 @@ pri func decoder.prepare_yuv_cache!(
 
     } else {
         offset = 0 +
-                (((((args.mby - 1) * this.workbuf_yuv_y_stride) + args.mbx) * 16) as base.u64)
+                (((((args.mby * 16) - 1) * this.workbuf_yuv_y_stride) + (args.mbx * 16)) as base.u64)
         i = 0x00
         while i < 0x10,
                 inv args.mby > 0,
@@ -194,7 +194,7 @@ pri func decoder.prepare_yuv_cache!(
         }
 
         offset = this.workbuf_yuv_y_end +
-                (((((args.mby - 1) * this.workbuf_yuv_uv_stride) + args.mbx) * 8) as base.u64)
+                (((((args.mby * 8) - 1) * this.workbuf_yuv_uv_stride) + (args.mbx * 8)) as base.u64)
         i = 0x00
         while i < 0x08,
                 inv args.mby > 0,
@@ -207,7 +207,7 @@ pri func decoder.prepare_yuv_cache!(
         }
 
         offset = this.workbuf_yuv_u_end +
-                (((((args.mby - 1) * this.workbuf_yuv_uv_stride) + args.mbx) * 8) as base.u64)
+                (((((args.mby * 8) - 1) * this.workbuf_yuv_uv_stride) + (args.mbx * 8)) as base.u64)
         i = 0x00
         while i < 0x08,
                 inv args.mby > 0,
