@@ -78,6 +78,8 @@ pri func decoder.decode_one_macroblock!(workbuf: slice base.u8, mbx: base.u32[..
         // Clear the HNZC bits.
         this.mb_states_left &= 0x0000_FFFF
         this.mb_states_top[args.mbx] &= 0x0000_FFFF
+        this.mb_dc_nz = 0
+        this.mb_ac_nz = 0
 
     } else {
         this.decode_coefficients!(
@@ -88,6 +90,9 @@ pri func decoder.decode_one_macroblock!(workbuf: slice base.u8, mbx: base.u32[..
     this.reconstruct!(
             workbuf: args.workbuf, mbx: args.mbx, mby: args.mby,
             luma_mode: luma_mode, chroma_mode: chroma_mode)
+
+    this.copy_from_yuv_cache!(
+            workbuf: args.workbuf, mbx: args.mbx, mby: args.mby)
 }
 
 // RFC 6386 Section 11.2. Luma Modes.
@@ -256,4 +261,46 @@ pri func decoder.decode_one_subblock_mode!(
     }
 
     return 9  // 9=B_HU_PRED.
+}
+
+pri func decoder.copy_from_yuv_cache!(
+        workbuf: slice base.u8,
+        mbx: base.u32[..= 0x3FF],
+        mby: base.u32[..= 0x3FF]) {
+    var w   : base.u64
+    var i   : base.u32
+    var dst : slice base.u8
+
+    w = ((((args.mby * this.workbuf_yuv_y_stride) + args.mbx) * 16) as base.u64) + 0
+    i = 0
+    while i < 16 {
+        if w < args.workbuf.length() {
+            dst = args.workbuf[w ..]
+            dst.copy_from_slice!(s: this.yuv_cache[i + 0x01][0x08 .. 0x18])
+        }
+        w ~mod+= this.workbuf_yuv_y_stride as base.u64
+        i += 1
+    }
+
+    w = ((((args.mby * this.workbuf_yuv_uv_stride) + args.mbx) * 8) as base.u64) + this.workbuf_yuv_y_end
+    i = 0
+    while i < 8 {
+        if w < args.workbuf.length() {
+            dst = args.workbuf[w ..]
+            dst.copy_from_slice!(s: this.yuv_cache[i + 0x12][0x08 .. 0x10])
+        }
+        w ~mod+= this.workbuf_yuv_uv_stride as base.u64
+        i += 1
+    }
+
+    w = ((((args.mby * this.workbuf_yuv_uv_stride) + args.mbx) * 8) as base.u64) + this.workbuf_yuv_u_end
+    i = 0
+    while i < 8 {
+        if w < args.workbuf.length() {
+            dst = args.workbuf[w ..]
+            dst.copy_from_slice!(s: this.yuv_cache[i + 0x12][0x18 .. 0x20])
+        }
+        w ~mod+= this.workbuf_yuv_uv_stride as base.u64
+        i += 1
+    }
 }

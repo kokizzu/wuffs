@@ -127,6 +127,102 @@ initialize_decoder_test_state(wuffs_vp8__decoder* dec) {
 }
 
 const char*  //
+test_wuffs_vp8_decode_inverse_dct_full() {
+  CHECK_FOCUS(__func__);
+
+  wuffs_vp8__decoder dec = {0};
+
+  // Initialize the coefficients to the digits of phi.
+
+  dec.private_data.f_mb_coeffs[0][0x00] = 0x16;
+  dec.private_data.f_mb_coeffs[0][0x01] = 0x18;
+  dec.private_data.f_mb_coeffs[0][0x02] = 0x03;
+  dec.private_data.f_mb_coeffs[0][0x03] = 0x39;
+  dec.private_data.f_mb_coeffs[0][0x04] = 0x88;
+  dec.private_data.f_mb_coeffs[0][0x05] = 0x74;
+  dec.private_data.f_mb_coeffs[0][0x06] = 0x98;
+  dec.private_data.f_mb_coeffs[0][0x07] = 0x94;
+  dec.private_data.f_mb_coeffs[0][0x08] = 0x84;
+  dec.private_data.f_mb_coeffs[0][0x09] = 0x82;
+  dec.private_data.f_mb_coeffs[0][0x0A] = 0x04;
+  dec.private_data.f_mb_coeffs[0][0x0B] = 0x58;
+  dec.private_data.f_mb_coeffs[0][0x0C] = 0x68;
+  dec.private_data.f_mb_coeffs[0][0x0D] = 0x43;
+  dec.private_data.f_mb_coeffs[0][0x0E] = 0x36;
+  dec.private_data.f_mb_coeffs[0][0x0F] = 0x56;
+
+  memset(dec.private_impl.f_yuv_cache, 0xC0,
+         sizeof(dec.private_impl.f_yuv_cache));
+
+  const uint32_t w0 = 0xFFACFBBC;
+  const uint32_t w1 = 0x92ABA8C6;
+  const uint32_t w2 = 0xABB6C1C6;
+  const uint32_t w3 = 0x8FDFC5A7;
+
+  wuffs_vp8__decoder__inverse_dct_full(&dec, 8, 1, 0);
+
+  uint32_t h0 = wuffs_base__peek_u32be__no_bounds_check(
+      &dec.private_impl.f_yuv_cache[1][8]);
+  uint32_t h1 = wuffs_base__peek_u32be__no_bounds_check(
+      &dec.private_impl.f_yuv_cache[2][8]);
+  uint32_t h2 = wuffs_base__peek_u32be__no_bounds_check(
+      &dec.private_impl.f_yuv_cache[3][8]);
+  uint32_t h3 = wuffs_base__peek_u32be__no_bounds_check(
+      &dec.private_impl.f_yuv_cache[4][8]);
+
+  if ((h0 != w0) || (h1 != w1) || (h2 != w2) || (h3 != w3)) {
+    RETURN_FAIL(
+        "\nhave %08" PRIX32 " %08" PRIX32 " %08" PRIX32 " %08" PRIX32   //
+        "\nwant %08" PRIX32 " %08" PRIX32 " %08" PRIX32 " %08" PRIX32,  //
+        h0, h1, h2, h3, w0, w1, w2, w3);
+  }
+  return NULL;
+}
+
+const char*  //
+test_wuffs_vp8_decode_inverse_wht() {
+  CHECK_FOCUS(__func__);
+
+  wuffs_vp8__decoder dec = {0};
+
+  // Initialize the coefficients to the digits of phi.
+
+  dec.private_data.f_mb_coeffs[24][0x00] = 0x16;
+  dec.private_data.f_mb_coeffs[24][0x01] = 0x18;
+  dec.private_data.f_mb_coeffs[24][0x02] = 0x03;
+  dec.private_data.f_mb_coeffs[24][0x03] = 0x39;
+  dec.private_data.f_mb_coeffs[24][0x04] = 0x88;
+  dec.private_data.f_mb_coeffs[24][0x05] = 0x74;
+  dec.private_data.f_mb_coeffs[24][0x06] = 0x98;
+  dec.private_data.f_mb_coeffs[24][0x07] = 0x94;
+  dec.private_data.f_mb_coeffs[24][0x08] = 0x84;
+  dec.private_data.f_mb_coeffs[24][0x09] = 0x82;
+  dec.private_data.f_mb_coeffs[24][0x0A] = 0x04;
+  dec.private_data.f_mb_coeffs[24][0x0B] = 0x58;
+  dec.private_data.f_mb_coeffs[24][0x0C] = 0x68;
+  dec.private_data.f_mb_coeffs[24][0x0D] = 0x43;
+  dec.private_data.f_mb_coeffs[24][0x0E] = 0x36;
+  dec.private_data.f_mb_coeffs[24][0x0F] = 0x56;
+
+  const uint32_t wants[16] = {
+      0x00A5, 0x0011, 0x001C, 0xFFF2, 0xFFFF, 0xFFDF, 0xFFF5, 0x0006,
+      0xFFC3, 0xFFF3, 0x0002, 0x0001, 0xFFCE, 0x0016, 0x0007, 0xFFEB,
+  };
+
+  wuffs_vp8__decoder__inverse_wht(&dec);
+
+  for (int b = 0; b < 16; b++) {
+    uint16_t have = dec.private_data.f_mb_coeffs[b][0];
+    uint16_t want = wants[b];
+    if (have != want) {
+      RETURN_FAIL("b=0x%02X: have 0x%04X, want 0x%04X", b, have, want);
+    }
+  }
+
+  return NULL;
+}
+
+const char*  //
 test_wuffs_vp8_decode_predict_uv8() {
   CHECK_FOCUS(__func__);
 
@@ -380,6 +476,8 @@ test_wuffs_vp8_decode_predict_y4() {
 
 proc g_tests[] = {
 
+    test_wuffs_vp8_decode_inverse_dct_full,
+    test_wuffs_vp8_decode_inverse_wht,
     test_wuffs_vp8_decode_predict_uv8,
     test_wuffs_vp8_decode_predict_y16,
     test_wuffs_vp8_decode_predict_y4,

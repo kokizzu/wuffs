@@ -191,6 +191,9 @@ wuffs_private_impl__u64__sat_sub_indirect(uint64_t* x, uint64_t y) {
 #define wuffs_base__utility__sign_extend_convert_u32_u64(a) \
   ((uint64_t)(int64_t)(int32_t)(a))
 
+#define wuffs_base__utility__sign_extend_rshift_u16(a, n) \
+  ((uint16_t)(((int16_t)(a)) >> (n)))
+
 #define wuffs_base__utility__sign_extend_rshift_u32(a, n) \
   ((uint32_t)(((int32_t)(a)) >> (n)))
 

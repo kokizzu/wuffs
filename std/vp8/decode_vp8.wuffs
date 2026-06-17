@@ -100,6 +100,17 @@ pub struct decoder? implements base.image_decoder(
 
         mb_subblock_modes : array[16] base.u8[..= 9],
 
+        // Two u32 values whose bits are packed like this:
+        //
+        //  - 24 ..= 31 are unused.
+        //  - 20 ..= 23 are chroma (V) HZNC bits.
+        //  - 16 ..= 19 are chroma (U) HZNC bits.
+        //  -  0 ..= 15 are luma   (Y) HNZC bits.
+        //
+        // HNZC stands for has-non-zero-coefficients.
+        mb_dc_nz : base.u32,
+        mb_ac_nz : base.u32,
+
         yuv_cache : array[26] array[32] base.u8,
 
         dst_x : base.u32,

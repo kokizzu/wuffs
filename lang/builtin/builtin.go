@@ -409,6 +409,7 @@ var funcsOther = [...]string{
 	"utility.sign_extend_convert_u16_u32(a: u16) u32",
 	"utility.sign_extend_convert_u16_u64(a: u16) u64",
 	"utility.sign_extend_convert_u32_u64(a: u32) u64",
+	"utility.sign_extend_rshift_u16(a: u16, n: u16[..= 15]) u16",
 	"utility.sign_extend_rshift_u32(a: u32, n: u32[..= 31]) u32",
 	"utility.sign_extend_rshift_u64(a: u64, n: u32[..= 63]) u64",
 

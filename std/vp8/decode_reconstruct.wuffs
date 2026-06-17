@@ -16,26 +16,81 @@ pri func decoder.reconstruct!(
         chroma_mode: base.u32[..= 3]) {
     var mode : base.u32[..= 12]
     var b    : base.u32
+    var mask : base.u32
 
     this.prepare_yuv_cache!(workbuf: args.workbuf, mbx: args.mbx, mby: args.mby)
 
     if args.luma_mode < 4 {
         mode = this.substitute_dc_top_left(mode: args.luma_mode, mbx: args.mbx, mby: args.mby)
         this.predict_y16!(mode: mode)
+    }
 
-    } else {
-        b = 0
-        while b < 16 {
+    b = 0
+    while b < 16 {
+        if args.luma_mode >= 4 {
             this.predict_y4!(b: b)
-            b += 1
         }
+
+        mask = (1 as base.u32) << (b + 0x00)
+        if (this.mb_ac_nz & mask) <> 0 {
+            this.inverse_dct_full!(
+                    cachex: ((b & 0x3) * 4) + 0x08,
+                    cachey: ((b & 0xC) * 1) + 0x01,
+                    b: (b + 0x00))
+        } else if (this.mb_dc_nz & mask) <> 0 {
+            this.inverse_dct_dc_only!(
+                    cachex: ((b & 0x3) * 4) + 0x08,
+                    cachey: ((b & 0xC) * 1) + 0x01,
+                    b: (b + 0x00))
+        }
+        b += 1
     }
 
     mode = this.substitute_dc_top_left(mode: args.chroma_mode, mbx: args.mbx, mby: args.mby)
 
     this.predict_uv8!(b: 0, mode: mode)
 
+    if (this.mb_ac_nz & 0x0F_0000) <> 0 {
+        b = 0
+        while b < 4 {
+            this.inverse_dct_full!(
+                    cachex: ((b & 0x1) * 4) + 0x08,
+                    cachey: ((b & 0x2) * 2) + 0x12,
+                    b: (b + 0x10))
+            b += 1
+        }
+    } else if (this.mb_dc_nz & 0x0F_0000) <> 0 {
+        b = 0
+        while b < 4 {
+            this.inverse_dct_dc_only!(
+                    cachex: ((b & 0x1) * 4) + 0x08,
+                    cachey: ((b & 0x2) * 2) + 0x12,
+                    b: (b + 0x10))
+            b += 1
+        }
+    }
+
     this.predict_uv8!(b: 1, mode: mode)
+
+    if (this.mb_ac_nz & 0xF0_0000) <> 0 {
+        b = 0
+        while b < 4 {
+            this.inverse_dct_full!(
+                    cachex: ((b & 0x1) * 4) + 0x18,
+                    cachey: ((b & 0x2) * 2) + 0x12,
+                    b: (b + 0x14))
+            b += 1
+        }
+    } else if (this.mb_dc_nz & 0xF0_0000) <> 0 {
+        b = 0
+        while b < 4 {
+            this.inverse_dct_dc_only!(
+                    cachex: ((b & 0x1) * 4) + 0x18,
+                    cachey: ((b & 0x2) * 2) + 0x12,
+                    b: (b + 0x14))
+            b += 1
+        }
+    }
 }
 
 pri func decoder.substitute_dc_top_left(

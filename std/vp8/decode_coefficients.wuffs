@@ -17,10 +17,14 @@ pri func decoder.decode_coefficients!(
     var bc    : base.u32
     var by    : base.u32
     var bx    : base.u32
+    var b     : base.u32[..= 23]
     var plane : base.u32[..= 3]
     var lnz   : base.u32[..= 1]
     var tnz   : base.u32[..= 1]
+    var bit   : base.u32[..= 1]
 
+    this.mb_dc_nz = 0
+    this.mb_ac_nz = 0
     this.initialize_mb_coeffs!()
 
     // Handle "intra16x16 prediction".
@@ -42,6 +46,8 @@ pri func decoder.decode_coefficients!(
 
         this.mb_states_top[args.mbx] |= lnz << 23
         this.mb_states_left |= lnz << 23
+
+        this.inverse_wht!()
         plane = 0  // Plane 0: Y beginning at coefficient 1.
     }
 
@@ -59,18 +65,28 @@ pri func decoder.decode_coefficients!(
             tnz = 1 & (this.mb_states_top[args.mbx] >> (24 + bx))
             this.mb_states_top[args.mbx] &= 0xFFFF_FFFF ^ ((1 as base.u32) << (24 + bx))
 
+            b = (4 * by) + bx
+
             lnz = this.decode_block_coefficients!(
                     workbuf: args.workbuf,
                     mby: args.mby,
                     seg: args.seg,
-                    b: (4 * by) + bx,
+                    b: b,
                     plane: plane,
                     context: lnz + tnz)
 
+            bit = 0
+            if this.mb_coeffs[b][0] <> 0 {
+                bit = 1
+            }
+            this.mb_dc_nz |= bit << b
+            this.mb_ac_nz |= lnz << b
             this.mb_states_top[args.mbx] |= lnz << (24 + bx)
+
             bx += 1
         }
         this.mb_states_left |= lnz << (24 + by)
+
         by += 1
     }
 
@@ -93,18 +109,27 @@ pri func decoder.decode_coefficients!(
                 tnz = 1 & (this.mb_states_top[args.mbx] >> (28 + bc + bx))
                 this.mb_states_top[args.mbx] &= 0xFFFF_FFFF ^ ((1 as base.u32) << (28 + bc + bx))
 
+                b = (2 * bc) + (2 * by) + bx + 16
                 lnz = this.decode_block_coefficients!(
                         workbuf: args.workbuf,
                         mby: args.mby,
                         seg: args.seg,
-                        b: (2 * bc) + (2 * by) + bx + 16,
+                        b: b,
                         plane: 2,  // Plane 2: U or V.
                         context: lnz + tnz)
 
                 this.mb_states_top[args.mbx] |= lnz << (28 + bc + bx)
+                bit = 0
+                if this.mb_coeffs[b][0] <> 0 {
+                    bit = 1
+                }
+                this.mb_dc_nz |= bit << b
+                this.mb_ac_nz |= lnz << b
+
                 bx += 1
             }
             this.mb_states_left |= lnz << (28 + bc + by)
+
             by += 1
         }
         bc += 2
