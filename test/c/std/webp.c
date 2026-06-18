@@ -111,7 +111,7 @@ test_wuffs_webp_decode_interface_lossy() {
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
   return do_test__wuffs_base__image_decoder(
       wuffs_webp__decoder__upcast_as__wuffs_base__image_decoder(dec),
-      "test/data/bricks-color.lossy.webp", 0, SIZE_MAX, 160, 120, 0xFF9F7780);
+      "test/data/bricks-color.lossy.webp", 0, SIZE_MAX, 160, 120, 0xFF493D65);
 }
 
 const char*  //
@@ -200,8 +200,8 @@ test_wuffs_webp_decode_many_small_reads() {
 
   wuffs_base__color_u32_argb_premul last_pixel =
       wuffs_base__pixel_buffer__color_u32_at(&pb, w - 1, h - 1);
-  if (last_pixel != 0xFF141F80) {
-    RETURN_FAIL("last_pixel: have 0x%" PRIX32 ", want 0xFF141F80", last_pixel);
+  if (last_pixel != 0xFF2D1922) {
+    RETURN_FAIL("last_pixel: have 0x%" PRIX32 ", want 0xFF2D1922", last_pixel);
   }
 
   return NULL;
