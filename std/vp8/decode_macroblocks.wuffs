@@ -38,8 +38,25 @@ pri func decoder.decode_macroblocks!(workbuf: slice base.u8) base.status {
             mbx += 1
         }
 
+        if (mby <= 0) or (this.filt_level <= 0) {
+            // No-op.
+        } else if this.filt_simple {
+            this.filter_simple!(workbuf: args.workbuf, mby: mby - 1)
+        } else {
+            this.filter_normal!(workbuf: args.workbuf, mby: mby - 1)
+        }
+
         mby += 1
     }
+
+    if (this.mbh <= 0) or (this.filt_level <= 0) {
+        // No-op.
+    } else if this.filt_simple {
+        this.filter_simple!(workbuf: args.workbuf, mby: this.mbh - 1)
+    } else {
+        this.filter_normal!(workbuf: args.workbuf, mby: this.mbh - 1)
+    }
+
     return ok
 }
 
@@ -47,7 +64,7 @@ pri func decoder.decode_one_macroblock!(workbuf: slice base.u8, mbx: base.u32[..
     var v1 : base.u32[..= 1]
 
     var seg         : base.u32[..= 3]
-    var skip        : base.bool
+    var skip        : base.u32[..= 1]
     var luma_mode   : base.u32[..= 4]
     var chroma_mode : base.u32[..= 3]
 
@@ -63,10 +80,9 @@ pri func decoder.decode_one_macroblock!(workbuf: slice base.u8, mbx: base.u32[..
         }
     }
 
-    skip = false
+    skip = 0
     if (this.prob_skip & 0x100) <> 0 {
-        v1 = this.read_bit!(workbuf: args.workbuf, part: 0, prob: this.prob_skip & 0xFF)
-        skip = v1 <> 0
+        skip = this.read_bit!(workbuf: args.workbuf, part: 0, prob: this.prob_skip & 0xFF)
     }
 
     luma_mode = this.decode_luma_mode!(workbuf: args.workbuf)
@@ -74,7 +90,7 @@ pri func decoder.decode_one_macroblock!(workbuf: slice base.u8, mbx: base.u32[..
 
     chroma_mode = this.decode_chroma_mode!(workbuf: args.workbuf)
 
-    if skip {
+    if skip <> 0 {
         // Clear the HNZC bits.
         this.mb_states_left &= 0x0000_FFFF
         this.mb_states_top[args.mbx] &= 0x0000_FFFF
@@ -93,6 +109,9 @@ pri func decoder.decode_one_macroblock!(workbuf: slice base.u8, mbx: base.u32[..
 
     this.copy_from_yuv_cache!(
             workbuf: args.workbuf, mbx: args.mbx, mby: args.mby)
+
+    this.mb_filters[args.mby & 1][args.mbx] =
+            (((1 ^ skip) << 3) | (seg << 1) | (luma_mode >> 2)) as base.u8
 }
 
 // RFC 6386 Section 11.2. Luma Modes.

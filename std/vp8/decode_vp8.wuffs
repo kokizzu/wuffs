@@ -88,6 +88,27 @@ pub struct decoder? implements base.image_decoder(
         quant_uvdc_delta : base.u32,
         quant_uvac_delta : base.u32,
 
+        // Look-up tables derived from the loop filter parameters.
+        //
+        // The array is indexed by ((2 * segment) + inner), where segment is in
+        // [0 ..= 3] and inner is in [0 ..= 1]. The inner bit is per any of the
+        // three equivalent conditions below (C is libwebp, Go is
+        // golang.org/x/image/vp8, Wuffs is this code):
+        //
+        //  - what C     calls   "is_i4x4    == false" / "is_i4x4    == true".
+        //  - what Go    calls   "usePredY16 == true"  / "usePredY16 == false".
+        //  - what Wuffs calls   "luma_mode  <  4"     / "luma_mode  >= 4".
+        //
+        // The u32 bits are packed like this (unless level == 0, in which case
+        // the high 24 bits are unused and also all-zero):
+        //
+        //  - 31         is "is_i4x4", also known as "inner".
+        //  - 24 ..= 30 are unused.
+        //  - 16 ..= 23 are hlevel (high edge variance level).
+        //  -  8 ..= 15 are ilevel (inner level).
+        //  -  0 ..=  7 are level.
+        loop_filters : array[8] base.u32,
+
         // Look-up tables derived from the dequantization parameters.
         //
         // The first index is the segment. The second index is Y/Y2/UV. The
@@ -140,6 +161,22 @@ pub struct decoder? implements base.image_decoder(
         // The mb_states_top array is indexed by mbx.
         mb_states_left : base.u32,
         mb_states_top  : array[0x400] base.u32,
+
+        // Macroblock filter parameters.
+        //
+        // The first index is (mby & 1). As we decode rows (and columns) of
+        // macroblocks, the filter parameters are decoded at the time of the
+        // R'th row but are applied (to row R) at the time of the (R+1)'th row.
+        //
+        // The second index is mbx.
+        //
+        // The u8 bits are packed like this:
+        //
+        //  -  4 ..=  7 are unused
+        //  -  3        is  decode_one_macroblock's (not skip).
+        //  -  0 ..=  2 are an index into loop_filters.
+        //
+        mb_filters : array[2] array[0x400] base.u8,
 )
 
 pub func decoder.get_quirk(key: base.u32) base.u64 {

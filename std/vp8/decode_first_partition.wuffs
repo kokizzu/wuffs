@@ -61,6 +61,7 @@ pri func decoder.decode_first_partition!(workbuf: roslice base.u8) base.status {
 
     // RFC 6386 Section 9.4. Loop Filter Type and Levels.
     this.decode_filter_header!(workbuf: args.workbuf)
+    this.calculate_loop_filters!()
 
     // RFC 6386 Section 9.5. Token Partition and Partition Data Offsets.
     v32 = this.read_unsigned!(workbuf: args.workbuf, part: 0, n: 2)
@@ -204,6 +205,84 @@ pri func decoder.decode_coeff_probs!(workbuf: roslice base.u8) {
     }
 }
 
+pri func decoder.calculate_loop_filters!() {
+    var seg    : base.u32
+    var inner  : base.u32
+    var level  : base.u32
+    var ilevel : base.u32
+    var hlevel : base.u32
+
+    seg = 0
+    while seg < 4 {
+        inner = 0
+        while inner < 2,
+                inv seg < 4,
+        {
+            level = this.filt_level as base.u32
+            if not this.seg_enabled {
+                // No-op.
+            } else if not this.filt_deltas_enabled {
+                level = this.util.sign_extend_convert_u8_u32(a: this.seg_strengths[seg])
+            } else {
+                // The (level as base.u32) is redundant, equivalent to level, but
+                // avoids a -Werror=sign-conversion false positive with gcc 12.2.0.
+                level = (level as base.u32) ~mod+
+                        this.util.sign_extend_convert_u8_u32(a: this.seg_strengths[seg])
+            }
+
+            // Yes, filt_deltas[*][0], not filt_deltas[*][seg].
+            if this.filt_deltas_enabled {
+                level = (level as base.u32) ~mod+
+                        this.util.sign_extend_convert_u8_u32(a: this.filt_deltas[0][0])
+                if inner <> 0 {
+                    level = (level as base.u32) ~mod+
+                            this.util.sign_extend_convert_u8_u32(a: this.filt_deltas[1][0])
+                }
+            }
+
+            if level >= 0x8000_0000 {
+                this.loop_filters[(2 * seg) + inner] = 0
+                inner += 1
+                continue
+
+            } else if level > 63 {
+                level = 63
+            }
+
+            ilevel = level
+            if this.filt_sharpness > 0 {
+                if this.filt_sharpness <= 4 {
+                    ilevel >>= 1
+                } else {
+                    ilevel >>= 2
+                }
+                ilevel = ilevel.max(no_less_than: (9 - this.filt_sharpness) as base.u32)
+            }
+            if (ilevel < 1) or (0x8000_0000 <= ilevel) {
+                ilevel = 1
+            }
+
+            // If we ever want to support (this.is_key_frame == false), note
+            // that the hlevel thresholds are a little different then.
+            if level < 15 {
+                hlevel = 0
+            } else if level < 40 {
+                hlevel = 1
+            } else {
+                hlevel = 2
+            }
+
+            level = (2 ~mod* level) ~mod+ ilevel
+
+            this.loop_filters[(2 * seg) + inner] =
+                    level | (ilevel ~mod<< 8) | (hlevel ~mod<< 16) | (inner << 31)
+
+            inner += 1
+        }
+        seg += 1
+    }
+}
+
 pri func decoder.calculate_dequants!() {
     var seg : base.u32
     var q   : base.u32
@@ -218,7 +297,8 @@ pri func decoder.calculate_dequants!() {
         } else {
             // The (q as base.u32) is redundant, equivalent to q, but avoids a
             // -Werror=sign-conversion false positive with gcc 12.2.0.
-            q = (q as base.u32) ~mod+ this.util.sign_extend_convert_u8_u32(a: this.seg_quants[seg])
+            q = (q as base.u32) ~mod+
+                    this.util.sign_extend_convert_u8_u32(a: this.seg_quants[seg])
         }
 
         this.dequants[seg][0][0] = DEQUANTS[0][this.clip_127(a: q ~mod+ this.quant_ydc_delta)]
