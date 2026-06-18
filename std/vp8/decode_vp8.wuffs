@@ -223,7 +223,7 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
     this.partitioned_data_length = ((this.quirk_source_length >> 1) as base.u32) - 10
 
     // RFC 6386 Section 9. Frame Header, up to and including 9.1. Uncompressed
-    // Data Chunk. decode_first_partition handles the rest of section 9.
+    // Data Chunk. decode_header_partition handles the rest of section 9.
 
     c32 = args.src.read_u24le_as_u32?()
     this.is_key_frame = ((c32 & 0x01) == 0)
@@ -361,7 +361,7 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
         i += 1
     }
 
-    status = this.decode_first_partition!(workbuf: args.workbuf)
+    status = this.decode_header_partition!(workbuf: args.workbuf)
     if not status.is_ok() {
         return status
     }

@@ -46,7 +46,7 @@ pri func decoder.copy_partitions_to_workbuf?(src: base.io_reader, workbuf: slice
     }
 }
 
-pri func decoder.decode_first_partition!(workbuf: roslice base.u8) base.status {
+pri func decoder.decode_header_partition!(workbuf: roslice base.u8) base.status {
     var v1  : base.u32[..= 1]
     var v32 : base.u32
 

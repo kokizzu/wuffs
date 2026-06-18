@@ -81924,7 +81924,7 @@ wuffs_vp8__decoder__copy_partitions_to_workbuf(
 
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__status
-wuffs_vp8__decoder__decode_first_partition(
+wuffs_vp8__decoder__decode_header_partition(
     wuffs_vp8__decoder* self,
     wuffs_base__slice_u8 a_workbuf);
 
@@ -83180,11 +83180,11 @@ wuffs_vp8__decoder__copy_partitions_to_workbuf(
   return status;
 }
 
-// -------- func vp8.decoder.decode_first_partition
+// -------- func vp8.decoder.decode_header_partition
 
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__status
-wuffs_vp8__decoder__decode_first_partition(
+wuffs_vp8__decoder__decode_header_partition(
     wuffs_vp8__decoder* self,
     wuffs_base__slice_u8 a_workbuf) {
   uint32_t v_v1 = 0;
@@ -85641,7 +85641,7 @@ wuffs_vp8__decoder__do_decode_frame(
       self->private_impl.f_part_n_bits[v_i] = 0u;
       v_i += 1u;
     }
-    v_status = wuffs_vp8__decoder__decode_first_partition(self, a_workbuf);
+    v_status = wuffs_vp8__decoder__decode_header_partition(self, a_workbuf);
     if ( ! wuffs_base__status__is_ok(&v_status)) {
       status = v_status;
       if (wuffs_base__status__is_error(&status)) {
