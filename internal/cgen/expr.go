@@ -290,14 +290,21 @@ func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, depth uint32) error {
 
 	op := n.Operator()
 	switch op {
-	case t.IDXBinaryPlus, t.IDXBinaryPipe, t.IDXBinaryHat:
+	case t.IDXBinaryPlus, t.IDXBinaryPipe, t.IDXBinaryHat, t.IDXBinaryTildeModPlus:
 		if lcv := n.LHS().AsExpr().ConstValue(); (lcv != nil) && (lcv.Sign() == 0) {
 			return g.writeExpr(b, n.RHS().AsExpr(), false, depth)
 		} else if rcv := n.RHS().AsExpr().ConstValue(); (rcv != nil) && (rcv.Sign() == 0) {
 			return g.writeExpr(b, n.LHS().AsExpr(), false, depth)
 		}
+		overallCast = overallCast || (op == t.IDXBinaryTildeModPlus)
 
-	case t.IDXBinaryStar:
+	case t.IDXBinaryMinus, t.IDXBinaryTildeModMinus:
+		if rcv := n.RHS().AsExpr().ConstValue(); (rcv != nil) && (rcv.Sign() == 0) {
+			return g.writeExpr(b, n.LHS().AsExpr(), false, depth)
+		}
+		overallCast = overallCast || (op == t.IDXBinaryTildeModMinus)
+
+	case t.IDXBinaryStar, t.IDXBinaryTildeModStar:
 		if lcv := n.LHS().AsExpr().ConstValue(); (lcv != nil) && (lcv.Cmp(one) == 0) {
 			return g.writeExpr(b, n.RHS().AsExpr(), false, depth)
 		} else if (lcv != nil) && (lcv.Sign() == 0) && n.RHS().AsExpr().Effect().Pure() {
@@ -307,6 +314,7 @@ func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, depth uint32) error {
 		} else if (rcv != nil) && (rcv.Sign() == 0) && n.LHS().AsExpr().Effect().Pure() {
 			return g.writeExpr(b, n.RHS().AsExpr(), false, depth)
 		}
+		overallCast = overallCast || (op == t.IDXBinaryTildeModStar)
 
 	case t.IDXBinaryTildeSatPlus, t.IDXBinaryTildeSatMinus:
 		uBits := uintBits(n.MType().QID())
@@ -323,19 +331,13 @@ func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, depth uint32) error {
 	case t.IDXBinaryAs:
 		return g.writeExprAs(b, n.LHS().AsExpr(), n.RHS().AsTypeExpr(), depth)
 
-	case t.IDXBinaryTildeModPlus, t.IDXBinaryTildeModMinus, t.IDXBinaryTildeModStar:
-		overallCast = true
-
-	case t.IDXBinaryTildeModShiftL:
-		overallCast = true
-		fallthrough
-
-	case t.IDXBinaryShiftL, t.IDXBinaryShiftR:
+	case t.IDXBinaryShiftL, t.IDXBinaryShiftR, t.IDXBinaryTildeModShiftL:
 		if rcv := n.RHS().AsExpr().ConstValue(); (rcv != nil) && (rcv.Sign() == 0) {
 			return g.writeExpr(b, n.LHS().AsExpr(), false, depth)
 		} else if lhs := n.LHS().AsExpr(); lhs.ConstValue() != nil {
 			lhsCast = true
 		}
+		overallCast = overallCast || (op == t.IDXBinaryTildeModShiftL)
 	}
 
 	if opName == "" {
