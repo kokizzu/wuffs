@@ -1777,7 +1777,13 @@ func (q *checker) bcheckExprBinaryOp1(op t.ID, lhs *a.Expr, lb bounds, rhs *a.Ex
 			}, nil
 		}
 
-	case t.IDXBinaryTildeModPlus, t.IDXBinaryTildeModMinus, t.IDXBinaryTildeModStar:
+	case t.IDXBinaryTildeModStar:
+		if (lb.IsJustZero() || rb.IsJustZero()) && lhs.Effect().Pure() && rhs.Effect().Pure() {
+			return bounds{zero, zero}, nil
+		}
+		fallthrough
+
+	case t.IDXBinaryTildeModPlus, t.IDXBinaryTildeModMinus:
 		typ := lhs.MType()
 		if typ.IsIdeal() {
 			typ = rhs.MType()

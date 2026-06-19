@@ -127,6 +127,13 @@ func (g *gen) writeStatementAssign1(b *buffer, op t.ID, lhs *a.Expr, rhs *a.Expr
 	lhsBuf := buffer(nil)
 	opName, closer, disableWconversion := "", "", false
 
+	switch op {
+	case t.IDPlusEq, t.IDMinusEq, t.IDTildeModPlusEq, t.IDTildeModMinusEq:
+		if rhs.MBounds().IsJustZero() {
+			return nil
+		}
+	}
+
 	if lhs != nil {
 		if err := g.writeExpr(&lhsBuf, lhs, false, 0); err != nil {
 			return err

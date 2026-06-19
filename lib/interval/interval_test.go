@@ -283,8 +283,8 @@ func TestContainsEtc(tt *testing.T) {
 			tt.Errorf("%v eq %v: got %t, want %t", x, sharedEmptyRange, got, want)
 		}
 
-		if got, want := x.justZero(), tc.s == "[ 0,  0]"; got != want {
-			tt.Errorf("%s.justZero(): got %t, want %t", tc.s, got, want)
+		if got, want := x.IsJustZero(), tc.s == "[ 0,  0]"; got != want {
+			tt.Errorf("%s.IsJustZero(): got %t, want %t", tc.s, got, want)
 		}
 	}
 

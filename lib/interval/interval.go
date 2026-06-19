@@ -318,9 +318,9 @@ func (x IntRange) Empty() bool {
 	return x[0] != nil && x[1] != nil && x[0].Cmp(x[1]) > 0
 }
 
-// justZero returns whether x is the [0 ..= 0] interval, containing exactly one
-// element: the integer zero.
-func (x IntRange) justZero() bool {
+// IsJustZero returns whether x is the [0 ..= 0] interval, containing exactly
+// one element: the integer zero.
+func (x IntRange) IsJustZero() bool {
 	return x[0] != nil && x[1] != nil && x[0].Sign() == 0 && x[1].Sign() == 0
 }
 
@@ -555,7 +555,7 @@ func (x IntRange) mulLsh(y IntRange, shift bool) (z IntRange) {
 	if x.Empty() || y.Empty() {
 		return makeEmptyRange()
 	}
-	if x.justZero() || (!shift && y.justZero()) {
+	if x.IsJustZero() || (!shift && y.IsJustZero()) {
 		return IntRange{big.NewInt(0), big.NewInt(0)}
 	}
 
@@ -642,7 +642,7 @@ func (x IntRange) TryQuo(y IntRange) (z IntRange, ok bool) {
 	if y.ContainsZero() {
 		return IntRange{}, false
 	}
-	if x.justZero() {
+	if x.IsJustZero() {
 		return IntRange{big.NewInt(0), big.NewInt(0)}, true
 	}
 
@@ -732,7 +732,7 @@ func (x IntRange) TryRsh(y IntRange) (z IntRange, ok bool) {
 	if y.ContainsNegative() {
 		return IntRange{}, false
 	}
-	if x.justZero() {
+	if x.IsJustZero() {
 		return IntRange{big.NewInt(0), big.NewInt(0)}, true
 	}
 
