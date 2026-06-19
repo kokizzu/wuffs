@@ -55,8 +55,11 @@ func (x ID) AssociativeForm() ID {
 
 func (x ID) IsBuiltIn() bool { return x < nBuiltInIDs }
 
-func (x ID) IsUnaryOp() bool       { return minOp <= x && x <= maxOp && unaryForms[x] != 0 }
-func (x ID) IsBinaryOp() bool      { return minOp <= x && x <= maxOp && binaryForms[x] != 0 }
+func (x ID) IsUnaryOp() bool  { return minOp <= x && x <= maxOp && unaryForms[x] != 0 }
+func (x ID) IsBinaryOp() bool { return minOp <= x && x <= maxOp && binaryForms[x] != 0 }
+func (x ID) IsXBinaryTildeModOp() bool {
+	return minXBinaryTildeModOp <= x && x <= maxXBinaryTildeModOp && binaryForms[x] != 0
+}
 func (x ID) IsAssociativeOp() bool { return minOp <= x && x <= maxOp && associativeForms[x] != 0 }
 
 func (x ID) IsLiteral(m *Map) bool {
@@ -279,12 +282,14 @@ const (
 )
 
 const (
-	minOp          = 0x40
-	minAmbiguousOp = 0x40
-	maxAmbiguousOp = 0x6F
-	minXOp         = 0x70
-	maxXOp         = 0xAF
-	maxOp          = 0xAF
+	minOp                = 0x40
+	minAmbiguousOp       = 0x40
+	maxAmbiguousOp       = 0x6F
+	minXOp               = 0x70
+	minXBinaryTildeModOp = 0x80
+	maxXBinaryTildeModOp = 0x87
+	maxXOp               = 0xAF
+	maxOp                = 0xAF
 
 	IDPlus    = ID(0x40)
 	IDMinus   = ID(0x41)
@@ -972,8 +977,8 @@ var builtInsByID = [nBuiltInIDs]string{
 	IDSkipU32:         "skip_u32",
 	IDSkipU32Fast:     "skip_u32_fast",
 
-	IDCopyFromSlice:             "copy_from_slice",
-	IDLimitedCopyU32FromHistory: "limited_copy_u32_from_history",
+	IDCopyFromSlice:                                               "copy_from_slice",
+	IDLimitedCopyU32FromHistory:                                   "limited_copy_u32_from_history",
 	IDLimitedCopyU32FromHistory8ByteChunksDistance1Fast:           "limited_copy_u32_from_history_8_byte_chunks_distance_1_fast",
 	IDLimitedCopyU32FromHistory8ByteChunksDistance1FastReturnCusp: "limited_copy_u32_from_history_8_byte_chunks_distance_1_fast_return_cusp",
 	IDLimitedCopyU32FromHistory8ByteChunksFast:                    "limited_copy_u32_from_history_8_byte_chunks_fast",
