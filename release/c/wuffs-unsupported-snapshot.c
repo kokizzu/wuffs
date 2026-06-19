@@ -84053,8 +84053,8 @@ wuffs_vp8__decoder__decode_subblock_modes(
   uint8_t v_mode = 0;
 
   if (a_luma_mode < 4u) {
-    self->private_data.f_mb_states_top[a_mbx] = (((uint32_t)(v_mode)) * 4369u);
-    self->private_data.f_mb_states_left = (((uint32_t)(v_mode)) * 4369u);
+    self->private_data.f_mb_states_top[a_mbx] = ((self->private_data.f_mb_states_top[a_mbx] & 4294901760u) | (((uint32_t)(a_luma_mode)) * 4369u));
+    self->private_data.f_mb_states_left = ((self->private_data.f_mb_states_left & 4294901760u) | (((uint32_t)(a_luma_mode)) * 4369u));
     return wuffs_base__make_empty_struct();
   }
   v_i = 0u;

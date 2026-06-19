@@ -201,8 +201,10 @@ pri func decoder.decode_subblock_modes!(
     var mode      : base.u8[..= 9]
 
     if args.luma_mode < 4 {
-        this.mb_states_top[args.mbx] = (mode as base.u32) * 0x1111
-        this.mb_states_left = (mode as base.u32) * 0x1111
+        this.mb_states_top[args.mbx] = (this.mb_states_top[args.mbx] & 0xFFFF_0000) |
+                ((args.luma_mode as base.u32) * 0x1111)
+        this.mb_states_left = (this.mb_states_left & 0xFFFF_0000) |
+                ((args.luma_mode as base.u32) * 0x1111)
         return nothing
     }
 

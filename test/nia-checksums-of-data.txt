@@ -65,7 +65,7 @@ OK. 41e6110e test/data/bricks-color.etc1s.pkm
 OK. 5670f263 test/data/bricks-color.etc2.pkm
 OK. 72a1f9cc test/data/bricks-color.jpeg
 OK. 076cb375 test/data/bricks-color.lossless.webp
-OK. 4af3fcf2 test/data/bricks-color.lossy.webp
+OK. e6fa7dde test/data/bricks-color.lossy.webp
 OK. 076cb375 test/data/bricks-color.png
 OK. 076cb375 test/data/bricks-color.qoi
 OK. 076cb375 test/data/bricks-color.tga
@@ -83,7 +83,7 @@ OK. 6065d955 test/data/bricks-gray.c3q4.handsum
 OK. c2bce675 test/data/bricks-gray.gif
 OK. 3a2478ad test/data/bricks-gray.jpeg
 OK. c2bce675 test/data/bricks-gray.lossless.webp
-OK. fc0d7a27 test/data/bricks-gray.lossy.webp
+OK. 21bfc968 test/data/bricks-gray.lossy.webp
 OK. c2bce675 test/data/bricks-gray.no-ancillary.png
 OK. c2bce675 test/data/bricks-gray.png
 OK. c2bce675 test/data/bricks-gray.tga
@@ -102,7 +102,7 @@ OK. 030f5a48 test/data/harvesters.bmp
 OK. c18b3d5a test/data/harvesters.gif
 OK. f217df74 test/data/harvesters.jpeg
 OK. 030f5a48 test/data/harvesters.lossless.webp
-OK. f94319e2 test/data/harvesters.lossy.webp
+OK. 5a00fc85 test/data/harvesters.lossy.webp
 OK. 030f5a48 test/data/harvesters.png
 OK. e776c90f test/data/hat.bmp
 OK. 6dcba6a4 test/data/hat.gif
@@ -115,13 +115,13 @@ OK. 33a44f22 test/data/hibiscus.primitive.bmp
 OK. 25e212b3 test/data/hibiscus.primitive.gif
 OK. 9624fa44 test/data/hibiscus.primitive.jpeg
 OK. 33a44f22 test/data/hibiscus.primitive.lossless.webp
-OK. 8fa195d4 test/data/hibiscus.primitive.lossy.webp
+OK. 5398c9d7 test/data/hibiscus.primitive.lossy.webp
 OK. 33a44f22 test/data/hibiscus.primitive.png
 OK. 60040742 test/data/hibiscus.regular.bmp
 OK. b727da8b test/data/hibiscus.regular.gif
 OK. 41e39405 test/data/hibiscus.regular.jpeg
 OK. 60040742 test/data/hibiscus.regular.lossless.webp
-OK. a88f76df test/data/hibiscus.regular.lossy.webp
+OK. cc05ca96 test/data/hibiscus.regular.lossy.webp
 OK. 60040742 test/data/hibiscus.regular.png
 OK. dcbb225a test/data/hippopotamus.bmp
 OK. ed4b78fc test/data/hippopotamus.interlaced.gif
@@ -146,7 +146,7 @@ OK. 39d18fce test/data/mona-lisa.21x32.c3q4.handsum
 OK. f6bb81e2 test/data/mona-lisa.21x32.etc2.pkm
 OK. 012ce4cf test/data/mona-lisa.21x32.lossless.webp
 OK. 012ce4cf test/data/mona-lisa.21x32.png
-OK. 6e682e48 test/data/mona-lisa.21x32.q0.lossy.webp
+OK. f0a78a8b test/data/mona-lisa.21x32.q0.lossy.webp
 OK. 1b56acf3 test/data/mona-lisa.21x32.q25.lossy.webp
 OK. 0a22e689 test/data/mona-lisa.21x32.q50.jpeg
 OK. a6a79d62 test/data/mona-lisa.21x32.q50.lossy.webp
