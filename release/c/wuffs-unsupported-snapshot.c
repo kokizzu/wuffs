@@ -83950,6 +83950,7 @@ wuffs_vp8__decoder__decode_one_macroblock(
   uint32_t v_v1 = 0;
   uint32_t v_seg = 0;
   uint32_t v_skip = 0;
+  uint32_t v_mask = 0;
   uint32_t v_luma_mode = 0;
   uint32_t v_chroma_mode = 0;
 
@@ -83972,8 +83973,12 @@ wuffs_vp8__decoder__decode_one_macroblock(
   wuffs_vp8__decoder__decode_subblock_modes(self, a_workbuf, a_mbx, v_luma_mode);
   v_chroma_mode = wuffs_vp8__decoder__decode_chroma_mode(self, a_workbuf);
   if (v_skip != 0u) {
-    self->private_data.f_mb_states_left &= 65535u;
-    self->private_data.f_mb_states_top[a_mbx] &= 65535u;
+    v_mask = 65535u;
+    if (v_luma_mode >= 4u) {
+      v_mask = 8454143u;
+    }
+    self->private_data.f_mb_states_left &= v_mask;
+    self->private_data.f_mb_states_top[a_mbx] &= v_mask;
     self->private_impl.f_mb_dc_nz = 0u;
     self->private_impl.f_mb_ac_nz = 0u;
   } else {

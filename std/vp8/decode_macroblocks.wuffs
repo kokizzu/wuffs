@@ -81,6 +81,7 @@ pri func decoder.decode_one_macroblock!(workbuf: slice base.u8, mbx: base.u32[..
 
     var seg         : base.u32[..= 3]
     var skip        : base.u32[..= 1]
+    var mask        : base.u32
     var luma_mode   : base.u32[..= 4]
     var chroma_mode : base.u32[..= 3]
 
@@ -108,8 +109,12 @@ pri func decoder.decode_one_macroblock!(workbuf: slice base.u8, mbx: base.u32[..
 
     if skip <> 0 {
         // Clear the HNZC bits.
-        this.mb_states_left &= 0x0000_FFFF
-        this.mb_states_top[args.mbx] &= 0x0000_FFFF
+        mask = 0x0000_FFFF
+        if luma_mode >= 4 {
+            mask = 0x0080_FFFF
+        }
+        this.mb_states_left &= mask
+        this.mb_states_top[args.mbx] &= mask
         this.mb_dc_nz = 0
         this.mb_ac_nz = 0
 
