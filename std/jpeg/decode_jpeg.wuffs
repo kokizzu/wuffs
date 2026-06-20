@@ -50,9 +50,9 @@ pub struct decoder? implements base.image_decoder(
 
         test_only_interrupt_decode_mcu : base.bool,
 
-        is_jfif        : base.bool,
-        is_adobe       : base.u8,  // 0: no, 1: yes+RGB/CMYK, 2:yes+YCC/YCCK.
-        is_rgb_or_cmyk : base.bool,
+        is_jfif   : base.bool,
+        is_adobe  : base.u8,  // 0: no, 1: yes+RGB/CMYK, 2:yes+YCC/YCCK.
+        ycc_model : base.u8,
 
         sof_marker          : base.u8,
         next_restart_marker : base.u8[..= 7],
@@ -773,19 +773,21 @@ pri func decoder.decode_sof?(src: base.io_reader) {
             return "#unsupported fractional sampling"
         }
 
-        // Match the behavior of libjpeg-turbo's jdapimin.c.
+        // Match the behavior of libjpeg-turbo's jdapimin.c. By default, we use
+        // BT.601 Full Range (which is mandatory for JFIF).
+        //
+        // is_adobe means 0: no, 1: yes+RGB/CMYK, 2:yes+YCC/YCCK.
+        this.ycc_model = base.YCC_MODEL__BT_601_FULL_RANGE as base.u8
         if this.num_components == 4 {
-            this.is_rgb_or_cmyk = this.is_adobe < 2
-        } else {  // this.num_components == 3
-            if this.is_jfif {
-                this.is_rgb_or_cmyk = false
-            } else if this.is_adobe > 0 {
-                this.is_rgb_or_cmyk = this.is_adobe == 1
-            } else {
-                this.is_rgb_or_cmyk =
-                        (this.components_c[0] == 'R') and
-                        (this.components_c[1] == 'G') and
-                        (this.components_c[2] == 'B')
+            if this.is_adobe < 2 {
+                this.ycc_model = base.YCC_MODEL__CMY as base.u8
+            }
+        } else if not this.is_jfif {  // And also (this.num_components == 3).
+            if (this.is_adobe == 1) or ((this.is_adobe < 1) and
+                    (this.components_c[0] == 'R') and
+                    (this.components_c[1] == 'G') and
+                    (this.components_c[2] == 'B')) {
+                this.ycc_model = base.YCC_MODEL__RGB as base.u8
             }
         }
     }
@@ -2166,7 +2168,7 @@ pri func decoder.swizzle_colorful!(dst: ptr base.pixel_buffer, workbuf: slice ba
             v1: this.components_v[1],
             v2: this.components_v[2],
             v3: this.components_v[3],
-            is_rgb_or_cmyk: this.is_rgb_or_cmyk,
+            ycc_model: this.ycc_model,
             triangle_filter_for_2to1: not this.use_lower_quality,
             scratch_buffer_2k: this.swizzle_ycck_scratch_buffer_2k[..])
     return status

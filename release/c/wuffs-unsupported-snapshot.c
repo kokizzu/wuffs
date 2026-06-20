@@ -5081,6 +5081,64 @@ wuffs_base__pixel_subsampling::denominator_y(uint32_t plane) const {
 
 // --------
 
+// YCbCr Models are how to convert to and from RGB. Here's the formulae from
+// https://gist.github.com/yohhoy/dafa5a47dade85d8b40625261af3776a
+//
+// ----
+//
+// Y  = (a * R) + (b * G) + (c * B)
+// Cb = (B - Y) / d
+// Cr = (R - Y) / e
+//
+//     BT.601   BT.709  BT.2020
+// a    0.299   0.2126   0.2627
+// b    0.587   0.7152   0.6780
+// c    0.114   0.0722   0.0593
+// d    1.772   1.8556   1.8814
+// e    1.402   1.5748   1.4746
+//
+// R = Y                                    + (e * Cr)
+// G = Y   - ((c / b) * d * Cb)   - ((a / b) * e * Cr)
+// B = Y             + (d * Cb)
+//
+// https://www.itu.int/rec/R-REC-BT.601
+// https://www.itu.int/rec/R-REC-BT.709
+// https://www.itu.int/rec/R-REC-BT.2020
+//
+// ----
+//
+// The formulae and abcde constants above are for Full Range. They need scaling
+// and biasing for Studio Range.
+//
+// Full Range means that the luma (Y) and chroma (Cb, Cr) samples all range in
+// [0 ..= 255], for 8-bit samples. This is equivalent to [0.0 ..= 1.0] or
+// sometimes [-0.5 ..= +0.5], for floating point samples.
+//
+// Studio Range means that luma (Y) ranges in [16 ..= 235] and chroma (Cb, Cr)
+// ranges in [16 ..= 240], again for 8-bit samples.
+//
+// JPEG/JFIF uses BT.601 Full Range. WEBP uses BT.601 Studio Range.
+//
+// ----
+//
+// Beyond the various ITU BT (Broadcast Television) standards linked from that
+// gist, some nominally-YCbCr data streams (like 3- or 4-channel JPEG images)
+// can, in practice, hold RGB or CMY/CMYK samples.
+//
+// For CMY, C = (100% - R), M = (100% - G) and Y = (100% - B). Black (K), if
+// present, then modulates the three RGB values.
+
+// clang-format off
+
+#define WUFFS_BASE__YCC_MODEL__BT_601_FULL_RANGE            0x00
+#define WUFFS_BASE__YCC_MODEL__BT_601_STUDIO_RANGE          0x01
+#define WUFFS_BASE__YCC_MODEL__RGB                          0x40
+#define WUFFS_BASE__YCC_MODEL__CMY                          0x80
+
+// clang-format on
+
+// --------
+
 typedef struct wuffs_base__pixel_config__struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.
@@ -11053,7 +11111,7 @@ struct wuffs_jpeg__decoder__struct {
     bool f_test_only_interrupt_decode_mcu;
     bool f_is_jfif;
     uint8_t f_is_adobe;
-    bool f_is_rgb_or_cmyk;
+    uint8_t f_ycc_model;
     uint8_t f_sof_marker;
     uint8_t f_next_restart_marker;
     uint8_t f_max_incl_components_h;
@@ -19034,7 +19092,7 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
     uint8_t v1,
     uint8_t v2,
     uint8_t v3,
-    bool is_rgb_or_cmyk,
+    uint8_t ycc_model,
     bool triangle_filter_for_2to1,
     wuffs_base__slice_u8 scratch_buffer_2k);
 
@@ -33411,7 +33469,7 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
     uint8_t v1,
     uint8_t v2,
     uint8_t v3,
-    bool is_rgb_or_cmyk,
+    uint8_t ycc_model,
     bool triangle_filter_for_2to1,
     wuffs_base__slice_u8 scratch_buffer_2k) {
   if (!p) {
@@ -33627,7 +33685,7 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
 
   wuffs_private_impl__swizzle_ycc__convert_3_func conv3func = NULL;
 
-  if (is_rgb_or_cmyk) {
+  if (ycc_model >= WUFFS_BASE__YCC_MODEL__RGB) {
     conv3func = &wuffs_private_impl__swizzle_rgb__convert_3_general;
   } else {
     switch (dst->pixcfg.private_impl.pixfmt.repr) {
@@ -33751,8 +33809,9 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
 
   if ((h3 != 0u) || (v3 != 0u)) {
     wuffs_private_impl__swizzle_ycc__convert_4_func conv4func =
-        is_rgb_or_cmyk ? &wuffs_private_impl__swizzle_cmyk__convert_4_general
-                       : &wuffs_private_impl__swizzle_ycck__convert_4_general;
+        (ycc_model >= WUFFS_BASE__YCC_MODEL__RGB)
+            ? &wuffs_private_impl__swizzle_cmyk__convert_4_general
+            : &wuffs_private_impl__swizzle_ycck__convert_4_general;
     (*func4)(                                                 //
         dst, x_min_incl, x_max_excl, y_min_incl, y_max_excl,  //
         src0.ptr, src1.ptr, src2.ptr, src3.ptr,               //
@@ -55652,15 +55711,17 @@ wuffs_jpeg__decoder__decode_sof(
         status = wuffs_base__make_status(wuffs_jpeg__error__unsupported_fractional_sampling);
         goto exit;
       }
+      self->private_impl.f_ycc_model = ((uint8_t)(0u));
       if (self->private_impl.f_num_components == 4u) {
-        self->private_impl.f_is_rgb_or_cmyk = (self->private_impl.f_is_adobe < 2u);
-      } else {
-        if (self->private_impl.f_is_jfif) {
-          self->private_impl.f_is_rgb_or_cmyk = false;
-        } else if (self->private_impl.f_is_adobe > 0u) {
-          self->private_impl.f_is_rgb_or_cmyk = (self->private_impl.f_is_adobe == 1u);
-        } else {
-          self->private_impl.f_is_rgb_or_cmyk = ((self->private_impl.f_components_c[0u] == 82u) && (self->private_impl.f_components_c[1u] == 71u) && (self->private_impl.f_components_c[2u] == 66u));
+        if (self->private_impl.f_is_adobe < 2u) {
+          self->private_impl.f_ycc_model = ((uint8_t)(128u));
+        }
+      } else if ( ! self->private_impl.f_is_jfif) {
+        if ((self->private_impl.f_is_adobe == 1u) || ((self->private_impl.f_is_adobe < 1u) &&
+            (self->private_impl.f_components_c[0u] == 82u) &&
+            (self->private_impl.f_components_c[1u] == 71u) &&
+            (self->private_impl.f_components_c[2u] == 66u))) {
+          self->private_impl.f_ycc_model = ((uint8_t)(64u));
         }
       }
     }
@@ -57624,7 +57685,7 @@ wuffs_jpeg__decoder__swizzle_colorful(
       self->private_impl.f_components_v[1u],
       self->private_impl.f_components_v[2u],
       self->private_impl.f_components_v[3u],
-      self->private_impl.f_is_rgb_or_cmyk,
+      self->private_impl.f_ycc_model,
       ! self->private_impl.f_use_lower_quality,
       wuffs_base__make_slice_u8(self->private_data.f_swizzle_ycck_scratch_buffer_2k, 2048));
   return wuffs_private_impl__status__ensure_not_a_suspension(v_status);
@@ -84033,7 +84094,7 @@ wuffs_vp8__decoder__swizzle_one_row_of_macroblocks(
       1u,
       1u,
       0u,
-      false,
+      0u,
       false,
       wuffs_base__make_slice_u8(self->private_data.f_swizzle_ycck_scratch_buffer_2k, 2048));
   return wuffs_private_impl__status__ensure_not_a_suspension(v_status);

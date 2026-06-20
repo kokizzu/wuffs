@@ -737,6 +737,64 @@ wuffs_base__pixel_subsampling::denominator_y(uint32_t plane) const {
 
 // --------
 
+// YCbCr Models are how to convert to and from RGB. Here's the formulae from
+// https://gist.github.com/yohhoy/dafa5a47dade85d8b40625261af3776a
+//
+// ----
+//
+// Y  = (a * R) + (b * G) + (c * B)
+// Cb = (B - Y) / d
+// Cr = (R - Y) / e
+//
+//     BT.601   BT.709  BT.2020
+// a    0.299   0.2126   0.2627
+// b    0.587   0.7152   0.6780
+// c    0.114   0.0722   0.0593
+// d    1.772   1.8556   1.8814
+// e    1.402   1.5748   1.4746
+//
+// R = Y                                    + (e * Cr)
+// G = Y   - ((c / b) * d * Cb)   - ((a / b) * e * Cr)
+// B = Y             + (d * Cb)
+//
+// https://www.itu.int/rec/R-REC-BT.601
+// https://www.itu.int/rec/R-REC-BT.709
+// https://www.itu.int/rec/R-REC-BT.2020
+//
+// ----
+//
+// The formulae and abcde constants above are for Full Range. They need scaling
+// and biasing for Studio Range.
+//
+// Full Range means that the luma (Y) and chroma (Cb, Cr) samples all range in
+// [0 ..= 255], for 8-bit samples. This is equivalent to [0.0 ..= 1.0] or
+// sometimes [-0.5 ..= +0.5], for floating point samples.
+//
+// Studio Range means that luma (Y) ranges in [16 ..= 235] and chroma (Cb, Cr)
+// ranges in [16 ..= 240], again for 8-bit samples.
+//
+// JPEG/JFIF uses BT.601 Full Range. WEBP uses BT.601 Studio Range.
+//
+// ----
+//
+// Beyond the various ITU BT (Broadcast Television) standards linked from that
+// gist, some nominally-YCbCr data streams (like 3- or 4-channel JPEG images)
+// can, in practice, hold RGB or CMY/CMYK samples.
+//
+// For CMY, C = (100% - R), M = (100% - G) and Y = (100% - B). Black (K), if
+// present, then modulates the three RGB values.
+
+// clang-format off
+
+#define WUFFS_BASE__YCC_MODEL__BT_601_FULL_RANGE            0x00
+#define WUFFS_BASE__YCC_MODEL__BT_601_STUDIO_RANGE          0x01
+#define WUFFS_BASE__YCC_MODEL__RGB                          0x40
+#define WUFFS_BASE__YCC_MODEL__CMY                          0x80
+
+// clang-format on
+
+// --------
+
 typedef struct wuffs_base__pixel_config__struct {
   // Do not access the private_impl's fields directly. There is no API/ABI
   // compatibility or safety guarantee if you do so.

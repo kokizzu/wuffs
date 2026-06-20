@@ -241,6 +241,13 @@ var Consts = [...]struct {
 	// ----
 
 	{t.IDU32, "0xFFFD", "UNICODE__REPLACEMENT_CHARACTER"},
+
+	// ----
+
+	{t.IDU32, "0x00", "YCC_MODEL__BT_601_FULL_RANGE"},
+	{t.IDU32, "0x01", "YCC_MODEL__BT_601_STUDIO_RANGE"},
+	{t.IDU32, "0x40", "YCC_MODEL__RGB"},
+	{t.IDU32, "0x80", "YCC_MODEL__CMY"},
 }
 
 var Statuses = [...]string{
@@ -734,7 +741,7 @@ var funcsOther = [...]string{
 		"v1: u8[..= 4]," +
 		"v2: u8[..= 4]," +
 		"v3: u8[..= 4]," +
-		"is_rgb_or_cmyk: bool," +
+		"ycc_model: u8," +
 		"triangle_filter_for_2to1: bool," +
 		"scratch_buffer_2k: slice u8) status",
 

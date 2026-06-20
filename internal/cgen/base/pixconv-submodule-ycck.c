@@ -1224,7 +1224,7 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
     uint8_t v1,
     uint8_t v2,
     uint8_t v3,
-    bool is_rgb_or_cmyk,
+    uint8_t ycc_model,
     bool triangle_filter_for_2to1,
     wuffs_base__slice_u8 scratch_buffer_2k) {
   if (!p) {
@@ -1440,7 +1440,7 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
 
   wuffs_private_impl__swizzle_ycc__convert_3_func conv3func = NULL;
 
-  if (is_rgb_or_cmyk) {
+  if (ycc_model >= WUFFS_BASE__YCC_MODEL__RGB) {
     conv3func = &wuffs_private_impl__swizzle_rgb__convert_3_general;
   } else {
     switch (dst->pixcfg.private_impl.pixfmt.repr) {
@@ -1564,8 +1564,9 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
 
   if ((h3 != 0u) || (v3 != 0u)) {
     wuffs_private_impl__swizzle_ycc__convert_4_func conv4func =
-        is_rgb_or_cmyk ? &wuffs_private_impl__swizzle_cmyk__convert_4_general
-                       : &wuffs_private_impl__swizzle_ycck__convert_4_general;
+        (ycc_model >= WUFFS_BASE__YCC_MODEL__RGB)
+            ? &wuffs_private_impl__swizzle_cmyk__convert_4_general
+            : &wuffs_private_impl__swizzle_ycck__convert_4_general;
     (*func4)(                                                 //
         dst, x_min_incl, x_max_excl, y_min_incl, y_max_excl,  //
         src0.ptr, src1.ptr, src2.ptr, src3.ptr,               //
