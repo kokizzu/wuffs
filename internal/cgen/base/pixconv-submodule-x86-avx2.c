@@ -14,7 +14,7 @@
 #if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V3)
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
 static void  //
-wuffs_private_impl__swizzle_ycc__convert_3_bgrx_x86_avx2(
+wuffs_private_impl__swizzle_ycc_bt601fr__convert_3_bgrx_x86_avx2(
     wuffs_base__pixel_buffer* dst,
     uint32_t x,
     uint32_t x_end,
@@ -23,7 +23,7 @@ wuffs_private_impl__swizzle_ycc__convert_3_bgrx_x86_avx2(
     const uint8_t* up1,
     const uint8_t* up2) {
   if ((x + 32u) > x_end) {
-    wuffs_private_impl__swizzle_ycc__convert_3_bgrx(  //
+    wuffs_private_impl__swizzle_ycc_bt601fr__convert_3_bgrx(  //
         dst, x, x_end, y, up0, up1, up2);
     return;
   }
@@ -48,7 +48,7 @@ wuffs_private_impl__swizzle_ycc__convert_3_bgrx_x86_avx2(
       +0x0000, -0x8000, +0x0000, -0x8000,        //
       +0x0000, -0x8000, +0x0000, -0x8000);
 
-  // Per wuffs_base__color_ycc__as__color_u32, the formulae:
+  // Per wuffs_base__color_ycc_bt601fr__as__color_u32, the formulae:
   //
   //  R = Y                + 1.40200 * Cr
   //  G = Y - 0.34414 * Cb - 0.71414 * Cr
@@ -287,7 +287,7 @@ wuffs_private_impl__swizzle_ycc__convert_3_bgrx_x86_avx2(
 // except for the lines marked with a § and that comments were stripped.
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
 static void  //
-wuffs_private_impl__swizzle_ycc__convert_3_rgbx_x86_avx2(
+wuffs_private_impl__swizzle_ycc_bt601fr__convert_3_rgbx_x86_avx2(
     wuffs_base__pixel_buffer* dst,
     uint32_t x,
     uint32_t x_end,
@@ -296,7 +296,7 @@ wuffs_private_impl__swizzle_ycc__convert_3_rgbx_x86_avx2(
     const uint8_t* up1,
     const uint8_t* up2) {
   if ((x + 32u) > x_end) {
-    wuffs_private_impl__swizzle_ycc__convert_3_rgbx(  //
+    wuffs_private_impl__swizzle_ycc_bt601fr__convert_3_rgbx(  //
         dst, x, x_end, y, up0, up1, up2);
     return;
   }

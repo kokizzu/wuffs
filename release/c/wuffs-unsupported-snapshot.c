@@ -4638,8 +4638,28 @@ wuffs_base__color_u64__as__color_u32(uint64_t c) {
 
 // wuffs_base__color_ycc__as__color_u32 converts from YCbCr to 0xAARRGGBB. The
 // alpha bits are always 0xFF.
+//
+// There is no YCC_MODEL (like bt601fr) in the macro name. For backwards
+// compatibility, it uses WUFFS_BASE__YCC_MODEL__BT_601_FULL_RANGE, like JPEG.
+#define wuffs_base__color_ycc__as__color_u32 \
+  wuffs_base__color_ycc_bt601fr__as__color_u32
+
+// wuffs_base__color_ycc__as__color_u32_abgr is like
+// wuffs_base__color_ycc__as__color_u32 but the uint32_t returned is in
+// 0xAABBGGRR order, not 0xAARRGGBB.
+//
+// There is no YCC_MODEL (like bt601fr) in the macro name. For backwards
+// compatibility, it uses WUFFS_BASE__YCC_MODEL__BT_601_FULL_RANGE, like JPEG.
+#define wuffs_base__color_ycc__as__color_u32_abgr \
+  wuffs_base__color_ycc_bt601fr__as__color_u32_abgr
+
+// wuffs_base__color_ycc_bt601fr__as__color_u32 is
+// wuffs_base__color_ycc__as__color_u32 for
+// WUFFS_BASE__YCC_MODEL__BT_601_FULL_RANGE.
 static inline wuffs_base__color_u32_argb_premul  //
-wuffs_base__color_ycc__as__color_u32(uint8_t yy, uint8_t cb, uint8_t cr) {
+wuffs_base__color_ycc_bt601fr__as__color_u32(uint8_t yy,
+                                             uint8_t cb,
+                                             uint8_t cr) {
   // Work in 16.16 fixed point arithmetic (so that 'one half' is (1 << 15)) and
   // bias the chroma values by 0x80.
   uint32_t yy32 = (((uint32_t)yy) << 16) | (1 << 15);
@@ -4688,11 +4708,13 @@ wuffs_base__color_ycc__as__color_u32(uint8_t yy, uint8_t cb, uint8_t cr) {
          ((0x00FF0000 & bb32) >> 16);
 }
 
-// wuffs_base__color_ycc__as__color_u32_abgr is like
-// wuffs_base__color_ycc__as__color_u32 but the uint32_t returned is in
-// 0xAABBGGRR order, not 0xAARRGGBB.
+// wuffs_base__color_ycc_bt601fr__as__color_u32_abgr is
+// wuffs_base__color_ycc__as__color_u32_abgr for
+// WUFFS_BASE__YCC_MODEL__BT_601_FULL_RANGE.
 static inline uint32_t  //
-wuffs_base__color_ycc__as__color_u32_abgr(uint8_t yy, uint8_t cb, uint8_t cr) {
+wuffs_base__color_ycc_bt601fr__as__color_u32_abgr(uint8_t yy,
+                                                  uint8_t cb,
+                                                  uint8_t cr) {
   uint32_t yy32 = (((uint32_t)yy) << 16) | (1 << 15);
   uint32_t cb32 = (((uint32_t)cb) - 0x80);
   uint32_t cr32 = (((uint32_t)cr) - 0x80);
@@ -4714,8 +4736,66 @@ wuffs_base__color_ycc__as__color_u32_abgr(uint8_t yy, uint8_t cb, uint8_t cr) {
          ((0x00FF0000 & rr32) >> 16);
 }
 
-// wuffs_base__color_swap_u32_argb_abgr converts between 0xAARRGGBB and
-// 0xAABBGGRR.
+// wuffs_base__color_ycc_bt601sr__as__color_u32 is
+// wuffs_base__color_ycc__as__color_u32 for
+// WUFFS_BASE__YCC_MODEL__BT_601_STUDIO_RANGE.
+static inline wuffs_base__color_u32_argb_premul  //
+wuffs_base__color_ycc_bt601sr__as__color_u32(uint8_t yy,
+                                             uint8_t cb,
+                                             uint8_t cr) {
+  // The constants here match those used in libwebp's src/dsp/yuv.h, using
+  // 18.14 fixed point arithmetic. (1 << 14) equals 16384.
+  //
+  // 19077 ≈ 16384 * 1.164
+  // 26149 ≈ 16384 * 1.596
+  //  6419 ≈ 16384 * 0.392
+  // 13320 ≈ 16384 * 0.813
+  // 33050 ≈ 16384 * 2.017
+  // 14234 ≈ 16384 * 0.869
+  //  8708 ≈ 16384 * 0.531
+  // 17685 ≈ 16384 * 1.079
+
+  int32_t y0 = ((int32_t)yy * 19077) >> 8;
+  int32_t rr = ((int32_t)cr * 26149) >> 8;
+  int32_t gb = ((int32_t)cb * 6419) >> 8;
+  int32_t gr = ((int32_t)cr * 13320) >> 8;
+  int32_t bb = ((int32_t)cb * 33050) >> 8;
+
+  int32_t r1 = y0 + rr - 14234;
+  int32_t g1 = y0 - gb - gr + 8708;
+  int32_t b1 = y0 + bb - 17685;
+
+  uint32_t r = (r1 < 0) ? 0u : (r1 > 16320) ? 255u : ((uint32_t)r1 >> 6);
+  uint32_t g = (g1 < 0) ? 0u : (g1 > 16320) ? 255u : ((uint32_t)g1 >> 6);
+  uint32_t b = (b1 < 0) ? 0u : (b1 > 16320) ? 255u : ((uint32_t)b1 >> 6);
+
+  return 0xFF000000u | (r << 16) | (g << 8) | b;
+}
+
+// wuffs_base__color_ycc_bt601sr__as__color_u32_abgr is
+// wuffs_base__color_ycc__as__color_u32_abgr for
+// WUFFS_BASE__YCC_MODEL__BT_601_STUDIO_RANGE.
+static inline uint32_t  //
+wuffs_base__color_ycc_bt601sr__as__color_u32_abgr(uint8_t yy,
+                                                  uint8_t cb,
+                                                  uint8_t cr) {
+  int32_t y0 = ((int32_t)yy * 19077) >> 8;
+  int32_t rr = ((int32_t)cr * 26149) >> 8;
+  int32_t gb = ((int32_t)cb * 6419) >> 8;
+  int32_t gr = ((int32_t)cr * 13320) >> 8;
+  int32_t bb = ((int32_t)cb * 33050) >> 8;
+
+  int32_t r1 = y0 + rr - 14234;
+  int32_t g1 = y0 - gb - gr + 8708;
+  int32_t b1 = y0 + bb - 17685;
+
+  uint32_t r = (r1 < 0) ? 0u : (r1 > 16320) ? 255u : ((uint32_t)r1 >> 6);
+  uint32_t g = (g1 < 0) ? 0u : (g1 > 16320) ? 255u : ((uint32_t)g1 >> 6);
+  uint32_t b = (b1 < 0) ? 0u : (b1 > 16320) ? 255u : ((uint32_t)b1 >> 6);
+
+  return 0xFF000000u | (b << 16) | (g << 8) | r;
+}
+
 static inline uint32_t  //
 wuffs_base__color_swap_u32_argb_abgr(uint32_t u) {
   uint32_t o = u & 0xFF00FF00ul;
@@ -32258,7 +32338,7 @@ wuffs_base__pixel_swizzler__swizzle_interleaved_transparent_black(
 #if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V3)
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
 static void  //
-wuffs_private_impl__swizzle_ycc__convert_3_bgrx_x86_avx2(
+wuffs_private_impl__swizzle_ycc_bt601fr__convert_3_bgrx_x86_avx2(
     wuffs_base__pixel_buffer* dst,
     uint32_t x,
     uint32_t x_end,
@@ -32269,7 +32349,7 @@ wuffs_private_impl__swizzle_ycc__convert_3_bgrx_x86_avx2(
 
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
 static void  //
-wuffs_private_impl__swizzle_ycc__convert_3_rgbx_x86_avx2(
+wuffs_private_impl__swizzle_ycc_bt601fr__convert_3_rgbx_x86_avx2(
     wuffs_base__pixel_buffer* dst,
     uint32_t x,
     uint32_t x_end,
@@ -32369,8 +32449,8 @@ wuffs_private_impl__swizzle_ycck__convert_4_general(
     const uint8_t* up3) {
   for (; x < x_end; x++) {
     // We invert once again: 0xFFu means no ink instead of full ink.
-    uint32_t color =                           //
-        wuffs_base__color_ycc__as__color_u32(  //
+    uint32_t color =                                   //
+        wuffs_base__color_ycc_bt601fr__as__color_u32(  //
             *up0++, *up1++, *up2++);
     uint32_t r = 0xFFu - (0xFFu & (color >> 16u));
     uint32_t g = 0xFFu - (0xFFu & (color >> 8u));
@@ -32414,7 +32494,7 @@ wuffs_private_impl__swizzle_rgb__convert_3_general(
 }
 
 static void  //
-wuffs_private_impl__swizzle_ycc__convert_3_general(
+wuffs_private_impl__swizzle_ycc_bt601fr__convert_3_general(
     wuffs_base__pixel_buffer* dst,
     uint32_t x,
     uint32_t x_end,
@@ -32423,28 +32503,29 @@ wuffs_private_impl__swizzle_ycc__convert_3_general(
     const uint8_t* up1,
     const uint8_t* up2) {
   for (; x < x_end; x++) {
-    uint32_t color =                           //
-        wuffs_base__color_ycc__as__color_u32(  //
+    uint32_t color =                                   //
+        wuffs_base__color_ycc_bt601fr__as__color_u32(  //
             *up0++, *up1++, *up2++);
     wuffs_base__pixel_buffer__set_color_u32_at(dst, x, y, color);
   }
 }
 
 static void  //
-wuffs_private_impl__swizzle_ycc__convert_3_bgrx(wuffs_base__pixel_buffer* dst,
-                                                uint32_t x,
-                                                uint32_t x_end,
-                                                uint32_t y,
-                                                const uint8_t* up0,
-                                                const uint8_t* up1,
-                                                const uint8_t* up2) {
+wuffs_private_impl__swizzle_ycc_bt601fr__convert_3_bgrx(
+    wuffs_base__pixel_buffer* dst,
+    uint32_t x,
+    uint32_t x_end,
+    uint32_t y,
+    const uint8_t* up0,
+    const uint8_t* up1,
+    const uint8_t* up2) {
   size_t dst_stride = dst->private_impl.planes[0].stride;
   uint8_t* dst_iter = dst->private_impl.planes[0].ptr +
                       (dst_stride * ((size_t)y)) + (4u * ((size_t)x));
 
   for (; x < x_end; x++) {
-    uint32_t color =                           //
-        wuffs_base__color_ycc__as__color_u32(  //
+    uint32_t color =                                   //
+        wuffs_base__color_ycc_bt601fr__as__color_u32(  //
             *up0++, *up1++, *up2++);
     wuffs_base__poke_u32le__no_bounds_check(dst_iter, color);
     dst_iter += 4u;
@@ -32452,20 +32533,82 @@ wuffs_private_impl__swizzle_ycc__convert_3_bgrx(wuffs_base__pixel_buffer* dst,
 }
 
 static void  //
-wuffs_private_impl__swizzle_ycc__convert_3_rgbx(wuffs_base__pixel_buffer* dst,
-                                                uint32_t x,
-                                                uint32_t x_end,
-                                                uint32_t y,
-                                                const uint8_t* up0,
-                                                const uint8_t* up1,
-                                                const uint8_t* up2) {
+wuffs_private_impl__swizzle_ycc_bt601fr__convert_3_rgbx(
+    wuffs_base__pixel_buffer* dst,
+    uint32_t x,
+    uint32_t x_end,
+    uint32_t y,
+    const uint8_t* up0,
+    const uint8_t* up1,
+    const uint8_t* up2) {
   size_t dst_stride = dst->private_impl.planes[0].stride;
   uint8_t* dst_iter = dst->private_impl.planes[0].ptr +
                       (dst_stride * ((size_t)y)) + (4u * ((size_t)x));
 
   for (; x < x_end; x++) {
-    uint32_t color =                                //
-        wuffs_base__color_ycc__as__color_u32_abgr(  //
+    uint32_t color =                                        //
+        wuffs_base__color_ycc_bt601fr__as__color_u32_abgr(  //
+            *up0++, *up1++, *up2++);
+    wuffs_base__poke_u32le__no_bounds_check(dst_iter, color);
+    dst_iter += 4u;
+  }
+}
+
+static void  //
+wuffs_private_impl__swizzle_ycc_bt601sr__convert_3_general(
+    wuffs_base__pixel_buffer* dst,
+    uint32_t x,
+    uint32_t x_end,
+    uint32_t y,
+    const uint8_t* up0,
+    const uint8_t* up1,
+    const uint8_t* up2) {
+  for (; x < x_end; x++) {
+    uint32_t color =                                   //
+        wuffs_base__color_ycc_bt601sr__as__color_u32(  //
+            *up0++, *up1++, *up2++);
+    wuffs_base__pixel_buffer__set_color_u32_at(dst, x, y, color);
+  }
+}
+
+static void  //
+wuffs_private_impl__swizzle_ycc_bt601sr__convert_3_bgrx(
+    wuffs_base__pixel_buffer* dst,
+    uint32_t x,
+    uint32_t x_end,
+    uint32_t y,
+    const uint8_t* up0,
+    const uint8_t* up1,
+    const uint8_t* up2) {
+  size_t dst_stride = dst->private_impl.planes[0].stride;
+  uint8_t* dst_iter = dst->private_impl.planes[0].ptr +
+                      (dst_stride * ((size_t)y)) + (4u * ((size_t)x));
+
+  for (; x < x_end; x++) {
+    uint32_t color =                                   //
+        wuffs_base__color_ycc_bt601sr__as__color_u32(  //
+            *up0++, *up1++, *up2++);
+    wuffs_base__poke_u32le__no_bounds_check(dst_iter, color);
+    dst_iter += 4u;
+  }
+}
+
+static void  //
+wuffs_private_impl__swizzle_ycc_bt601sr__convert_3_rgbx(
+    wuffs_base__pixel_buffer* dst,
+    uint32_t x,
+    uint32_t x_end,
+    uint32_t y,
+    const uint8_t* up0,
+    const uint8_t* up1,
+    const uint8_t* up2) {
+  size_t dst_stride = dst->private_impl.planes[0].stride;
+  uint8_t* dst_iter = dst->private_impl.planes[0].ptr +
+                      (dst_stride * ((size_t)y)) + (4u * ((size_t)x));
+
+  for (; x < x_end; x++) {
+    uint32_t color =                                        //
+        wuffs_base__color_ycc_bt601sr__as__color_u32_abgr(  //
             *up0++, *up1++, *up2++);
     wuffs_base__poke_u32le__no_bounds_check(dst_iter, color);
     dst_iter += 4u;
@@ -33687,6 +33830,24 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
 
   if (ycc_model >= WUFFS_BASE__YCC_MODEL__RGB) {
     conv3func = &wuffs_private_impl__swizzle_rgb__convert_3_general;
+
+  } else if (ycc_model == WUFFS_BASE__YCC_MODEL__BT_601_STUDIO_RANGE) {
+    switch (dst->pixcfg.private_impl.pixfmt.repr) {
+      case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
+      case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
+      case WUFFS_BASE__PIXEL_FORMAT__BGRX:
+        conv3func = &wuffs_private_impl__swizzle_ycc_bt601sr__convert_3_bgrx;
+        break;
+      case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
+      case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
+      case WUFFS_BASE__PIXEL_FORMAT__RGBX:
+        conv3func = &wuffs_private_impl__swizzle_ycc_bt601sr__convert_3_rgbx;
+        break;
+      default:
+        conv3func = &wuffs_private_impl__swizzle_ycc_bt601sr__convert_3_general;
+        break;
+    }
+
   } else {
     switch (dst->pixcfg.private_impl.pixfmt.repr) {
       case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
@@ -33694,25 +33855,27 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
       case WUFFS_BASE__PIXEL_FORMAT__BGRX:
 #if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V3)
         if (wuffs_base__cpu_arch__have_x86_avx2()) {
-          conv3func = &wuffs_private_impl__swizzle_ycc__convert_3_bgrx_x86_avx2;
+          conv3func =
+              &wuffs_private_impl__swizzle_ycc_bt601fr__convert_3_bgrx_x86_avx2;
           break;
         }
 #endif
-        conv3func = &wuffs_private_impl__swizzle_ycc__convert_3_bgrx;
+        conv3func = &wuffs_private_impl__swizzle_ycc_bt601fr__convert_3_bgrx;
         break;
       case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
       case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
       case WUFFS_BASE__PIXEL_FORMAT__RGBX:
 #if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V3)
         if (wuffs_base__cpu_arch__have_x86_avx2()) {
-          conv3func = &wuffs_private_impl__swizzle_ycc__convert_3_rgbx_x86_avx2;
+          conv3func =
+              &wuffs_private_impl__swizzle_ycc_bt601fr__convert_3_rgbx_x86_avx2;
           break;
         }
 #endif
-        conv3func = &wuffs_private_impl__swizzle_ycc__convert_3_rgbx;
+        conv3func = &wuffs_private_impl__swizzle_ycc_bt601fr__convert_3_rgbx;
         break;
       default:
-        conv3func = &wuffs_private_impl__swizzle_ycc__convert_3_general;
+        conv3func = &wuffs_private_impl__swizzle_ycc_bt601fr__convert_3_general;
         break;
     }
   }
@@ -33808,6 +33971,10 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
   }
 
   if ((h3 != 0u) || (v3 != 0u)) {
+    if (ycc_model == WUFFS_BASE__YCC_MODEL__BT_601_STUDIO_RANGE) {
+      return wuffs_base__make_status(
+          wuffs_base__error__unsupported_pixel_swizzler_option);
+    }
     wuffs_private_impl__swizzle_ycc__convert_4_func conv4func =
         (ycc_model >= WUFFS_BASE__YCC_MODEL__RGB)
             ? &wuffs_private_impl__swizzle_cmyk__convert_4_general
@@ -33841,7 +34008,7 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
 #if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V3)
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
 static void  //
-wuffs_private_impl__swizzle_ycc__convert_3_bgrx_x86_avx2(
+wuffs_private_impl__swizzle_ycc_bt601fr__convert_3_bgrx_x86_avx2(
     wuffs_base__pixel_buffer* dst,
     uint32_t x,
     uint32_t x_end,
@@ -33850,7 +34017,7 @@ wuffs_private_impl__swizzle_ycc__convert_3_bgrx_x86_avx2(
     const uint8_t* up1,
     const uint8_t* up2) {
   if ((x + 32u) > x_end) {
-    wuffs_private_impl__swizzle_ycc__convert_3_bgrx(  //
+    wuffs_private_impl__swizzle_ycc_bt601fr__convert_3_bgrx(  //
         dst, x, x_end, y, up0, up1, up2);
     return;
   }
@@ -33875,7 +34042,7 @@ wuffs_private_impl__swizzle_ycc__convert_3_bgrx_x86_avx2(
       +0x0000, -0x8000, +0x0000, -0x8000,        //
       +0x0000, -0x8000, +0x0000, -0x8000);
 
-  // Per wuffs_base__color_ycc__as__color_u32, the formulae:
+  // Per wuffs_base__color_ycc_bt601fr__as__color_u32, the formulae:
   //
   //  R = Y                + 1.40200 * Cr
   //  G = Y - 0.34414 * Cb - 0.71414 * Cr
@@ -34114,7 +34281,7 @@ wuffs_private_impl__swizzle_ycc__convert_3_bgrx_x86_avx2(
 // except for the lines marked with a § and that comments were stripped.
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
 static void  //
-wuffs_private_impl__swizzle_ycc__convert_3_rgbx_x86_avx2(
+wuffs_private_impl__swizzle_ycc_bt601fr__convert_3_rgbx_x86_avx2(
     wuffs_base__pixel_buffer* dst,
     uint32_t x,
     uint32_t x_end,
@@ -34123,7 +34290,7 @@ wuffs_private_impl__swizzle_ycc__convert_3_rgbx_x86_avx2(
     const uint8_t* up1,
     const uint8_t* up2) {
   if ((x + 32u) > x_end) {
-    wuffs_private_impl__swizzle_ycc__convert_3_rgbx(  //
+    wuffs_private_impl__swizzle_ycc_bt601fr__convert_3_rgbx(  //
         dst, x, x_end, y, up0, up1, up2);
     return;
   }

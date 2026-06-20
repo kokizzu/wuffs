@@ -13,7 +13,7 @@
 #if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V3)
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
 static void  //
-wuffs_private_impl__swizzle_ycc__convert_3_bgrx_x86_avx2(
+wuffs_private_impl__swizzle_ycc_bt601fr__convert_3_bgrx_x86_avx2(
     wuffs_base__pixel_buffer* dst,
     uint32_t x,
     uint32_t x_end,
@@ -24,7 +24,7 @@ wuffs_private_impl__swizzle_ycc__convert_3_bgrx_x86_avx2(
 
 WUFFS_BASE__MAYBE_ATTRIBUTE_TARGET("pclmul,popcnt,sse4.2,avx2")
 static void  //
-wuffs_private_impl__swizzle_ycc__convert_3_rgbx_x86_avx2(
+wuffs_private_impl__swizzle_ycc_bt601fr__convert_3_rgbx_x86_avx2(
     wuffs_base__pixel_buffer* dst,
     uint32_t x,
     uint32_t x_end,
@@ -124,8 +124,8 @@ wuffs_private_impl__swizzle_ycck__convert_4_general(
     const uint8_t* up3) {
   for (; x < x_end; x++) {
     // We invert once again: 0xFFu means no ink instead of full ink.
-    uint32_t color =                           //
-        wuffs_base__color_ycc__as__color_u32(  //
+    uint32_t color =                                   //
+        wuffs_base__color_ycc_bt601fr__as__color_u32(  //
             *up0++, *up1++, *up2++);
     uint32_t r = 0xFFu - (0xFFu & (color >> 16u));
     uint32_t g = 0xFFu - (0xFFu & (color >> 8u));
@@ -169,7 +169,7 @@ wuffs_private_impl__swizzle_rgb__convert_3_general(
 }
 
 static void  //
-wuffs_private_impl__swizzle_ycc__convert_3_general(
+wuffs_private_impl__swizzle_ycc_bt601fr__convert_3_general(
     wuffs_base__pixel_buffer* dst,
     uint32_t x,
     uint32_t x_end,
@@ -178,28 +178,29 @@ wuffs_private_impl__swizzle_ycc__convert_3_general(
     const uint8_t* up1,
     const uint8_t* up2) {
   for (; x < x_end; x++) {
-    uint32_t color =                           //
-        wuffs_base__color_ycc__as__color_u32(  //
+    uint32_t color =                                   //
+        wuffs_base__color_ycc_bt601fr__as__color_u32(  //
             *up0++, *up1++, *up2++);
     wuffs_base__pixel_buffer__set_color_u32_at(dst, x, y, color);
   }
 }
 
 static void  //
-wuffs_private_impl__swizzle_ycc__convert_3_bgrx(wuffs_base__pixel_buffer* dst,
-                                                uint32_t x,
-                                                uint32_t x_end,
-                                                uint32_t y,
-                                                const uint8_t* up0,
-                                                const uint8_t* up1,
-                                                const uint8_t* up2) {
+wuffs_private_impl__swizzle_ycc_bt601fr__convert_3_bgrx(
+    wuffs_base__pixel_buffer* dst,
+    uint32_t x,
+    uint32_t x_end,
+    uint32_t y,
+    const uint8_t* up0,
+    const uint8_t* up1,
+    const uint8_t* up2) {
   size_t dst_stride = dst->private_impl.planes[0].stride;
   uint8_t* dst_iter = dst->private_impl.planes[0].ptr +
                       (dst_stride * ((size_t)y)) + (4u * ((size_t)x));
 
   for (; x < x_end; x++) {
-    uint32_t color =                           //
-        wuffs_base__color_ycc__as__color_u32(  //
+    uint32_t color =                                   //
+        wuffs_base__color_ycc_bt601fr__as__color_u32(  //
             *up0++, *up1++, *up2++);
     wuffs_base__poke_u32le__no_bounds_check(dst_iter, color);
     dst_iter += 4u;
@@ -207,20 +208,82 @@ wuffs_private_impl__swizzle_ycc__convert_3_bgrx(wuffs_base__pixel_buffer* dst,
 }
 
 static void  //
-wuffs_private_impl__swizzle_ycc__convert_3_rgbx(wuffs_base__pixel_buffer* dst,
-                                                uint32_t x,
-                                                uint32_t x_end,
-                                                uint32_t y,
-                                                const uint8_t* up0,
-                                                const uint8_t* up1,
-                                                const uint8_t* up2) {
+wuffs_private_impl__swizzle_ycc_bt601fr__convert_3_rgbx(
+    wuffs_base__pixel_buffer* dst,
+    uint32_t x,
+    uint32_t x_end,
+    uint32_t y,
+    const uint8_t* up0,
+    const uint8_t* up1,
+    const uint8_t* up2) {
   size_t dst_stride = dst->private_impl.planes[0].stride;
   uint8_t* dst_iter = dst->private_impl.planes[0].ptr +
                       (dst_stride * ((size_t)y)) + (4u * ((size_t)x));
 
   for (; x < x_end; x++) {
-    uint32_t color =                                //
-        wuffs_base__color_ycc__as__color_u32_abgr(  //
+    uint32_t color =                                        //
+        wuffs_base__color_ycc_bt601fr__as__color_u32_abgr(  //
+            *up0++, *up1++, *up2++);
+    wuffs_base__poke_u32le__no_bounds_check(dst_iter, color);
+    dst_iter += 4u;
+  }
+}
+
+static void  //
+wuffs_private_impl__swizzle_ycc_bt601sr__convert_3_general(
+    wuffs_base__pixel_buffer* dst,
+    uint32_t x,
+    uint32_t x_end,
+    uint32_t y,
+    const uint8_t* up0,
+    const uint8_t* up1,
+    const uint8_t* up2) {
+  for (; x < x_end; x++) {
+    uint32_t color =                                   //
+        wuffs_base__color_ycc_bt601sr__as__color_u32(  //
+            *up0++, *up1++, *up2++);
+    wuffs_base__pixel_buffer__set_color_u32_at(dst, x, y, color);
+  }
+}
+
+static void  //
+wuffs_private_impl__swizzle_ycc_bt601sr__convert_3_bgrx(
+    wuffs_base__pixel_buffer* dst,
+    uint32_t x,
+    uint32_t x_end,
+    uint32_t y,
+    const uint8_t* up0,
+    const uint8_t* up1,
+    const uint8_t* up2) {
+  size_t dst_stride = dst->private_impl.planes[0].stride;
+  uint8_t* dst_iter = dst->private_impl.planes[0].ptr +
+                      (dst_stride * ((size_t)y)) + (4u * ((size_t)x));
+
+  for (; x < x_end; x++) {
+    uint32_t color =                                   //
+        wuffs_base__color_ycc_bt601sr__as__color_u32(  //
+            *up0++, *up1++, *up2++);
+    wuffs_base__poke_u32le__no_bounds_check(dst_iter, color);
+    dst_iter += 4u;
+  }
+}
+
+static void  //
+wuffs_private_impl__swizzle_ycc_bt601sr__convert_3_rgbx(
+    wuffs_base__pixel_buffer* dst,
+    uint32_t x,
+    uint32_t x_end,
+    uint32_t y,
+    const uint8_t* up0,
+    const uint8_t* up1,
+    const uint8_t* up2) {
+  size_t dst_stride = dst->private_impl.planes[0].stride;
+  uint8_t* dst_iter = dst->private_impl.planes[0].ptr +
+                      (dst_stride * ((size_t)y)) + (4u * ((size_t)x));
+
+  for (; x < x_end; x++) {
+    uint32_t color =                                        //
+        wuffs_base__color_ycc_bt601sr__as__color_u32_abgr(  //
             *up0++, *up1++, *up2++);
     wuffs_base__poke_u32le__no_bounds_check(dst_iter, color);
     dst_iter += 4u;
@@ -1442,6 +1505,24 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
 
   if (ycc_model >= WUFFS_BASE__YCC_MODEL__RGB) {
     conv3func = &wuffs_private_impl__swizzle_rgb__convert_3_general;
+
+  } else if (ycc_model == WUFFS_BASE__YCC_MODEL__BT_601_STUDIO_RANGE) {
+    switch (dst->pixcfg.private_impl.pixfmt.repr) {
+      case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
+      case WUFFS_BASE__PIXEL_FORMAT__BGRA_PREMUL:
+      case WUFFS_BASE__PIXEL_FORMAT__BGRX:
+        conv3func = &wuffs_private_impl__swizzle_ycc_bt601sr__convert_3_bgrx;
+        break;
+      case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
+      case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
+      case WUFFS_BASE__PIXEL_FORMAT__RGBX:
+        conv3func = &wuffs_private_impl__swizzle_ycc_bt601sr__convert_3_rgbx;
+        break;
+      default:
+        conv3func = &wuffs_private_impl__swizzle_ycc_bt601sr__convert_3_general;
+        break;
+    }
+
   } else {
     switch (dst->pixcfg.private_impl.pixfmt.repr) {
       case WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL:
@@ -1449,25 +1530,27 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
       case WUFFS_BASE__PIXEL_FORMAT__BGRX:
 #if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V3)
         if (wuffs_base__cpu_arch__have_x86_avx2()) {
-          conv3func = &wuffs_private_impl__swizzle_ycc__convert_3_bgrx_x86_avx2;
+          conv3func =
+              &wuffs_private_impl__swizzle_ycc_bt601fr__convert_3_bgrx_x86_avx2;
           break;
         }
 #endif
-        conv3func = &wuffs_private_impl__swizzle_ycc__convert_3_bgrx;
+        conv3func = &wuffs_private_impl__swizzle_ycc_bt601fr__convert_3_bgrx;
         break;
       case WUFFS_BASE__PIXEL_FORMAT__RGBA_NONPREMUL:
       case WUFFS_BASE__PIXEL_FORMAT__RGBA_PREMUL:
       case WUFFS_BASE__PIXEL_FORMAT__RGBX:
 #if defined(WUFFS_PRIVATE_IMPL__CPU_ARCH__X86_64_V3)
         if (wuffs_base__cpu_arch__have_x86_avx2()) {
-          conv3func = &wuffs_private_impl__swizzle_ycc__convert_3_rgbx_x86_avx2;
+          conv3func =
+              &wuffs_private_impl__swizzle_ycc_bt601fr__convert_3_rgbx_x86_avx2;
           break;
         }
 #endif
-        conv3func = &wuffs_private_impl__swizzle_ycc__convert_3_rgbx;
+        conv3func = &wuffs_private_impl__swizzle_ycc_bt601fr__convert_3_rgbx;
         break;
       default:
-        conv3func = &wuffs_private_impl__swizzle_ycc__convert_3_general;
+        conv3func = &wuffs_private_impl__swizzle_ycc_bt601fr__convert_3_general;
         break;
     }
   }
@@ -1563,6 +1646,10 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
   }
 
   if ((h3 != 0u) || (v3 != 0u)) {
+    if (ycc_model == WUFFS_BASE__YCC_MODEL__BT_601_STUDIO_RANGE) {
+      return wuffs_base__make_status(
+          wuffs_base__error__unsupported_pixel_swizzler_option);
+    }
     wuffs_private_impl__swizzle_ycc__convert_4_func conv4func =
         (ycc_model >= WUFFS_BASE__YCC_MODEL__RGB)
             ? &wuffs_private_impl__swizzle_cmyk__convert_4_general

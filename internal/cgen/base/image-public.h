@@ -294,8 +294,28 @@ wuffs_base__color_u64__as__color_u32(uint64_t c) {
 
 // wuffs_base__color_ycc__as__color_u32 converts from YCbCr to 0xAARRGGBB. The
 // alpha bits are always 0xFF.
+//
+// There is no YCC_MODEL (like bt601fr) in the macro name. For backwards
+// compatibility, it uses WUFFS_BASE__YCC_MODEL__BT_601_FULL_RANGE, like JPEG.
+#define wuffs_base__color_ycc__as__color_u32 \
+  wuffs_base__color_ycc_bt601fr__as__color_u32
+
+// wuffs_base__color_ycc__as__color_u32_abgr is like
+// wuffs_base__color_ycc__as__color_u32 but the uint32_t returned is in
+// 0xAABBGGRR order, not 0xAARRGGBB.
+//
+// There is no YCC_MODEL (like bt601fr) in the macro name. For backwards
+// compatibility, it uses WUFFS_BASE__YCC_MODEL__BT_601_FULL_RANGE, like JPEG.
+#define wuffs_base__color_ycc__as__color_u32_abgr \
+  wuffs_base__color_ycc_bt601fr__as__color_u32_abgr
+
+// wuffs_base__color_ycc_bt601fr__as__color_u32 is
+// wuffs_base__color_ycc__as__color_u32 for
+// WUFFS_BASE__YCC_MODEL__BT_601_FULL_RANGE.
 static inline wuffs_base__color_u32_argb_premul  //
-wuffs_base__color_ycc__as__color_u32(uint8_t yy, uint8_t cb, uint8_t cr) {
+wuffs_base__color_ycc_bt601fr__as__color_u32(uint8_t yy,
+                                             uint8_t cb,
+                                             uint8_t cr) {
   // Work in 16.16 fixed point arithmetic (so that 'one half' is (1 << 15)) and
   // bias the chroma values by 0x80.
   uint32_t yy32 = (((uint32_t)yy) << 16) | (1 << 15);
@@ -344,11 +364,13 @@ wuffs_base__color_ycc__as__color_u32(uint8_t yy, uint8_t cb, uint8_t cr) {
          ((0x00FF0000 & bb32) >> 16);
 }
 
-// wuffs_base__color_ycc__as__color_u32_abgr is like
-// wuffs_base__color_ycc__as__color_u32 but the uint32_t returned is in
-// 0xAABBGGRR order, not 0xAARRGGBB.
+// wuffs_base__color_ycc_bt601fr__as__color_u32_abgr is
+// wuffs_base__color_ycc__as__color_u32_abgr for
+// WUFFS_BASE__YCC_MODEL__BT_601_FULL_RANGE.
 static inline uint32_t  //
-wuffs_base__color_ycc__as__color_u32_abgr(uint8_t yy, uint8_t cb, uint8_t cr) {
+wuffs_base__color_ycc_bt601fr__as__color_u32_abgr(uint8_t yy,
+                                                  uint8_t cb,
+                                                  uint8_t cr) {
   uint32_t yy32 = (((uint32_t)yy) << 16) | (1 << 15);
   uint32_t cb32 = (((uint32_t)cb) - 0x80);
   uint32_t cr32 = (((uint32_t)cr) - 0x80);
@@ -370,8 +392,66 @@ wuffs_base__color_ycc__as__color_u32_abgr(uint8_t yy, uint8_t cb, uint8_t cr) {
          ((0x00FF0000 & rr32) >> 16);
 }
 
-// wuffs_base__color_swap_u32_argb_abgr converts between 0xAARRGGBB and
-// 0xAABBGGRR.
+// wuffs_base__color_ycc_bt601sr__as__color_u32 is
+// wuffs_base__color_ycc__as__color_u32 for
+// WUFFS_BASE__YCC_MODEL__BT_601_STUDIO_RANGE.
+static inline wuffs_base__color_u32_argb_premul  //
+wuffs_base__color_ycc_bt601sr__as__color_u32(uint8_t yy,
+                                             uint8_t cb,
+                                             uint8_t cr) {
+  // The constants here match those used in libwebp's src/dsp/yuv.h, using
+  // 18.14 fixed point arithmetic. (1 << 14) equals 16384.
+  //
+  // 19077 ≈ 16384 * 1.164
+  // 26149 ≈ 16384 * 1.596
+  //  6419 ≈ 16384 * 0.392
+  // 13320 ≈ 16384 * 0.813
+  // 33050 ≈ 16384 * 2.017
+  // 14234 ≈ 16384 * 0.869
+  //  8708 ≈ 16384 * 0.531
+  // 17685 ≈ 16384 * 1.079
+
+  int32_t y0 = ((int32_t)yy * 19077) >> 8;
+  int32_t rr = ((int32_t)cr * 26149) >> 8;
+  int32_t gb = ((int32_t)cb * 6419) >> 8;
+  int32_t gr = ((int32_t)cr * 13320) >> 8;
+  int32_t bb = ((int32_t)cb * 33050) >> 8;
+
+  int32_t r1 = y0 + rr - 14234;
+  int32_t g1 = y0 - gb - gr + 8708;
+  int32_t b1 = y0 + bb - 17685;
+
+  uint32_t r = (r1 < 0) ? 0u : (r1 > 16320) ? 255u : ((uint32_t)r1 >> 6);
+  uint32_t g = (g1 < 0) ? 0u : (g1 > 16320) ? 255u : ((uint32_t)g1 >> 6);
+  uint32_t b = (b1 < 0) ? 0u : (b1 > 16320) ? 255u : ((uint32_t)b1 >> 6);
+
+  return 0xFF000000u | (r << 16) | (g << 8) | b;
+}
+
+// wuffs_base__color_ycc_bt601sr__as__color_u32_abgr is
+// wuffs_base__color_ycc__as__color_u32_abgr for
+// WUFFS_BASE__YCC_MODEL__BT_601_STUDIO_RANGE.
+static inline uint32_t  //
+wuffs_base__color_ycc_bt601sr__as__color_u32_abgr(uint8_t yy,
+                                                  uint8_t cb,
+                                                  uint8_t cr) {
+  int32_t y0 = ((int32_t)yy * 19077) >> 8;
+  int32_t rr = ((int32_t)cr * 26149) >> 8;
+  int32_t gb = ((int32_t)cb * 6419) >> 8;
+  int32_t gr = ((int32_t)cr * 13320) >> 8;
+  int32_t bb = ((int32_t)cb * 33050) >> 8;
+
+  int32_t r1 = y0 + rr - 14234;
+  int32_t g1 = y0 - gb - gr + 8708;
+  int32_t b1 = y0 + bb - 17685;
+
+  uint32_t r = (r1 < 0) ? 0u : (r1 > 16320) ? 255u : ((uint32_t)r1 >> 6);
+  uint32_t g = (g1 < 0) ? 0u : (g1 > 16320) ? 255u : ((uint32_t)g1 >> 6);
+  uint32_t b = (b1 < 0) ? 0u : (b1 > 16320) ? 255u : ((uint32_t)b1 >> 6);
+
+  return 0xFF000000u | (b << 16) | (g << 8) | r;
+}
+
 static inline uint32_t  //
 wuffs_base__color_swap_u32_argb_abgr(uint32_t u) {
   uint32_t o = u & 0xFF00FF00ul;
