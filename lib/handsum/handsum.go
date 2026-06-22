@@ -135,6 +135,25 @@ package handsum
 // For Alpha values only, to encourage producing 0x00 (fully transparent) or
 // 0xFF (fully opaque) values, we transform (on decode) the values towards the
 // extreme ends via a cube root mapping.
+//
+// There are 16 possible landscape aspect ratios (and likewise for portrait):
+//
+// 16 :  1   ≈  16.000 : 1
+// 16 :  2   ≈   8.000 : 1
+// 16 :  3   ≈   5.333 : 1
+// 16 :  4   ≈   4.000 : 1
+// 16 :  5   ≈   3.200 : 1
+// 16 :  6   ≈   2.667 : 1
+// 16 :  7   ≈   2.286 : 1
+// 16 :  8   ≈   2.000 : 1
+// 16 :  9   ≈   1.778 : 1
+// 16 : 10   ≈   1.600 : 1
+// 16 : 11   ≈   1.455 : 1
+// 16 : 12   ≈   1.333 : 1
+// 16 : 13   ≈   1.231 : 1
+// 16 : 14   ≈   1.143 : 1
+// 16 : 15   ≈   1.067 : 1
+// 16 : 16   ≈   1.000 : 1
 
 import (
 	"errors"
