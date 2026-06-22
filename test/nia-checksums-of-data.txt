@@ -115,13 +115,13 @@ OK. 33a44f22 test/data/hibiscus.primitive.bmp
 OK. 25e212b3 test/data/hibiscus.primitive.gif
 OK. 9624fa44 test/data/hibiscus.primitive.jpeg
 OK. 33a44f22 test/data/hibiscus.primitive.lossless.webp
-OK. 9f1315c7 test/data/hibiscus.primitive.lossy.webp
+OK. 09bbaab0 test/data/hibiscus.primitive.lossy.webp
 OK. 33a44f22 test/data/hibiscus.primitive.png
 OK. 60040742 test/data/hibiscus.regular.bmp
 OK. b727da8b test/data/hibiscus.regular.gif
 OK. 41e39405 test/data/hibiscus.regular.jpeg
 OK. 60040742 test/data/hibiscus.regular.lossless.webp
-OK. 2b5fe795 test/data/hibiscus.regular.lossy.webp
+OK. 6bbe1ed2 test/data/hibiscus.regular.lossy.webp
 OK. 60040742 test/data/hibiscus.regular.png
 OK. dcbb225a test/data/hippopotamus.bmp
 OK. ed4b78fc test/data/hippopotamus.interlaced.gif

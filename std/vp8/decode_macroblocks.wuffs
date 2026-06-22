@@ -119,7 +119,7 @@ pri func decoder.decode_one_macroblock!(workbuf: slice base.u8, mbx: base.u32[..
         this.mb_ac_nz = 0
 
     } else {
-        this.decode_coefficients!(
+        skip = this.decode_coefficients!(
                 workbuf: args.workbuf, mbx: args.mbx, mby: args.mby,
                 seg: seg, luma_mode: luma_mode)
     }

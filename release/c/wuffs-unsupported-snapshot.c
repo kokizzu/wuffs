@@ -81822,7 +81822,7 @@ wuffs_vp8__decoder__read_signed(
     uint32_t a_n);
 
 WUFFS_BASE__GENERATED_C_CODE
-static wuffs_base__empty_struct
+static uint32_t
 wuffs_vp8__decoder__decode_coefficients(
     wuffs_vp8__decoder* self,
     wuffs_base__slice_u8 a_workbuf,
@@ -82316,7 +82316,7 @@ wuffs_vp8__decoder__read_signed(
 // -------- func vp8.decoder.decode_coefficients
 
 WUFFS_BASE__GENERATED_C_CODE
-static wuffs_base__empty_struct
+static uint32_t
 wuffs_vp8__decoder__decode_coefficients(
     wuffs_vp8__decoder* self,
     wuffs_base__slice_u8 a_workbuf,
@@ -82417,7 +82417,10 @@ wuffs_vp8__decoder__decode_coefficients(
     }
     v_bc += 2u;
   }
-  return wuffs_base__make_empty_struct();
+  if ((self->private_impl.f_mb_dc_nz == 0u) && (self->private_impl.f_mb_ac_nz == 0u)) {
+    return 1u;
+  }
+  return 0u;
 }
 
 // -------- func vp8.decoder.initialize_mb_coeffs
@@ -83984,7 +83987,7 @@ wuffs_vp8__decoder__decode_one_macroblock(
     self->private_impl.f_mb_dc_nz = 0u;
     self->private_impl.f_mb_ac_nz = 0u;
   } else {
-    wuffs_vp8__decoder__decode_coefficients(self,
+    v_skip = wuffs_vp8__decoder__decode_coefficients(self,
         a_workbuf,
         a_mbx,
         a_mby,

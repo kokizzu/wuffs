@@ -173,7 +173,7 @@ OK. 16c2c0fe test/3pdata/blinksuite/test-load.jpg
 OK. 631f6a02 test/3pdata/blinksuite/test.webp
 OK. 19d3a207 test/3pdata/blinksuite/test3.webp
 BAD 1dfa35c6 test/3pdata/blinksuite/truncated2.webp
-OK. a66e5687 test/3pdata/blinksuite/webp-color-no-profile-lossy.webp
+OK. 603ddc49 test/3pdata/blinksuite/webp-color-no-profile-lossy.webp
 BAD ed67a9a5 test/3pdata/blinksuite/wrong-block-length.gif
 OK. 577c5c4c test/3pdata/blinksuite/ycbcr-420-fast-int-progressive.jpg
 OK. bf4cd8e2 test/3pdata/blinksuite/ycbcr-420-float-progressive.jpg
