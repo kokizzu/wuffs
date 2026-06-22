@@ -5,6 +5,10 @@ image compression format for still images. APNG ([Animated
 PNG](https://wiki.mozilla.org/APNG_Specification)) is an unofficial extension
 for animated images.
 
+The ["Making Software - Image
+Compression"](https://www.makingsoftware.com/chapters/image-compression) book
+chapter also has a good overview of a number of image formats, including PNG.
+
 
 ## File Structure
 
