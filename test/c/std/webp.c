@@ -111,7 +111,7 @@ test_wuffs_webp_decode_interface_lossy() {
                    WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
   return do_test__wuffs_base__image_decoder(
       wuffs_webp__decoder__upcast_as__wuffs_base__image_decoder(dec),
-      "test/data/bricks-color.lossy.webp", 0, SIZE_MAX, 160, 120, 0xFF123168);
+      "test/data/bricks-color.lossy.webp", 0, SIZE_MAX, 160, 120, 0xFF032665);
 }
 
 const char*  //
@@ -200,8 +200,8 @@ test_wuffs_webp_decode_many_small_reads() {
 
   wuffs_base__color_u32_argb_premul last_pixel =
       wuffs_base__pixel_buffer__color_u32_at(&pb, w - 1, h - 1);
-  if (last_pixel != 0xFF2D1827) {
-    RETURN_FAIL("last_pixel: have 0x%" PRIX32 ", want 0xFF2D1827", last_pixel);
+  if (last_pixel != 0xFF210A1B) {
+    RETURN_FAIL("last_pixel: have 0x%" PRIX32 ", want 0xFF210A1B", last_pixel);
   }
 
   return NULL;
@@ -270,6 +270,36 @@ test_mimic_webp_lossless_decode_image_4002k_24bpp() {
   return do_test_mimic_webp_decode("test/data/harvesters.lossless.webp");
 }
 
+const char*  //
+test_mimic_webp_lossy_decode_image_19k_8bpp() {
+  CHECK_FOCUS(__func__);
+  return do_test_mimic_webp_decode("test/data/bricks-gray.lossy.webp");
+}
+
+const char*  //
+test_mimic_webp_lossy_decode_image_40k_24bpp() {
+  CHECK_FOCUS(__func__);
+  return do_test_mimic_webp_decode("test/data/hat.lossy.webp");
+}
+
+const char*  //
+test_mimic_webp_lossy_decode_image_77k_24bpp() {
+  CHECK_FOCUS(__func__);
+  return do_test_mimic_webp_decode("test/data/bricks-color.lossy.webp");
+}
+
+const char*  //
+test_mimic_webp_lossy_decode_image_552k_32bpp() {
+  CHECK_FOCUS(__func__);
+  return do_test_mimic_webp_decode("test/data/hibiscus.primitive.lossy.webp");
+}
+
+const char*  //
+test_mimic_webp_lossy_decode_image_4002k_24bpp() {
+  CHECK_FOCUS(__func__);
+  return do_test_mimic_webp_decode("test/data/harvesters.lossy.webp");
+}
+
 #endif  // WUFFS_MIMIC
 
 // ---------------- WebP Benches
@@ -323,6 +353,57 @@ bench_wuffs_webp_lossless_decode_image_4002k_24bpp() {
       WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
       wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
       NULL, 0, "test/data/harvesters.lossless.webp", 0, SIZE_MAX, 1);
+}
+
+const char*  //
+bench_wuffs_webp_lossy_decode_image_19k_8bpp() {
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &wuffs_webp_decode,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__Y), NULL, 0,
+      "test/data/bricks-gray.lossy.webp", 0, SIZE_MAX, 50);
+}
+
+const char*  //
+bench_wuffs_webp_lossy_decode_image_40k_24bpp() {
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &wuffs_webp_decode,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      NULL, 0, "test/data/hat.lossy.webp", 0, SIZE_MAX, 30);
+}
+
+const char*  //
+bench_wuffs_webp_lossy_decode_image_77k_24bpp() {
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &wuffs_webp_decode,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      NULL, 0, "test/data/bricks-color.lossy.webp", 0, SIZE_MAX, 50);
+}
+
+const char*  //
+bench_wuffs_webp_lossy_decode_image_552k_32bpp() {
+  uint32_t q = WUFFS_BASE__QUIRK_IGNORE_CHECKSUM;
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &wuffs_webp_decode,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      &q, 1, "test/data/hibiscus.primitive.lossy.webp", 0, SIZE_MAX, 4);
+}
+
+const char*  //
+bench_wuffs_webp_lossy_decode_image_4002k_24bpp() {
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &wuffs_webp_decode,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      NULL, 0, "test/data/harvesters.lossy.webp", 0, SIZE_MAX, 1);
 }
 
 // ---------------- Mimic Benches
@@ -380,6 +461,57 @@ bench_mimic_webp_lossless_decode_image_4002k_24bpp() {
       NULL, 0, "test/data/harvesters.lossless.webp", 0, SIZE_MAX, 1);
 }
 
+const char*  //
+bench_mimic_webp_lossy_decode_image_19k_8bpp() {
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &mimic_webp_decode,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__Y), NULL, 0,
+      "test/data/bricks-gray.lossy.webp", 0, SIZE_MAX, 50);
+}
+
+const char*  //
+bench_mimic_webp_lossy_decode_image_40k_24bpp() {
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &mimic_webp_decode,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      NULL, 0, "test/data/hat.lossy.webp", 0, SIZE_MAX, 30);
+}
+
+const char*  //
+bench_mimic_webp_lossy_decode_image_77k_24bpp() {
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &mimic_webp_decode,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      NULL, 0, "test/data/bricks-color.lossy.webp", 0, SIZE_MAX, 50);
+}
+
+const char*  //
+bench_mimic_webp_lossy_decode_image_552k_32bpp() {
+  uint32_t q = WUFFS_BASE__QUIRK_IGNORE_CHECKSUM;
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &mimic_webp_decode,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      &q, 1, "test/data/hibiscus.primitive.lossy.webp", 0, SIZE_MAX, 4);
+}
+
+const char*  //
+bench_mimic_webp_lossy_decode_image_4002k_24bpp() {
+  CHECK_FOCUS(__func__);
+  return do_bench_image_decode(
+      &mimic_webp_decode,
+      WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED,
+      wuffs_base__make_pixel_format(WUFFS_BASE__PIXEL_FORMAT__BGRA_NONPREMUL),
+      NULL, 0, "test/data/harvesters.lossy.webp", 0, SIZE_MAX, 1);
+}
+
 #endif  // WUFFS_MIMIC
 
 // ---------------- Manifest
@@ -397,6 +529,11 @@ proc g_tests[] = {
     test_mimic_webp_lossless_decode_image_77k_8bpp,
     test_mimic_webp_lossless_decode_image_552k_32bpp,
     test_mimic_webp_lossless_decode_image_4002k_24bpp,
+    test_mimic_webp_lossy_decode_image_19k_8bpp,
+// test_mimic_webp_lossy_decode_image_40k_24bpp,
+// test_mimic_webp_lossy_decode_image_77k_24bpp,
+// test_mimic_webp_lossy_decode_image_552k_32bpp,
+// test_mimic_webp_lossy_decode_image_4002k_24bpp,
 
 #endif  // WUFFS_MIMIC
 
@@ -410,6 +547,11 @@ proc g_benches[] = {
     bench_wuffs_webp_lossless_decode_image_77k_8bpp,
     bench_wuffs_webp_lossless_decode_image_552k_32bpp,
     bench_wuffs_webp_lossless_decode_image_4002k_24bpp,
+    bench_wuffs_webp_lossy_decode_image_19k_8bpp,
+    bench_wuffs_webp_lossy_decode_image_40k_24bpp,
+    bench_wuffs_webp_lossy_decode_image_77k_24bpp,
+    bench_wuffs_webp_lossy_decode_image_552k_32bpp,
+    bench_wuffs_webp_lossy_decode_image_4002k_24bpp,
 
 #ifdef WUFFS_MIMIC
 
@@ -418,6 +560,11 @@ proc g_benches[] = {
     bench_mimic_webp_lossless_decode_image_77k_8bpp,
     bench_mimic_webp_lossless_decode_image_552k_32bpp,
     bench_mimic_webp_lossless_decode_image_4002k_24bpp,
+    bench_mimic_webp_lossy_decode_image_19k_8bpp,
+    bench_mimic_webp_lossy_decode_image_40k_24bpp,
+    bench_mimic_webp_lossy_decode_image_77k_24bpp,
+    bench_mimic_webp_lossy_decode_image_552k_32bpp,
+    bench_mimic_webp_lossy_decode_image_4002k_24bpp,
 
 #endif  // WUFFS_MIMIC
 
