@@ -74,6 +74,7 @@ mimic_webp_decode(uint64_t* n_bytes_out,
       return "mimic_webp_decode: unsupported pixfmt";
   }
 
+  config.options.no_fancy_upsampling = 1;  // TODO: remove for best mimicry.
   config.output.colorspace = MODE_BGRA;
   config.output.width = w;
   config.output.height = h;

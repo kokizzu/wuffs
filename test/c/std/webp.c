@@ -530,10 +530,10 @@ proc g_tests[] = {
     test_mimic_webp_lossless_decode_image_552k_32bpp,
     test_mimic_webp_lossless_decode_image_4002k_24bpp,
     test_mimic_webp_lossy_decode_image_19k_8bpp,
-// test_mimic_webp_lossy_decode_image_40k_24bpp,
-// test_mimic_webp_lossy_decode_image_77k_24bpp,
-// test_mimic_webp_lossy_decode_image_552k_32bpp,
-// test_mimic_webp_lossy_decode_image_4002k_24bpp,
+    test_mimic_webp_lossy_decode_image_40k_24bpp,
+    test_mimic_webp_lossy_decode_image_77k_24bpp,
+    // test_mimic_webp_lossy_decode_image_552k_32bpp,
+    test_mimic_webp_lossy_decode_image_4002k_24bpp,
 
 #endif  // WUFFS_MIMIC
 
