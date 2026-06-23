@@ -15,6 +15,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
 	"errors"
 	"flag"
 	"image"
@@ -39,10 +40,11 @@ var (
 	encodeFlag    = flag.Bool("encode", false, "")
 	roundtripFlag = flag.Bool("roundtrip", false, "")
 
-	bFlag  = flag.String("b", "", "")
-	bgFlag = flag.String("bg", "", "")
-	cFlag  = flag.String("c", "rgb", "")
-	qFlag  = flag.Int("q", 4, "")
+	bFlag      = flag.String("b", "", "")
+	base64Flag = flag.String("base64", "", "")
+	bgFlag     = flag.String("bg", "", "")
+	cFlag      = flag.String("c", "rgb", "")
+	qFlag      = flag.Int("q", 4, "")
 )
 
 func getBFlag() string {
@@ -84,6 +86,7 @@ Flags:
 
   -b or -bg  Encoding background color: e.g. red, white, 9c27b0 or #ff8.
       The default is ff9e9e9e (for -c=1 or -c=3) or 00000000 (for -c=4).
+  -base64=std or -base64=url  Decode or encode base64, not raw bytes.
   -c  Encoding color: gray (1), rgb (3, default) or rgba (4).
   -q  Encoding quality: 1, 2, 3 or 4 (default).
 `
@@ -99,6 +102,16 @@ func main1() error {
 	flag.Usage = func() { os.Stderr.WriteString(usageStr) }
 	flag.Parse()
 
+	b64e := (*base64.Encoding)(nil)
+	if !*roundtripFlag {
+		switch *base64Flag {
+		case "STD", "Std", "std":
+			b64e = base64.StdEncoding
+		case "URL", "Url", "url":
+			b64e = base64.URLEncoding
+		}
+	}
+
 	color := handsum.ColorRGB
 	switch *cFlag {
 	case "1", "GRAY", "Gray", "gray":
@@ -106,13 +119,16 @@ func main1() error {
 	case "4", "RGBA", "Rgba", "rgba":
 		color = handsum.ColorRGBA
 	}
-	quality := handsum.Quality(max(1, min(4, *qFlag)))
-
 	if (color <= handsum.ColorRGB) && (getBFlag() == "") {
 		*bFlag = "ff9e9e9e"
 	}
 
-	inFile := os.Stdin
+	quality := handsum.Quality(max(1, min(4, *qFlag)))
+
+	// ----
+
+	r := (io.Reader)(os.Stdin)
+
 	switch flag.NArg() {
 	case 0:
 		// No-op.
@@ -122,33 +138,48 @@ func main1() error {
 			return err
 		}
 		defer f.Close()
-		inFile = f
+		r = f
 	default:
 		return errors.New("too many filenames; the maximum is one")
 	}
 
+	if *decodeFlag && (b64e != nil) {
+		buf := [1024]byte{}
+		n, err := io.ReadFull(r, buf[:])
+		if (err != nil) && (err != io.ErrUnexpectedEOF) {
+			return err
+		}
+		dec, err := b64e.AppendDecode(nil, buf[:n])
+		if err != nil {
+			return err
+		}
+		r = bytes.NewReader(dec)
+	}
+
+	// ----
+
 	if *decodeFlag && !*encodeFlag && !*roundtripFlag {
-		return decode(inFile)
+		return decode(r)
 	}
 	if !*decodeFlag && *encodeFlag && !*roundtripFlag {
-		return encode(os.Stdout, inFile, color, quality)
+		return encode(os.Stdout, b64e, r, color, quality)
 	}
 	if !*decodeFlag && !*encodeFlag && *roundtripFlag {
-		return roundtrip(inFile, color, quality)
+		return roundtrip(r, color, quality)
 	}
 	return errors.New("must specify exactly one of -decode, -encode, -roundtrip or -help")
 }
 
-func decode(inFile *os.File) error {
-	src, err := handsum.Decode(inFile)
+func decode(r io.Reader) error {
+	src, err := handsum.Decode(r)
 	if err != nil {
 		return err
 	}
 	return png.Encode(os.Stdout, src)
 }
 
-func encode(w io.Writer, inFile *os.File, color handsum.Color, quality handsum.Quality) error {
-	src, _, err := image.Decode(inFile)
+func encode(w io.Writer, b64e *base64.Encoding, r io.Reader, color handsum.Color, quality handsum.Quality) error {
+	src, _, err := image.Decode(r)
 	if err != nil {
 		return err
 	}
@@ -157,15 +188,32 @@ func encode(w io.Writer, inFile *os.File, color handsum.Color, quality handsum.Q
 		src = applyBackgroundColor(src)
 	}
 
-	return handsum.Encode(w, src, &handsum.EncodeOptions{
+	w1, buf := w, (*bytes.Buffer)(nil)
+	if b64e != nil {
+		buf = &bytes.Buffer{}
+		w1 = buf
+	}
+
+	if err := handsum.Encode(w1, src, &handsum.EncodeOptions{
 		Color:   color,
 		Quality: quality,
-	})
+	}); err != nil {
+		return err
+	}
+
+	if b64e != nil {
+		enc := b64e.AppendEncode(nil, buf.Bytes())
+		if _, err := w.Write(enc); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
-func roundtrip(inFile *os.File, color handsum.Color, quality handsum.Quality) error {
+func roundtrip(r io.Reader, color handsum.Color, quality handsum.Quality) error {
 	buf := &bytes.Buffer{}
-	err := encode(buf, inFile, color, quality)
+	err := encode(buf, nil, r, color, quality)
 	if err != nil {
 		return err
 	}
