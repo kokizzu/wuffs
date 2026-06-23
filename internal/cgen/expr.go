@@ -286,25 +286,18 @@ func (g *gen) writeExprUnaryOp(b *buffer, n *a.Expr, depth uint32) error {
 }
 
 func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, depth uint32) error {
-	op := n.Operator()
-	opName := ""
-	lhsCast := false
-	overallCast := n.MType().IsSmallInteger() || op.IsXBinaryTildeModOp()
+	opName, lhsCast, overallCast := "", false, n.MType().IsSmallInteger()
 
+	op := n.Operator()
 	switch op {
-	case t.IDXBinaryPlus, t.IDXBinaryPipe, t.IDXBinaryHat, t.IDXBinaryTildeModPlus:
+	case t.IDXBinaryPlus, t.IDXBinaryPipe, t.IDXBinaryHat:
 		if lcv := n.LHS().AsExpr().ConstValue(); (lcv != nil) && (lcv.Sign() == 0) {
 			return g.writeExpr(b, n.RHS().AsExpr(), false, depth)
 		} else if rcv := n.RHS().AsExpr().ConstValue(); (rcv != nil) && (rcv.Sign() == 0) {
 			return g.writeExpr(b, n.LHS().AsExpr(), false, depth)
 		}
 
-	case t.IDXBinaryMinus, t.IDXBinaryTildeModMinus:
-		if rcv := n.RHS().AsExpr().ConstValue(); (rcv != nil) && (rcv.Sign() == 0) {
-			return g.writeExpr(b, n.LHS().AsExpr(), false, depth)
-		}
-
-	case t.IDXBinaryStar, t.IDXBinaryTildeModStar:
+	case t.IDXBinaryStar:
 		if lcv := n.LHS().AsExpr().ConstValue(); (lcv != nil) && (lcv.Cmp(one) == 0) {
 			return g.writeExpr(b, n.RHS().AsExpr(), false, depth)
 		} else if (lcv != nil) && (lcv.Sign() == 0) && n.RHS().AsExpr().Effect().Pure() {
@@ -330,7 +323,14 @@ func (g *gen) writeExprBinaryOp(b *buffer, n *a.Expr, depth uint32) error {
 	case t.IDXBinaryAs:
 		return g.writeExprAs(b, n.LHS().AsExpr(), n.RHS().AsTypeExpr(), depth)
 
-	case t.IDXBinaryShiftL, t.IDXBinaryShiftR, t.IDXBinaryTildeModShiftL:
+	case t.IDXBinaryTildeModPlus, t.IDXBinaryTildeModMinus, t.IDXBinaryTildeModStar:
+		overallCast = true
+
+	case t.IDXBinaryTildeModShiftL:
+		overallCast = true
+		fallthrough
+
+	case t.IDXBinaryShiftL, t.IDXBinaryShiftR:
 		if rcv := n.RHS().AsExpr().ConstValue(); (rcv != nil) && (rcv.Sign() == 0) {
 			return g.writeExpr(b, n.LHS().AsExpr(), false, depth)
 		} else if lhs := n.LHS().AsExpr(); lhs.ConstValue() != nil {
