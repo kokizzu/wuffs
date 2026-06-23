@@ -19,14 +19,18 @@
 // without having to explicitly wrap around the ring-buffer boundaries.
 //
 // This is similar to the technique discussed in
-// https://lo.calho.st/quick-hacks/employing-black-magic-in-the-linux-page-table/
+// https://lo.calho.st/posts/black-magic-buffer/
 //
-// This program differs from that web page's discussion by mapping the physical
-// memory three times, not just two. This lets us read or write, implicitly
-// wrapping, both forwards (after the middle mapping's end) and backwards
-// (before the middle mapping's start). That web page only considers forwards
-// reads or writes. Backwards reads are useful when decoding a Lempel-Ziv style
-// compression format, copying from history (recently decoded bytes).
+// It's also known as the Magic Ring Buffer:
+// https://fgiesen.wordpress.com/2012/07/21/the-magic-ring-buffer/
+//
+// This program differs from those blog posts' discussion by mapping the
+// physical memory three times, not just two. This lets us read or write,
+// implicitly wrapping, both forwards (after the middle mapping's end) and
+// backwards (before the middle mapping's start). Those blog posts only
+// consider forwards reads or writes. Backwards reads are useful when decoding
+// a Lempel-Ziv style compression format, copying from history (recently
+// decoded bytes).
 //
 // Its output should be:
 //
