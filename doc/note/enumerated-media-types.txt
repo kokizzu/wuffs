@@ -213,6 +213,12 @@
 0x197816_E971D000	7168914218930176	text/xvcr/..	text/x-vcard
 0x197816_FE887DA3	7168914572737955	text/~~~~/~~	text/*
 
+0x1B0CAA_5CAC5000	7613750209957888	vand/curd/..	vnd.android.cursor.dir
+0x1B0CAA_5CAC7800	7613750209968128	vand/curi/..	vnd.android.cursor.item
+0x1B0CAA_5CAC7DA3	7613750209969571	vand/curi/~~	vnd.android.cursor.item/*
+0x1B0CAA_623F0A27	7613750303459879	vand/docu/di	vnd.android.document/directory
+0x1B0CAA_623F0C41	7613750303460417	vand/docu/ro	vnd.android.document/root
+
 0x1B384F_1DE9D000	7661736826621952	vide/3gpp/..	video/3gpp
 0x1B384F_1DE9D072	7661736826622066	vide/3gpp/2.	video/3gpp2
 0x1B384F_9EAA7000	7661738986729472	vide/mp4./..	video/mp4
