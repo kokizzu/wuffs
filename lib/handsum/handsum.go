@@ -47,9 +47,9 @@
 // 4.59375 bits per pixel for a 16×16 pixel image (a 1:1 aspect ratio), or
 // 6.125 bits per pixel for a 16×12 pixel image (a 4:3 aspect ratio).
 //
-// A Handsum file's starts with a 3 byte header: a 15-bit magic signature, a
-// 2-bit color (Gray, RGB or RGBA), a 2-bit quality and a 5-bit aspect ratio.
-// An image's longest dimension (width or height) is 16 pixels and the aspect
+// Handsum files start with a 3 byte header: a 15-bit magic signature, a 2-bit
+// color (Gray, RGB or RGBA), a 2-bit quality and a 5-bit aspect ratio. An
+// image's longest dimension (width or height) is 16 pixels and the aspect
 // ratio gives the shorter dimension.
 //
 // The color=RGB payload, after the header, holds a scaled 16×16 pixel YCbCr
@@ -79,10 +79,11 @@
 //
 // All Handsum images use the sRGB color profile and non-premultiplied alpha.
 //
-// The "Handsum" name was inspired by the "Thumbhash" image file format, which
-// is also designed for very small thumbnails (or very compact representations
-// of image placeholders). Handsum files are bigger (but better quality) than
-// Thumbhash. "Handsum" also sounds like "handsome", meaning "good looking".
+// The "Handsum" name was inspired by the "Thumbhash" image file format (which
+// was in turn inspired by "Blurhash"), which is also designed for very small
+// thumbnails (or very compact representations of image placeholders). Handsum
+// files are bigger (but better quality) than Thumbhash (and Blurhash).
+// "Handsum" also sounds like "handsome", meaning "good looking".
 //
 // Other techniques and image formats, similar to Thumbhash, can be found by
 // search for "LQIP" or "Low Quality Image Placeholders".

@@ -203,6 +203,7 @@ func encode(w io.Writer, b64e *base64.Encoding, r io.Reader, color handsum.Color
 
 	if b64e != nil {
 		enc := b64e.AppendEncode(nil, buf.Bytes())
+		enc = append(enc, '\n')
 		if _, err := w.Write(enc); err != nil {
 			return err
 		}
