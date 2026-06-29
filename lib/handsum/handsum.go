@@ -337,7 +337,7 @@ func Encode(w io.Writer, src image.Image, options *EncodeOptions) error {
 	if c >= ColorRGBA {
 		alphasBlock := lowleveljpeg.BlockU8{}
 		alphasBlock.DownsampleFrom(&alphasQuadBlock)
-		bitOffset = encodeBlockQ3(&buf, bitOffset, &alphasBlock, QualityBest.numberOfCoefficients())
+		bitOffset = encodeBlockQ4(&buf, bitOffset, &alphasBlock, QualityBest.numberOfCoefficients())
 	}
 
 	_, err := w.Write(buf[:bitOffset/8])
@@ -375,13 +375,13 @@ func scaleSrc(src image.Image, alphasQuadBlock *lowleveljpeg.QuadBlockU8) image.
 type encodeBlockFunc func(buf *[fileSizeMax]byte, bitOffset int, src *lowleveljpeg.BlockU8, nCoeffs int) int
 
 var encodeBlockFuncs = [4]encodeBlockFunc{
-	encodeBlockQ0,
 	encodeBlockQ1,
-	encodeBlockQ1,
-	encodeBlockQ3,
+	encodeBlockQ2,
+	encodeBlockQ2,
+	encodeBlockQ4,
 }
 
-func encodeBlockQ0(buf *[fileSizeMax]byte, bitOffset int, src *lowleveljpeg.BlockU8, nCoeffs int) int {
+func encodeBlockQ1(buf *[fileSizeMax]byte, bitOffset int, src *lowleveljpeg.BlockU8, nCoeffs int) int {
 	f8 := src.ForwardDCT()
 
 	for _, z := range zigzag8 {
@@ -398,7 +398,7 @@ func encodeBlockQ0(buf *[fileSizeMax]byte, bitOffset int, src *lowleveljpeg.Bloc
 	return bitOffset
 }
 
-func encodeBlockQ1(buf *[fileSizeMax]byte, bitOffset int, src *lowleveljpeg.BlockU8, nCoeffs int) int {
+func encodeBlockQ2(buf *[fileSizeMax]byte, bitOffset int, src *lowleveljpeg.BlockU8, nCoeffs int) int {
 	for i := range 4 {
 		x4 := (i & 1) << 2  // The sequence 0, 4, 0, 4.
 		y4 := (i & 2) << 1  // The sequence 0, 0, 4, 4.
@@ -422,7 +422,7 @@ func encodeBlockQ1(buf *[fileSizeMax]byte, bitOffset int, src *lowleveljpeg.Bloc
 	return bitOffset
 }
 
-func encodeBlockQ3(buf *[fileSizeMax]byte, bitOffset int, src *lowleveljpeg.BlockU8, nCoeffs int) int {
+func encodeBlockQ4(buf *[fileSizeMax]byte, bitOffset int, src *lowleveljpeg.BlockU8, nCoeffs int) int {
 	// We could import the lowleveldct2x2 package and call its ForwardDCT
 	// method (and InverseDCTFrom on decode), but it's easy to just inline it.
 
@@ -550,7 +550,7 @@ func Decode(r io.Reader) (image.Image, error) {
 
 		if c >= ColorRGBA {
 			aaBlockU8 := lowleveljpeg.BlockU8{}
-			bitOffset = decodeBlockQ3(aaBlockU8[:], 8, &buf, bitOffset, QualityBest.numberOfCoefficients())
+			bitOffset = decodeBlockQ4(aaBlockU8[:], 8, &buf, bitOffset, QualityBest.numberOfCoefficients())
 			aaQuadBlockU8.UpsampleFrom(&aaBlockU8)
 			for i, v := range aaQuadBlockU8 {
 				aaQuadBlockU8[i] = cubeRootLUT[v]
@@ -577,13 +577,13 @@ func decodeWidthAndHeight(buf2 byte) (w int, h int, ok bool) {
 type decodeBlockFunc func(dst []byte, stride int, buf *[fileSizeMax]byte, bitOffset int, nCoeffs int) int
 
 var decodeBlockFuncs = [4]decodeBlockFunc{
-	decodeBlockQ0,
 	decodeBlockQ1,
-	decodeBlockQ1,
-	decodeBlockQ3,
+	decodeBlockQ2,
+	decodeBlockQ2,
+	decodeBlockQ4,
 }
 
-func decodeBlockQ0(dst []byte, stride int, buf *[fileSizeMax]byte, bitOffset int, nCoeffs int) int {
+func decodeBlockQ1(dst []byte, stride int, buf *[fileSizeMax]byte, bitOffset int, nCoeffs int) int {
 	a := lowleveljpeg.BlockI16{}
 
 	for _, z := range zigzag8 {
@@ -608,7 +608,7 @@ func decodeBlockQ0(dst []byte, stride int, buf *[fileSizeMax]byte, bitOffset int
 	return bitOffset
 }
 
-func decodeBlockQ1(dst []byte, stride int, buf *[fileSizeMax]byte, bitOffset int, nCoeffs int) int {
+func decodeBlockQ2(dst []byte, stride int, buf *[fileSizeMax]byte, bitOffset int, nCoeffs int) int {
 	tmp := lowleveljpeg.BlockU8{}
 
 	for i := range 4 {
@@ -637,7 +637,7 @@ func decodeBlockQ1(dst []byte, stride int, buf *[fileSizeMax]byte, bitOffset int
 		}
 	}
 
-	smoothBlockSeams8x8Q1(&tmp)
+	smoothBlockSeams8x8Q2(&tmp)
 
 	for i := range 8 {
 		di := i * stride
@@ -648,7 +648,7 @@ func decodeBlockQ1(dst []byte, stride int, buf *[fileSizeMax]byte, bitOffset int
 	return bitOffset
 }
 
-func decodeBlockQ3(dst []byte, stride int, buf *[fileSizeMax]byte, bitOffset int, nCoeffs int) int {
+func decodeBlockQ4(dst []byte, stride int, buf *[fileSizeMax]byte, bitOffset int, nCoeffs int) int {
 	tmp := lowleveljpeg.BlockU8{}
 
 	for i := range 16 {
@@ -674,7 +674,7 @@ func decodeBlockQ3(dst []byte, stride int, buf *[fileSizeMax]byte, bitOffset int
 		tmp[o2+9] = biasAndClamp[((+dct0-dct1-dct2+1)>>1)&1023]
 	}
 
-	smoothBlockSeams8x8Q3(&tmp)
+	smoothBlockSeams8x8Q4(&tmp)
 
 	for i := range 8 {
 		di := i * stride
@@ -911,7 +911,7 @@ func smoothBlockSeams16x16(b *lowleveljpeg.QuadBlockU8) {
 	b[0x87] = uint8(((9 * v87) + (3 * v77) + v78 + (3 * v88) + 8) / 16)
 }
 
-func smoothBlockSeams8x8Q1(b *lowleveljpeg.BlockU8) {
+func smoothBlockSeams8x8Q2(b *lowleveljpeg.BlockU8) {
 	for _, pair := range smoothingPairs8x8 {
 		v0 := uint32(b[pair[0]])
 		v1 := uint32(b[pair[1]])
@@ -930,7 +930,7 @@ func smoothBlockSeams8x8Q1(b *lowleveljpeg.BlockU8) {
 	b[0o43] = uint8(((9 * v43) + (3 * v33) + v34 + (3 * v44) + 8) / 16)
 }
 
-func smoothBlockSeams8x8Q3(b *lowleveljpeg.BlockU8) {
+func smoothBlockSeams8x8Q4(b *lowleveljpeg.BlockU8) {
 	for y := 1; y < 7; y += 2 {
 		for x := 1; x < 7; x += 2 {
 			o := (y * 8) + x
