@@ -157,6 +157,8 @@ OK. 12fc69a5 test/data/mona-lisa.21x32.th
 OK. 2dccfe56 test/data/muybridge-frame-000.wbmp
 OK. db2733f5 test/data/muybridge.apng
 OK. db2733f5 test/data/muybridge.gif
+OK. 6e0d715b test/data/peacock.24x19.lossy.webp
+OK. ad130b74 test/data/peacock.24x19.png
 OK. d42a13cd test/data/peacock.default.jpeg
 OK. c8a50351 test/data/peacock.default.truncated.decoded-by-djpeg.png
 OK. 91b6bebb test/data/peacock.default.truncated.decoded-by-wuffs.png
