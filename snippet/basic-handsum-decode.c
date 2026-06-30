@@ -42,7 +42,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <string.h>
 
 typedef struct basic_handsum_decode__pixel_buffer_type {
   uint32_t width;   // Measured in pixels, not bytes.
@@ -79,6 +78,17 @@ basic_handsum_decode__decode(basic_handsum_decode__pixel_buffer* dst,
 // --------
 
 #ifdef BASIC_HANDSUM_DECODE_IMPLEMENTATION
+
+// We implement memcpy ourselves, instead of using "#include <string.h>", so
+// that we can compile this snippet with --target=wasm32.
+static void  //
+basic_handsum_decode__memcpy(uint8_t* restrict dst,
+                             const uint8_t* restrict src,
+                             size_t n) {
+  while (n--) {
+    *dst++ = *src++;
+  }
+}
 
 static void  //
 basic_handsum_decode__smooth_block_seams_16x16(uint8_t* b) {
@@ -297,7 +307,7 @@ basic_handsum_decode__decode_block_q4(uint8_t* dst_ptr,
   for (size_t i = 0; i < 8; i++) {
     size_t di = i * dst_stride;
     size_t ti = i * 8;
-    memcpy(&dst_ptr[di], &tmp[ti], 8);
+    basic_handsum_decode__memcpy(&dst_ptr[di], &tmp[ti], 8);
   }
 
   return bit_offset;
@@ -629,7 +639,8 @@ basic_handsum_decode__scale_horizontal(
   }
 
   for (int y = 0; y < 16; y++) {
-    memcpy(&pixbuf->bgra_pixels[4 * w * y], &dst[4 * w * y], 4 * w);
+    basic_handsum_decode__memcpy(&pixbuf->bgra_pixels[4 * w * y],
+                                 &dst[4 * w * y], 4 * w);
   }
 }
 
@@ -686,7 +697,7 @@ basic_handsum_decode__scale_vertical(
     }
   }
 
-  memcpy(&pixbuf->bgra_pixels[0], &dst[0], 64 * h);
+  basic_handsum_decode__memcpy(&pixbuf->bgra_pixels[0], &dst[0], 64 * h);
 }
 
 static void  //
