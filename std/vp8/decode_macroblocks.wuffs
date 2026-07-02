@@ -429,7 +429,7 @@ pri func decoder.swizzle_one_row_of_macroblocks!(
             v3: 0,
             ycc_model: base.YCC_MODEL__BT_601_STUDIO_RANGE as base.u8,
             // TODO(§): let fancy upsampling work with y_min_incl > 0.
-            ycc_upsampling: base.YCC_UPSAMPLING__BASIC as base.u8,
+            ycc_upsampling: base.YCC_UPSAMPLING__FANCY_LIKE_LIBWEBP as base.u8,
             scratch_buffer_2k: this.swizzle_ycck_scratch_buffer_2k[..])
     return status
 }

@@ -84333,7 +84333,7 @@ wuffs_vp8__decoder__swizzle_one_row_of_macroblocks(
       1u,
       0u,
       ((uint8_t)(1u)),
-      ((uint8_t)(0u)),
+      ((uint8_t)(2u)),
       wuffs_base__make_slice_u8(self->private_data.f_swizzle_ycck_scratch_buffer_2k, 2048));
   return wuffs_private_impl__status__ensure_not_a_suspension(v_status);
 }
