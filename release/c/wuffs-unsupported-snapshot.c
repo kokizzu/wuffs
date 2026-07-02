@@ -83991,10 +83991,6 @@ wuffs_vp8__decoder__decode_macroblocks(
       } else {
         wuffs_vp8__decoder__filter_normal(self, a_workbuf, (v_mby - 1u));
       }
-      v_status = wuffs_vp8__decoder__swizzle_one_row_of_macroblocks(self, a_dst, a_workbuf, (v_mby - 1u));
-      if ( ! wuffs_base__status__is_ok(&v_status)) {
-        return wuffs_private_impl__status__ensure_not_a_suspension(v_status);
-      }
     }
     v_mby += 1u;
   }
@@ -84288,6 +84284,7 @@ wuffs_vp8__decoder__swizzle_one_row_of_macroblocks(
     return wuffs_base__make_status(wuffs_base__error__bad_workbuf_length);
   }
   v_y_min_incl = wuffs_base__u32__sat_sub((a_mby * 16u), 6u);
+  v_y_min_incl = 0u;
   v_y_max_excl = ((a_mby * 16u) + 10u);
   if ((a_mby + 1u) >= self->private_impl.f_mbh) {
     v_y_max_excl = self->private_impl.f_height;
