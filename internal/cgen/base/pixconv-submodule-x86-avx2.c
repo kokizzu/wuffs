@@ -445,10 +445,12 @@ wuffs_private_impl__swizzle_ycc__upsample_inv_h2v2_triangle_x86_avx2(
     size_t src_len,
     uint32_t h1v2_bias_ignored,
     bool first_column,
-    bool last_column) {
+    bool last_column,
+    uint8_t odd_column_rounding) {
   uint8_t* dp = dst_ptr;
   const uint8_t* sp_major = src_ptr_major;
   const uint8_t* sp_minor = src_ptr_minor;
+  const uint8_t oc = odd_column_rounding;
 
   if (first_column) {
     src_len--;
@@ -456,7 +458,7 @@ wuffs_private_impl__swizzle_ycc__upsample_inv_h2v2_triangle_x86_avx2(
       uint32_t sv = (12u * ((uint32_t)(*sp_major++))) +  //
                     (4u * ((uint32_t)(*sp_minor++)));
       *dp++ = (uint8_t)((sv + 8u) >> 4u);
-      *dp++ = (uint8_t)((sv + 7u) >> 4u);
+      *dp++ = (uint8_t)((sv + oc) >> 4u);
       return dst_ptr;
     }
 
@@ -468,7 +470,7 @@ wuffs_private_impl__swizzle_ycc__upsample_inv_h2v2_triangle_x86_avx2(
     uint32_t sv = (9u * ((uint32_t)(*sp_major++))) +  //
                   (3u * ((uint32_t)(*sp_minor++)));
     *dp++ = (uint8_t)((sv + (3u * sv_major_m1) + (sv_minor_m1) + 8u) >> 4u);
-    *dp++ = (uint8_t)((sv + (3u * sv_major_p1) + (sv_minor_p1) + 7u) >> 4u);
+    *dp++ = (uint8_t)((sv + (3u * sv_major_p1) + (sv_minor_p1) + oc) >> 4u);
     if (src_len <= 0u) {
       return dst_ptr;
     }
@@ -489,7 +491,7 @@ wuffs_private_impl__swizzle_ycc__upsample_inv_h2v2_triangle_x86_avx2(
       uint32_t sv = (9u * ((uint32_t)(*sp_major++))) +  //
                     (3u * ((uint32_t)(*sp_minor++)));
       *dp++ = (uint8_t)((sv + (3u * sv_major_m1) + (sv_minor_m1) + 8u) >> 4u);
-      *dp++ = (uint8_t)((sv + (3u * sv_major_p1) + (sv_minor_p1) + 7u) >> 4u);
+      *dp++ = (uint8_t)((sv + (3u * sv_major_p1) + (sv_minor_p1) + oc) >> 4u);
     }
 
   } else {
@@ -562,8 +564,8 @@ wuffs_private_impl__swizzle_ycc__upsample_inv_h2v2_triangle_x86_avx2(
       // the u16 right value by 4. On the right (p1), shift right by 4 and then
       // shift left by 8 so that, when still in the u16x16 little-endian
       // interpretation, we have:
-      //  - m1_element =  (etcetera + 8) >> 4
-      //  - p1_element = ((etcetera + 7) >> 4) << 8
+      //  - m1_element =  (etcetera +  8) >> 4
+      //  - p1_element = ((etcetera + oc) >> 4) << 8
       //
       // step4_m1_lo = [0x00?? 0x00?? ... 0x00?? 0x00??]
       // step4_p1_lo = [0x??00 0x??00 ... 0x??00 0x??00]
@@ -572,14 +574,14 @@ wuffs_private_impl__swizzle_ycc__upsample_inv_h2v2_triangle_x86_avx2(
       __m256i step4_m1_lo = _mm256_srli_epi16(
           _mm256_add_epi16(step3_m1_lo, _mm256_set1_epi16(8)), 4);
       __m256i step4_p1_lo = _mm256_slli_epi16(
-          _mm256_srli_epi16(_mm256_add_epi16(step3_p1_lo, _mm256_set1_epi16(7)),
-                            4),
+          _mm256_srli_epi16(
+              _mm256_add_epi16(step3_p1_lo, _mm256_set1_epi16(oc)), 4),
           8);
       __m256i step4_m1_hi = _mm256_srli_epi16(
           _mm256_add_epi16(step3_m1_hi, _mm256_set1_epi16(8)), 4);
       __m256i step4_p1_hi = _mm256_slli_epi16(
-          _mm256_srli_epi16(_mm256_add_epi16(step3_p1_hi, _mm256_set1_epi16(7)),
-                            4),
+          _mm256_srli_epi16(
+              _mm256_add_epi16(step3_p1_hi, _mm256_set1_epi16(oc)), 4),
           8);
 
       // Bitwise-or two "0x00"-rich u16x16 vectors to get a u8x32 vector. Do
@@ -630,7 +632,7 @@ wuffs_private_impl__swizzle_ycc__upsample_inv_h2v2_triangle_x86_avx2(
     uint32_t sv = (9u * ((uint32_t)(*sp_major++))) +  //
                   (3u * ((uint32_t)(*sp_minor++)));
     *dp++ = (uint8_t)((sv + (3u * sv_major_m1) + (sv_minor_m1) + 8u) >> 4u);
-    *dp++ = (uint8_t)((sv + (3u * sv_major_p1) + (sv_minor_p1) + 7u) >> 4u);
+    *dp++ = (uint8_t)((sv + (3u * sv_major_p1) + (sv_minor_p1) + oc) >> 4u);
   }
 
   return dst_ptr;

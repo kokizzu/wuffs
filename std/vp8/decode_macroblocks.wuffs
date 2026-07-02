@@ -425,7 +425,7 @@ pri func decoder.swizzle_one_row_of_macroblocks!(
             v2: 1,
             v3: 0,
             ycc_model: base.YCC_MODEL__BT_601_STUDIO_RANGE as base.u8,
-            triangle_filter_for_2to1: false,
+            ycc_upsampling: base.YCC_UPSAMPLING__BASIC as base.u8,
             scratch_buffer_2k: this.swizzle_ycck_scratch_buffer_2k[..])
     return status
 }

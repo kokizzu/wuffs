@@ -68,7 +68,7 @@ wuffs_base__pixel_swizzler__swizzle_ycck(
     uint8_t v2,
     uint8_t v3,
     uint8_t ycc_model,
-    bool triangle_filter_for_2to1,
+    uint8_t ycc_upsampling,
     wuffs_base__slice_u8 scratch_buffer_2k);
 
 // ---------------- Images (Utility)

@@ -2072,7 +2072,9 @@ pri func decoder.swizzle_colorful!(dst: ptr base.pixel_buffer, workbuf: slice ba
     var height1 : base.u32[..= 0x1_0008]
     var height2 : base.u32[..= 0x1_0008]
     var height3 : base.u32[..= 0x1_0008]
-    var status  : base.status
+
+    var ycc_upsampling : base.u8
+    var status         : base.status
 
     if this.swizzle_immediately {
         i = this.swizzle_immediately_c_offsets[0] as base.u64
@@ -2137,6 +2139,11 @@ pri func decoder.swizzle_colorful!(dst: ptr base.pixel_buffer, workbuf: slice ba
         }
     }
 
+    ycc_upsampling = base.YCC_UPSAMPLING__BASIC as base.u8
+    if not this.use_lower_quality {
+        ycc_upsampling = base.YCC_UPSAMPLING__FANCY_LIKE_LIBJPEG as base.u8
+    }
+
     status = this.swizzler.swizzle_ycck!(
             dst: args.dst,
             dst_palette: args.dst.palette_or_else(fallback: this.dst_palette[..]),
@@ -2169,7 +2176,7 @@ pri func decoder.swizzle_colorful!(dst: ptr base.pixel_buffer, workbuf: slice ba
             v2: this.components_v[2],
             v3: this.components_v[3],
             ycc_model: this.ycc_model,
-            triangle_filter_for_2to1: not this.use_lower_quality,
+            ycc_upsampling: ycc_upsampling,
             scratch_buffer_2k: this.swizzle_ycck_scratch_buffer_2k[..])
     return status
 }

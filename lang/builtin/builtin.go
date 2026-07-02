@@ -248,6 +248,12 @@ var Consts = [...]struct {
 	{t.IDU32, "0x01", "YCC_MODEL__BT_601_STUDIO_RANGE"},
 	{t.IDU32, "0x40", "YCC_MODEL__RGB"},
 	{t.IDU32, "0x80", "YCC_MODEL__CMY"},
+
+	// ----
+
+	{t.IDU32, "0x00", "YCC_UPSAMPLING__BASIC"},
+	{t.IDU32, "0x01", "YCC_UPSAMPLING__FANCY_LIKE_LIBJPEG"},
+	{t.IDU32, "0x02", "YCC_UPSAMPLING__FANCY_LIKE_LIBWEBP"},
 }
 
 var Statuses = [...]string{
@@ -742,7 +748,7 @@ var funcsOther = [...]string{
 		"v2: u8[..= 4]," +
 		"v3: u8[..= 4]," +
 		"ycc_model: u8," +
-		"triangle_filter_for_2to1: bool," +
+		"ycc_upsampling: u8," +
 		"scratch_buffer_2k: slice u8) status",
 
 	// ---- arm_crc32_utility
