@@ -82114,11 +82114,10 @@ wuffs_vp8__decoder__copy_from_yuv_cache(
 
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__status
-wuffs_vp8__decoder__swizzle_one_row_of_macroblocks(
+wuffs_vp8__decoder__swizzle(
     wuffs_vp8__decoder* self,
     wuffs_base__pixel_buffer* a_dst,
-    wuffs_base__slice_u8 a_workbuf,
-    uint32_t a_mby);
+    wuffs_base__slice_u8 a_workbuf);
 
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
@@ -83995,14 +83994,13 @@ wuffs_vp8__decoder__decode_macroblocks(
     v_mby += 1u;
   }
   if (self->private_impl.f_mbh > 0u) {
-    v_mby = (self->private_impl.f_mbh - 1u);
     if (self->private_impl.f_filt_level <= 0u) {
     } else if (self->private_impl.f_filt_simple) {
-      wuffs_vp8__decoder__filter_simple(self, a_workbuf, v_mby);
+      wuffs_vp8__decoder__filter_simple(self, a_workbuf, (self->private_impl.f_mbh - 1u));
     } else {
-      wuffs_vp8__decoder__filter_normal(self, a_workbuf, v_mby);
+      wuffs_vp8__decoder__filter_normal(self, a_workbuf, (self->private_impl.f_mbh - 1u));
     }
-    v_status = wuffs_vp8__decoder__swizzle_one_row_of_macroblocks(self, a_dst, a_workbuf, v_mby);
+    v_status = wuffs_vp8__decoder__swizzle(self, a_dst, a_workbuf);
     if ( ! wuffs_base__status__is_ok(&v_status)) {
       return wuffs_private_impl__status__ensure_not_a_suspension(v_status);
     }
@@ -84263,62 +84261,41 @@ wuffs_vp8__decoder__copy_from_yuv_cache(
   return wuffs_base__make_empty_struct();
 }
 
-// -------- func vp8.decoder.swizzle_one_row_of_macroblocks
+// -------- func vp8.decoder.swizzle
 
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__status
-wuffs_vp8__decoder__swizzle_one_row_of_macroblocks(
+wuffs_vp8__decoder__swizzle(
     wuffs_vp8__decoder* self,
     wuffs_base__pixel_buffer* a_dst,
-    wuffs_base__slice_u8 a_workbuf,
-    uint32_t a_mby) {
-  uint32_t v_y_min_incl = 0;
-  uint32_t v_y_max_excl = 0;
-  uint64_t v_o = 0;
-  wuffs_base__slice_u8 v_src0 = {0};
-  wuffs_base__slice_u8 v_src1 = {0};
-  wuffs_base__slice_u8 v_src2 = {0};
+    wuffs_base__slice_u8 a_workbuf) {
   wuffs_base__status v_status = wuffs_base__make_status(NULL);
 
   if ((self->private_impl.f_workbuf_yuv_y_end > self->private_impl.f_workbuf_yuv_u_end) || (self->private_impl.f_workbuf_yuv_u_end > self->private_impl.f_workbuf_yuv_v_end) || (self->private_impl.f_workbuf_yuv_v_end > ((uint64_t)(a_workbuf.len)))) {
     return wuffs_base__make_status(wuffs_base__error__bad_workbuf_length);
-  }
-  v_y_min_incl = wuffs_base__u32__sat_sub((a_mby * 16u), 6u);
-  v_y_min_incl = 0u;
-  v_y_max_excl = ((a_mby * 16u) + 10u);
-  if ((a_mby + 1u) >= self->private_impl.f_mbh) {
-    v_y_max_excl = self->private_impl.f_height;
-  }
-  v_o = ((uint64_t)((v_y_min_incl * self->private_impl.f_workbuf_yuv_y_stride)));
-  if (v_o < self->private_impl.f_workbuf_yuv_y_end) {
-    v_src0 = wuffs_base__slice_u8__subslice_ij(a_workbuf, v_o, self->private_impl.f_workbuf_yuv_y_end);
-  }
-  v_o = (((uint64_t)(((v_y_min_incl / 2u) * self->private_impl.f_workbuf_yuv_uv_stride))) + self->private_impl.f_workbuf_yuv_y_end);
-  if (v_o < self->private_impl.f_workbuf_yuv_u_end) {
-    v_src1 = wuffs_base__slice_u8__subslice_ij(a_workbuf, v_o, self->private_impl.f_workbuf_yuv_u_end);
-  }
-  v_o = (((uint64_t)(((v_y_min_incl / 2u) * self->private_impl.f_workbuf_yuv_uv_stride))) + self->private_impl.f_workbuf_yuv_u_end);
-  if (v_o < self->private_impl.f_workbuf_yuv_v_end) {
-    v_src2 = wuffs_base__slice_u8__subslice_ij(a_workbuf, v_o, self->private_impl.f_workbuf_yuv_v_end);
   }
   v_status = wuffs_base__pixel_swizzler__swizzle_ycck(&self->private_impl.f_swizzler,
       a_dst,
       wuffs_base__pixel_buffer__palette(a_dst),
       0u,
       self->private_impl.f_width,
-      v_y_min_incl,
-      v_y_max_excl,
-      v_src0,
-      v_src1,
-      v_src2,
+      0u,
+      self->private_impl.f_height,
+      wuffs_base__slice_u8__subslice_j(a_workbuf, self->private_impl.f_workbuf_yuv_y_end),
+      wuffs_base__slice_u8__subslice_ij(a_workbuf,
+      self->private_impl.f_workbuf_yuv_y_end,
+      self->private_impl.f_workbuf_yuv_u_end),
+      wuffs_base__slice_u8__subslice_ij(a_workbuf,
+      self->private_impl.f_workbuf_yuv_u_end,
+      self->private_impl.f_workbuf_yuv_v_end),
       wuffs_base__utility__empty_slice_u8(),
       (self->private_impl.f_mbw * 16u),
       (self->private_impl.f_mbw * 8u),
       (self->private_impl.f_mbw * 8u),
       0u,
-      wuffs_base__u32__sat_sub((self->private_impl.f_mbh * 16u), v_y_min_incl),
-      wuffs_base__u32__sat_sub((self->private_impl.f_mbh * 8u), (v_y_min_incl / 2u)),
-      wuffs_base__u32__sat_sub((self->private_impl.f_mbh * 8u), (v_y_min_incl / 2u)),
+      (self->private_impl.f_mbh * 16u),
+      (self->private_impl.f_mbh * 8u),
+      (self->private_impl.f_mbh * 8u),
       0u,
       (self->private_impl.f_mbw * 16u),
       (self->private_impl.f_mbw * 8u),

@@ -47,29 +47,21 @@ pri func decoder.decode_macroblocks!(dst: ptr base.pixel_buffer, workbuf: slice 
             } else {
                 this.filter_normal!(workbuf: args.workbuf, mby: mby - 1)
             }
-
-            // TODO(§): re-enable this when swizzle_ycck can take y_min_incl > 0.
-            //
-            // status = this.swizzle_one_row_of_macroblocks!(dst: args.dst, workbuf: args.workbuf, mby: mby - 1)
-            // if not status.is_ok() {
-            // return status
-            // }
         }
 
         mby += 1
     }
 
     if this.mbh > 0 {
-        mby = this.mbh - 1
         if this.filt_level <= 0 {
             // No-op.
         } else if this.filt_simple {
-            this.filter_simple!(workbuf: args.workbuf, mby: mby)
+            this.filter_simple!(workbuf: args.workbuf, mby: this.mbh - 1)
         } else {
-            this.filter_normal!(workbuf: args.workbuf, mby: mby)
+            this.filter_normal!(workbuf: args.workbuf, mby: this.mbh - 1)
         }
 
-        status = this.swizzle_one_row_of_macroblocks!(dst: args.dst, workbuf: args.workbuf, mby: mby)
+        status = this.swizzle!(dst: args.dst, workbuf: args.workbuf)
         if not status.is_ok() {
             return status
         }
@@ -349,18 +341,9 @@ pri func decoder.copy_from_yuv_cache!(
     }
 }
 
-pri func decoder.swizzle_one_row_of_macroblocks!(
+pri func decoder.swizzle!(
         dst: ptr base.pixel_buffer,
-        workbuf: slice base.u8,
-        mby: base.u32[..= 0x3FF]) base.status {
-    var y_min_incl : base.u32[..= 0x3FFF]
-    var y_max_excl : base.u32[..= 0x3FFF]
-
-    var o    : base.u64
-    var src0 : slice base.u8
-    var src1 : slice base.u8
-    var src2 : slice base.u8
-
+        workbuf: slice base.u8) base.status {
     var status : base.status
 
     if (this.workbuf_yuv_y_end > this.workbuf_yuv_u_end) or
@@ -371,49 +354,24 @@ pri func decoder.swizzle_one_row_of_macroblocks!(
     assert this.workbuf_yuv_u_end <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: this.workbuf_yuv_v_end)
     assert this.workbuf_yuv_y_end <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: this.workbuf_yuv_u_end)
 
-    // There are 16 rows of pixels per macroblock. However, the bottom 6 rows
-    // of pixels (the bottom 3 rows of samples, at 4:2:0 chroma subsampling)
-    // can be modified by the the macroblock below's loop filtering (which
-    // happens after decoder.swizzle_one_row_of_macroblocks returns), unless
-    // we're swizzling the bottom-most row of macroblocks.
-    y_min_incl = (args.mby * 16) ~sat- 6
-    y_min_incl = 0  // TODO(§): delete this.
-    y_max_excl = (args.mby * 16) + 10
-    if (args.mby + 1) >= this.mbh {
-        y_max_excl = this.height
-    }
-
-    o = (y_min_incl * this.workbuf_yuv_y_stride) as base.u64
-    if o < this.workbuf_yuv_y_end {
-        src0 = args.workbuf[o .. this.workbuf_yuv_y_end]
-    }
-    o = (((y_min_incl / 2) * this.workbuf_yuv_uv_stride) as base.u64) + this.workbuf_yuv_y_end
-    if o < this.workbuf_yuv_u_end {
-        src1 = args.workbuf[o .. this.workbuf_yuv_u_end]
-    }
-    o = (((y_min_incl / 2) * this.workbuf_yuv_uv_stride) as base.u64) + this.workbuf_yuv_u_end
-    if o < this.workbuf_yuv_v_end {
-        src2 = args.workbuf[o .. this.workbuf_yuv_v_end]
-    }
-
     status = this.swizzler.swizzle_ycck!(
             dst: args.dst,
             dst_palette: args.dst.palette(),
             x_min_incl: 0,
             x_max_excl: this.width,
-            y_min_incl: y_min_incl,
-            y_max_excl: y_max_excl,
-            src0: src0,
-            src1: src1,
-            src2: src2,
+            y_min_incl: 0,
+            y_max_excl: this.height,
+            src0: args.workbuf[.. this.workbuf_yuv_y_end],
+            src1: args.workbuf[this.workbuf_yuv_y_end .. this.workbuf_yuv_u_end],
+            src2: args.workbuf[this.workbuf_yuv_u_end .. this.workbuf_yuv_v_end],
             src3: this.util.empty_slice_u8(),
             width0: this.mbw * 16,
             width1: this.mbw * 8,
             width2: this.mbw * 8,
             width3: 0,
-            height0: (this.mbh * 16) ~sat- y_min_incl,
-            height1: (this.mbh * 8) ~sat- (y_min_incl / 2),
-            height2: (this.mbh * 8) ~sat- (y_min_incl / 2),
+            height0: this.mbh * 16,
+            height1: this.mbh * 8,
+            height2: this.mbh * 8,
             height3: 0,
             stride0: this.mbw * 16,
             stride1: this.mbw * 8,
@@ -428,7 +386,6 @@ pri func decoder.swizzle_one_row_of_macroblocks!(
             v2: 1,
             v3: 0,
             ycc_model: base.YCC_MODEL__BT_601_STUDIO_RANGE as base.u8,
-            // TODO(§): let fancy upsampling work with y_min_incl > 0.
             ycc_upsampling: base.YCC_UPSAMPLING__FANCY_LIKE_LIBWEBP as base.u8,
             scratch_buffer_2k: this.swizzle_ycck_scratch_buffer_2k[..])
     return status
