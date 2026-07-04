@@ -79,8 +79,7 @@ basic_handsum_decode__decode(basic_handsum_decode__pixel_buffer* dst,
 
 #ifdef BASIC_HANDSUM_DECODE_IMPLEMENTATION
 
-// We implement memcpy ourselves, instead of using "#include <string.h>", so
-// that we can compile this snippet with --target=wasm32.
+#ifdef __wasm__
 static void  //
 basic_handsum_decode__memcpy(uint8_t* restrict dst,
                              const uint8_t* restrict src,
@@ -89,6 +88,10 @@ basic_handsum_decode__memcpy(uint8_t* restrict dst,
     *dst++ = *src++;
   }
 }
+#else
+#include <string.h>
+#define basic_handsum_decode__memcpy memcpy
+#endif
 
 static void  //
 basic_handsum_decode__smooth_block_seams_16x16(uint8_t* b) {
