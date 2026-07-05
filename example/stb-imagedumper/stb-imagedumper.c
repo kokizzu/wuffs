@@ -684,7 +684,7 @@ struct {
 static const char* g_usage =
     "Usage: stb-imagedumper *.{jpeg,png}\n"
     "\n"
-    "If no filenames are given then it defaults to /dev/stdin\n"
+    "The \"-\" filename is a special case, a short equivalent of /dev/stdin\n"
     "\n"
     "Flags:\n"
     "    -a or -ascii-art (use ASCII art instead of ANSI color codes)\n"
@@ -994,7 +994,11 @@ handle(const char* filename,
                                        &src_w, &src_h, &channels_in_file,
                                        bytes_per_pixel);
   } else {
-    src_pixels = stbi_load(filename,  //
+    const char* fn = filename;
+    if ((fn[0] == '-') && (fn[1] == '\x00')) {
+      fn = "/dev/stdin";
+    }
+    src_pixels = stbi_load(fn,  //
                            &src_w, &src_h, &channels_in_file, bytes_per_pixel);
   }
 
@@ -1201,9 +1205,6 @@ main(int argc, char** argv) {
       handle(demos[c].filename, demos[c].src_len, demos[c].src_ptr,
              demos[c].src_len);
     }
-
-  } else if (g_flags.remaining_argc == 0) {
-    handle("/dev/stdin", 0, NULL, 0);
   }
 
   for (int c = 0; c < g_flags.remaining_argc; c++) {
