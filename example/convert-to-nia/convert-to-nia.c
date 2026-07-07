@@ -11,8 +11,8 @@
 // ----------------
 
 /*
-convert-to-nia converts an image from stdin (e.g. in the BMP, GIF, JPEG or PNG
-format) to stdout (in the NIA/NIE format).
+convert-to-nia converts an image from stdin (e.g. in the BMP, GIF, JPEG, PNG,
+PPM, QOI, TARGA or WEBP format) to stdout (in the NIA/NIE format).
 
 See the "const char* g_usage" string below for details.
 
@@ -135,8 +135,8 @@ static const char* g_usage =
     "            -fail-if-unsandboxed\n"
     "\n"
     "convert-to-nia converts an image from stdin (e.g. in the BMP, GIF, JPEG\n"
-    "or PNG format) to stdout (in the NIA format, or in the NIE, hash, PPM\n"
-    "or PNG format if the -1, -d, -p or -u flag is given).\n"
+    "PNG, PPM, QOI, TARGA or WEBP format) to stdout (in the NIA format, or\n"
+    "in the NIE, hash, PPM or PNG format if given -1, -d, -p or -u flags).\n"
     "\n"
     "NIA/NIE is a trivial animated/still image file format, specified at\n"
     "https://github.com/google/wuffs/blob/main/doc/spec/nie-spec.md\n"
