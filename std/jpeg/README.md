@@ -13,6 +13,7 @@ chapter also has a good overview of a number of image formats, including JPEG.
 
 Web pages:
 
+- [DCT and DFT for 1D and 2D Signals](https://ekrem-7-fidan.medium.com/dct-and-dft-for-1d-and-2d-signals-discrete-cosine-transform-and-discrete-fourier-transform-59feb837441d) by Ekrem Fidan.
 - [How JPEG works](https://cgjennings.ca/articles/jpeg-compression/) by Christopher G. Jennings.
 - [How JPG Works](https://www.freecodecamp.org/news/how-jpg-works-a4dbd2316f35/) by Colt McAnlis.
 - [JPEG compression](https://www.sophielwang.com/blog/jpeg) by Sophie Wang.
