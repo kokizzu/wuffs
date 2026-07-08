@@ -50698,42 +50698,6 @@ WUFFS_HANDSUM__ZIGZAG[2][15] WUFFS_BASE__POTENTIALLY_UNUSED = {
 };
 
 static const uint8_t
-WUFFS_HANDSUM__SCALE_AND_BIAS_CHROMA_DOWN[256] WUFFS_BASE__POTENTIALLY_UNUSED = {
-  60u, 60u, 61u, 61u, 62u, 62u, 63u, 63u,
-  64u, 64u, 65u, 65u, 66u, 66u, 67u, 67u,
-  68u, 68u, 69u, 69u, 70u, 70u, 71u, 71u,
-  72u, 72u, 73u, 73u, 74u, 74u, 75u, 75u,
-  76u, 76u, 77u, 77u, 78u, 78u, 79u, 79u,
-  80u, 80u, 81u, 81u, 82u, 82u, 83u, 83u,
-  84u, 84u, 85u, 85u, 86u, 86u, 87u, 87u,
-  88u, 88u, 89u, 89u, 90u, 90u, 91u, 91u,
-  92u, 92u, 93u, 93u, 94u, 94u, 95u, 95u,
-  96u, 96u, 97u, 97u, 98u, 98u, 99u, 99u,
-  100u, 100u, 101u, 101u, 102u, 102u, 103u, 103u,
-  104u, 104u, 105u, 105u, 106u, 106u, 107u, 107u,
-  108u, 108u, 109u, 109u, 110u, 110u, 111u, 111u,
-  112u, 112u, 113u, 113u, 114u, 114u, 115u, 115u,
-  116u, 116u, 117u, 117u, 118u, 118u, 119u, 119u,
-  120u, 120u, 121u, 121u, 122u, 122u, 123u, 123u,
-  124u, 124u, 125u, 125u, 126u, 126u, 127u, 127u,
-  128u, 128u, 129u, 129u, 130u, 130u, 131u, 131u,
-  132u, 132u, 133u, 133u, 134u, 134u, 135u, 135u,
-  136u, 136u, 137u, 137u, 138u, 138u, 139u, 139u,
-  140u, 140u, 141u, 141u, 142u, 142u, 143u, 143u,
-  144u, 144u, 145u, 145u, 146u, 146u, 147u, 147u,
-  148u, 148u, 149u, 149u, 150u, 150u, 151u, 151u,
-  152u, 152u, 153u, 153u, 154u, 154u, 155u, 155u,
-  156u, 156u, 157u, 157u, 158u, 158u, 159u, 159u,
-  160u, 160u, 161u, 161u, 162u, 162u, 163u, 163u,
-  164u, 164u, 165u, 165u, 166u, 166u, 167u, 167u,
-  168u, 168u, 169u, 169u, 170u, 170u, 171u, 171u,
-  172u, 172u, 173u, 173u, 174u, 174u, 175u, 175u,
-  176u, 176u, 177u, 177u, 178u, 178u, 179u, 179u,
-  180u, 180u, 181u, 181u, 182u, 182u, 183u, 183u,
-  184u, 184u, 185u, 185u, 186u, 186u, 187u, 187u,
-};
-
-static const uint8_t
 WUFFS_HANDSUM__CUBE_ROOT[256] WUFFS_BASE__POTENTIALLY_UNUSED = {
   0u, 0u, 1u, 1u, 1u, 2u, 2u, 2u,
   3u, 3u, 3u, 4u, 4u, 4u, 5u, 5u,
@@ -52241,8 +52205,8 @@ wuffs_handsum__decoder__scale_and_bias_chroma_down(
   while (v_y < 8u) {
     v_x = 0u;
     while (v_x < 8u) {
-      self->private_data.f_buffers[1u][v_y][((4u * v_x) + 1u)] = WUFFS_HANDSUM__SCALE_AND_BIAS_CHROMA_DOWN[self->private_data.f_buffers[1u][v_y][((4u * v_x) + 1u)]];
-      self->private_data.f_buffers[1u][v_y][((4u * v_x) + 2u)] = WUFFS_HANDSUM__SCALE_AND_BIAS_CHROMA_DOWN[self->private_data.f_buffers[1u][v_y][((4u * v_x) + 2u)]];
+      self->private_data.f_buffers[1u][v_y][((4u * v_x) + 1u)] = ((uint8_t)(60u + ((uint8_t)(self->private_data.f_buffers[1u][v_y][((4u * v_x) + 1u)] >> 1u))));
+      self->private_data.f_buffers[1u][v_y][((4u * v_x) + 2u)] = ((uint8_t)(60u + ((uint8_t)(self->private_data.f_buffers[1u][v_y][((4u * v_x) + 2u)] >> 1u))));
       v_x += 1u;
     }
     v_y += 1u;
