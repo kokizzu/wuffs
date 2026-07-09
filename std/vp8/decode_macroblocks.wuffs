@@ -28,6 +28,8 @@ pri func decoder.decode_macroblocks!(dst: ptr base.pixel_buffer, workbuf: slice 
 
         this.mb_states_left = 0
 
+        // Decode this row, using this.mb_coeffs and this.yuv_cache before
+        // ultimately writing to args.workbuf.
         mbx = 0
         while mbx < this.mbw,
                 inv mby < 0x400,
@@ -39,6 +41,7 @@ pri func decoder.decode_macroblocks!(dst: ptr base.pixel_buffer, workbuf: slice 
             mbx += 1
         }
 
+        // Filter the previous row, already in args.workbuf.
         if mby > 0 {
             if this.filt_level <= 0 {
                 // No-op.
@@ -52,6 +55,7 @@ pri func decoder.decode_macroblocks!(dst: ptr base.pixel_buffer, workbuf: slice 
         mby += 1
     }
 
+    // Filter the final row, already in args.workbuf, and swizzle to args.dst.
     if this.mbh > 0 {
         if this.filt_level <= 0 {
             // No-op.
@@ -79,6 +83,7 @@ pri func decoder.decode_one_macroblock!(workbuf: slice base.u8, mbx: base.u32[..
     var luma_mode   : base.u32[..= 4]
     var chroma_mode : base.u32[..= 3]
 
+    // RFC 6386 Section 10. Segment-Based Feature Adjustments.
     seg = 0
     if this.seg_update_map {
         v1 = this.read_bit!(workbuf: args.workbuf, part: 0, prob: this.seg_probs[0] as base.u32)

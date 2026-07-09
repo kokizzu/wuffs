@@ -8,6 +8,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+// --------
+
+// RFC 6386 Section 13. DCT Coefficient Decoding.
+//
+// and
+//
+// RFC 6386 Section 13.2. Coding of Individual Coefficient Values.
+
 pri func decoder.decode_coefficients!(
         workbuf: slice base.u8,
         mbx: base.u32[..= 0x3FF],
@@ -36,7 +44,7 @@ pri func decoder.decode_coefficients!(
         tnz = 1 & (this.mb_states_top[args.mbx] >> 23)
         this.mb_states_top[args.mbx] &= 0xFF7F_FFFF
 
-        lnz = this.decode_block_coefficients!(
+        lnz = this.decode_subblock_coefficients!(
                 workbuf: args.workbuf,
                 mby: args.mby,
                 seg: args.seg,
@@ -67,7 +75,7 @@ pri func decoder.decode_coefficients!(
 
             b = (4 * by) + bx
 
-            lnz = this.decode_block_coefficients!(
+            lnz = this.decode_subblock_coefficients!(
                     workbuf: args.workbuf,
                     mby: args.mby,
                     seg: args.seg,
@@ -110,7 +118,7 @@ pri func decoder.decode_coefficients!(
                 this.mb_states_top[args.mbx] &= 0xFFFF_FFFF ^ ((1 as base.u32) << (28 + bc + bx))
 
                 b = (2 * bc) + (2 * by) + bx + 16
-                lnz = this.decode_block_coefficients!(
+                lnz = this.decode_subblock_coefficients!(
                         workbuf: args.workbuf,
                         mby: args.mby,
                         seg: args.seg,
@@ -158,7 +166,7 @@ pri func decoder.initialize_mb_coeffs!() {
     }
 }
 
-pri func decoder.decode_block_coefficients!(
+pri func decoder.decode_subblock_coefficients!(
         workbuf: slice base.u8,
         mby: base.u32[..= 0x3FF],
         seg: base.u32[..= 3],

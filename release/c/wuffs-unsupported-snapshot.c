@@ -81873,7 +81873,7 @@ wuffs_vp8__decoder__initialize_mb_coeffs(
 
 WUFFS_BASE__GENERATED_C_CODE
 static uint32_t
-wuffs_vp8__decoder__decode_block_coefficients(
+wuffs_vp8__decoder__decode_subblock_coefficients(
     wuffs_vp8__decoder* self,
     wuffs_base__slice_u8 a_workbuf,
     uint32_t a_mby,
@@ -82376,7 +82376,7 @@ wuffs_vp8__decoder__decode_coefficients(
     self->private_data.f_mb_states_left &= 4286578687u;
     v_tnz = (1u & (self->private_data.f_mb_states_top[a_mbx] >> 23u));
     self->private_data.f_mb_states_top[a_mbx] &= 4286578687u;
-    v_lnz = wuffs_vp8__decoder__decode_block_coefficients(self,
+    v_lnz = wuffs_vp8__decoder__decode_subblock_coefficients(self,
         a_workbuf,
         a_mby,
         a_seg,
@@ -82397,7 +82397,7 @@ wuffs_vp8__decoder__decode_coefficients(
       v_tnz = (1u & (self->private_data.f_mb_states_top[a_mbx] >> (24u + v_bx)));
       self->private_data.f_mb_states_top[a_mbx] &= (4294967295u ^ (((uint32_t)(1u)) << (24u + v_bx)));
       v_b = ((4u * v_by) + v_bx);
-      v_lnz = wuffs_vp8__decoder__decode_block_coefficients(self,
+      v_lnz = wuffs_vp8__decoder__decode_subblock_coefficients(self,
           a_workbuf,
           a_mby,
           a_seg,
@@ -82430,7 +82430,7 @@ wuffs_vp8__decoder__decode_coefficients(
             (2u * v_by) +
             v_bx +
             16u);
-        v_lnz = wuffs_vp8__decoder__decode_block_coefficients(self,
+        v_lnz = wuffs_vp8__decoder__decode_subblock_coefficients(self,
             a_workbuf,
             a_mby,
             a_seg,
@@ -82478,11 +82478,11 @@ wuffs_vp8__decoder__initialize_mb_coeffs(
   return wuffs_base__make_empty_struct();
 }
 
-// -------- func vp8.decoder.decode_block_coefficients
+// -------- func vp8.decoder.decode_subblock_coefficients
 
 WUFFS_BASE__GENERATED_C_CODE
 static uint32_t
-wuffs_vp8__decoder__decode_block_coefficients(
+wuffs_vp8__decoder__decode_subblock_coefficients(
     wuffs_vp8__decoder* self,
     wuffs_base__slice_u8 a_workbuf,
     uint32_t a_mby,

@@ -8,6 +8,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+// --------
+
+// A simplified and optimized version of decoder.inverse_dct_full when the AC
+// coefficients are all zero.
 pri func decoder.inverse_dct_dc_only!(
         cachex: base.u32[..= 28],
         cachey: base.u32[..= 22],
@@ -25,6 +29,9 @@ pri func decoder.inverse_dct_dc_only!(
     }
 }
 
+// RFC 6386 Section 14.4. Implementation of the DCT Inversion.
+//
+// It reads from mb_coeffs and yuv_cache and writes to yuv_cache.
 pri func decoder.inverse_dct_full!(
         cachex: base.u32[..= 28],
         cachey: base.u32[..= 22],
@@ -119,8 +126,10 @@ pri func decoder.inverse_dct_full!(
     var q32 : base.u32
     var q33 : base.u32
 
-    // 85627 is approximately 65536 * cos(pi/8) * sqrt(2).
     // 35468 is approximately 65536 * sin(pi/8) * sqrt(2).
+    //
+    // 85627 is approximately 65536 * cos(pi/8) * sqrt(2). Compared to the RFC
+    // implementation 85627 is also (20091 + 65536).
 
     // --------
 
@@ -299,6 +308,9 @@ pri func decoder.inverse_dct_full!(
             this.yuv_cache[args.cachey + 3][args.cachex + 3] as base.u32) ~mod+ q33)]
 }
 
+// RFC 6386 Section 14.3. Implementation of the WHT Inversion.
+//
+// It reads from and writes to mb_coeffs.
 pri func decoder.inverse_wht!() {
     var a00 : base.u32
     var a01 : base.u32

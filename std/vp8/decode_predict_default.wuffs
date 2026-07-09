@@ -10,7 +10,13 @@
 
 // --------
 
-// Predicts a 4×4 luma block, the Xs below, based on samples top and left.
+// RFC 6386 Section 12. Intraframe Prediction.
+//
+// These methods read from and write to yuv_cache.
+
+// --------
+
+// Predicts a 4×4 luma subblock, the Xs below, based on samples top and left.
 //
 //  a b c d e f g h i
 //  p X X X X

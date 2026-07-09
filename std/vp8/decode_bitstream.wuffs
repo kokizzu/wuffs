@@ -8,6 +8,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+// --------
+
+// RFC 6386 Section 7. Boolean Entropy Decoder.
+
 pri func decoder.read_bit!(workbuf: roslice base.u8, part: base.u32[..= 8], prob: base.u32[..= 0xFF]) base.u32[..= 1] {
     var p        : base.u32[..= 8]
     var c8       : base.u8

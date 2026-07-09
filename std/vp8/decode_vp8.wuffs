@@ -33,6 +33,8 @@ pub struct decoder? implements base.image_decoder(
 
         frame_config_io_position : base.u64,
 
+        // This uses the same representation as an wuffs_base__optional_u63:
+        // ((value_as_u63 << 1) | has_value_as_u1).
         quirk_source_length : base.u64,
 
         // Just under 144 MiB, for 9 partitions each up to 0xFF_FFFF bytes.
@@ -119,6 +121,7 @@ pub struct decoder? implements base.image_decoder(
         // hold in the 0x100 bit) and prob_skip_false (in the low 8 bits).
         prob_skip : base.u32[..= 0x1FF],
 
+        // 4×4 luma subblock prediction modes.
         mb_subblock_modes : array[16] base.u8[..= 9],
 
         // Two u32 values whose bits are packed like this:
@@ -132,6 +135,13 @@ pub struct decoder? implements base.image_decoder(
         mb_dc_nz : base.u32,
         mb_ac_nz : base.u32,
 
+        // The workspace for the reconstruction-in-progress macroblock,
+        // containing the predicted and then fully decoded (prediction plus
+        // post-IDCT residuals) YUV samples to copy out to the workbuf. Its
+        // edges also hold samples from previous (left and top) macroblocks
+        // that are used in calculating this macroblock's predictions.
+        //
+        // See the comments near decoder.reconstruct for the layout.
         yuv_cache : array[26] array[32] base.u8,
 
         swizzler : base.pixel_swizzler,
@@ -142,6 +152,20 @@ pub struct decoder? implements base.image_decoder(
         // 1056 is (4 planes, 8 bands, 3 contexts, 11 tokens) flattened.
         coeff_probs : array[1056] base.u8,
 
+        // Macroblock coefficients. Per this.decode_one_macroblock:
+        //
+        // this.decode_coefficients decodes these macroblock coefficients from
+        // the bitstream and dequantizes them, writing them to this.mb_coeffs.
+        // At this point, these are pre-IDCT residuals.
+        //
+        // this.reconstruct calculates the predictions (writing them to
+        // this.yuv_cache, not this.mb_coeffs) and then applies the inverse WHT
+        // (if applicable) and the inverse DCT to the pre-IDCT residuals, by
+        // calling this.inverse_dct_etc.
+        //
+        // this.inverse_dct_etc reads the pre-IDCT residuals from
+        // this.mb_coeffs and writes fully decoded samples (predictions plus
+        // post-IDCT residuals) to this.yuv_cache.
         mb_coeffs : array[25] array[16] base.u16,
 
         // Macroblock states are a u32 whose bits are packed like this:
