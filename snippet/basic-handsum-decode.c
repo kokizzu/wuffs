@@ -14,8 +14,8 @@
 // Handsum image files. Basic means that it only supports Handsum's default
 // configuration, c3q4: color=3 (RGB, no Alpha) and quality=4 (best).
 //
-// It is a C port of some of the github.com/google/wuffs/lib/handsum library.
-// Decoding only, no encoding, and c3q4 only.
+// It is a C port of some (decoding only and c3q4 only) of this Go library:
+// https://pkg.go.dev/github.com/google/wuffs/lib/handsum
 //
 // To decode other configurations, like c1q1 (Gray, worst quality) or c4q2
 // (RGBA, medium-low quality), use the github.com/google/wuffs Go or
