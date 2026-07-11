@@ -18,6 +18,9 @@
 //
 // #define WUFFS_MIMICLIB_USE_STB_IMAGE_INSTEAD_OF_LIBJPEG 1
 
+#include <limits.h>
+#include <stdint.h>
+
 // -------------------------------- WUFFS_MIMICLIB_USE_XXX_INSTEAD_OF_LIBJPEG
 #if defined(WUFFS_MIMICLIB_USE_STB_IMAGE_INSTEAD_OF_LIBJPEG)
 

@@ -8,6 +8,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include <limits.h>
+#include <stdint.h>
+
 #include "openssl/evp.h"
 
 const char*  //

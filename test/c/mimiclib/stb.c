@@ -8,6 +8,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include <limits.h>
+#include <stdint.h>
+
 // We #include a foo.cpp file, not a foo.h file, as stb_image is a "single file
 // C library".
 //

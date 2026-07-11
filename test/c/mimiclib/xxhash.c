@@ -8,6 +8,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#include <limits.h>
+#include <stdint.h>
+
 #include "xxhash.h"
 
 uint32_t global_mimiclib_xxhash32_unused_u32;
