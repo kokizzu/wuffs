@@ -70,6 +70,13 @@ code (instead of writing C/C++ code that _uses_ Wuffs' standard library).
   a tab).
 
 
+## 2026-07-11 version 0.3.5
+
+- No significant changes to `wuffs-v0.3.c` per se.
+- Some test files were renamed, to work better with pkg.go.dev indexing.
+- Some test code had #include lines added, to fix some third party builds.
+
+
 ## 2024-04-19 version 0.3.4
 
 - Have `std/png` ignore tRNS chunks for color types 4 (YA) and 6 (RGBA).
