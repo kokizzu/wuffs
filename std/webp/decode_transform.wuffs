@@ -8,7 +8,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pri func decoder.apply_transform_predictor!(pix: slice base.u8, tile_data: roslice base.u8) {
+pri func decoder.apply_transform_predictor!(pix: slice base.u8, width: base.u32[..= 0x4000], tile_data: roslice base.u8) {
     var w4       : base.u64[..= 0x1_0000]
     var prev_row : roslice base.u8
     var curr_row : slice base.u8
@@ -37,11 +37,11 @@ pri func decoder.apply_transform_predictor!(pix: slice base.u8, tile_data: rosli
     var sum_l : base.u32
     var sum_t : base.u32
 
-    if (this.width <= 0) or (this.height <= 0) {
+    if (args.width <= 0) or (this.height <= 0) {
         return nothing
     }
 
-    w4 = (this.width * 4) as base.u64
+    w4 = (args.width * 4) as base.u64
     curr_row = this.util.empty_slice_u8()
     if w4 <= args.pix.length() {
         curr_row = args.pix[.. w4]
@@ -62,7 +62,7 @@ pri func decoder.apply_transform_predictor!(pix: slice base.u8, tile_data: rosli
     }
 
     tile_size_log2 = this.transform_tile_size_log2[0] as base.u32
-    tiles_per_row = (this.width + (((1 as base.u32) << tile_size_log2) - 1)) >> tile_size_log2
+    tiles_per_row = (args.width + (((1 as base.u32) << tile_size_log2) - 1)) >> tile_size_log2
     mask = ((1 as base.u32) << tile_size_log2) - 1
 
     y = 1
@@ -94,10 +94,10 @@ pri func decoder.apply_transform_predictor!(pix: slice base.u8, tile_data: rosli
         }
 
         x = 1
-        while x < this.width,
+        while x < args.width,
                 inv y < 0x4000,
         {
-            assert x < 0x4000 via "a < b: a < c; c <= b"(c: this.width)
+            assert x < 0x4000 via "a < b: a < c; c <= b"(c: args.width)
 
             if ((x & mask) == 0) and (tile_data.length() >= 4) {
                 mode = tile_data[1] & 0x0F
@@ -283,7 +283,7 @@ pri func decoder.mode13(l: base.u8, t: base.u8, tl: base.u8) base.u8 {
     return 0
 }
 
-pri func decoder.apply_transform_cross_color!(pix: slice base.u8, tile_data: roslice base.u8) {
+pri func decoder.apply_transform_cross_color!(pix: slice base.u8, width: base.u32[..= 0x4000], tile_data: roslice base.u8) {
     var tile_size_log2 : base.u32[..= 9]
     var tiles_per_row  : base.u32[..= 16895]
     var mask           : base.u32
@@ -301,7 +301,7 @@ pri func decoder.apply_transform_cross_color!(pix: slice base.u8, tile_data: ros
     var r : base.u8
 
     tile_size_log2 = this.transform_tile_size_log2[1] as base.u32
-    tiles_per_row = (this.width + (((1 as base.u32) << tile_size_log2) - 1)) >> tile_size_log2
+    tiles_per_row = (args.width + (((1 as base.u32) << tile_size_log2) - 1)) >> tile_size_log2
     mask = ((1 as base.u32) << tile_size_log2) - 1
 
     y = 0
@@ -315,10 +315,10 @@ pri func decoder.apply_transform_cross_color!(pix: slice base.u8, tile_data: ros
         }
 
         x = 0
-        while x < this.width,
+        while x < args.width,
                 inv y < 0x4000,
         {
-            assert x < 0x4000 via "a < b: a < c; c <= b"(c: this.width)
+            assert x < 0x4000 via "a < b: a < c; c <= b"(c: args.width)
 
             if ((x & mask) == 0) and (tile_data.length() >= 4) {
                 g2r = this.util.sign_extend_convert_u8_u32(a: tile_data[0])
@@ -357,7 +357,7 @@ pri func decoder.apply_transform_subtract_green!(pix: slice base.u8) {
     }
 }
 
-pri func decoder.apply_transform_color_indexing!(pix: slice base.u8) {
+pri func decoder.apply_transform_color_indexing!(pix: slice base.u8, width: base.u32[..= 0x4000]) {
     var tile_size_log2 : base.u32[..= 9]
     var bits_per_pixel : base.u32[..= 8]
     var x_mask         : base.u32
@@ -404,8 +404,8 @@ pri func decoder.apply_transform_color_indexing!(pix: slice base.u8) {
     while y < this.height {
         assert y < 0x4000 via "a < b: a < c; c <= b"(c: this.height)
 
-        di = (4 * (y + 0) * this.width) as base.u64
-        dj = (4 * (y + 1) * this.width) as base.u64
+        di = (4 * (y + 0) * args.width) as base.u64
+        dj = (4 * (y + 1) * args.width) as base.u64
         if (di > dj) or (dj > args.pix.length()) {
             break
         }

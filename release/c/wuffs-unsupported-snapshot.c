@@ -87048,6 +87048,7 @@ static wuffs_base__empty_struct
 wuffs_webp__decoder__apply_transform_predictor(
     wuffs_webp__decoder* self,
     wuffs_base__slice_u8 a_pix,
+    uint32_t a_width,
     wuffs_base__slice_u8 a_tile_data);
 
 WUFFS_BASE__GENERATED_C_CODE
@@ -87078,6 +87079,7 @@ static wuffs_base__empty_struct
 wuffs_webp__decoder__apply_transform_cross_color(
     wuffs_webp__decoder* self,
     wuffs_base__slice_u8 a_pix,
+    uint32_t a_width,
     wuffs_base__slice_u8 a_tile_data);
 
 WUFFS_BASE__GENERATED_C_CODE
@@ -87090,7 +87092,8 @@ WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
 wuffs_webp__decoder__apply_transform_color_indexing(
     wuffs_webp__decoder* self,
-    wuffs_base__slice_u8 a_pix);
+    wuffs_base__slice_u8 a_pix,
+    uint32_t a_width);
 
 WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__status
@@ -88469,6 +88472,7 @@ static wuffs_base__empty_struct
 wuffs_webp__decoder__apply_transform_predictor(
     wuffs_webp__decoder* self,
     wuffs_base__slice_u8 a_pix,
+    uint32_t a_width,
     wuffs_base__slice_u8 a_tile_data) {
   uint64_t v_w4 = 0;
   wuffs_base__slice_u8 v_prev_row = {0};
@@ -88496,10 +88500,10 @@ wuffs_webp__decoder__apply_transform_predictor(
   uint32_t v_sum_l = 0;
   uint32_t v_sum_t = 0;
 
-  if ((self->private_impl.f_width <= 0u) || (self->private_impl.f_height <= 0u)) {
+  if ((a_width <= 0u) || (self->private_impl.f_height <= 0u)) {
     return wuffs_base__make_empty_struct();
   }
-  v_w4 = ((uint64_t)((self->private_impl.f_width * 4u)));
+  v_w4 = ((uint64_t)((a_width * 4u)));
   v_curr_row = wuffs_base__utility__empty_slice_u8();
   if (v_w4 <= ((uint64_t)(a_pix.len))) {
     v_curr_row = wuffs_base__slice_u8__subslice_j(a_pix, v_w4);
@@ -88529,7 +88533,7 @@ wuffs_webp__decoder__apply_transform_predictor(
     v_curr_row = wuffs_base__slice_u8__subslice_i(v_curr_row, 4u);
   }
   v_tile_size_log2 = ((uint32_t)(self->private_impl.f_transform_tile_size_log2[0u]));
-  v_tiles_per_row = ((self->private_impl.f_width + ((((uint32_t)(1u)) << v_tile_size_log2) - 1u)) >> v_tile_size_log2);
+  v_tiles_per_row = ((a_width + ((((uint32_t)(1u)) << v_tile_size_log2) - 1u)) >> v_tile_size_log2);
   v_mask = ((((uint32_t)(1u)) << v_tile_size_log2) - 1u);
   v_y = 1u;
   while (v_y < self->private_impl.f_height) {
@@ -88561,7 +88565,7 @@ wuffs_webp__decoder__apply_transform_predictor(
 #endif
     }
     v_x = 1u;
-    while (v_x < self->private_impl.f_width) {
+    while (v_x < a_width) {
       if (((v_x & v_mask) == 0u) && (((uint64_t)(v_tile_data.len)) >= 4u)) {
         v_mode = ((uint8_t)(v_tile_data.ptr[1u] & 15u));
         v_tile_data = wuffs_base__slice_u8__subslice_i(v_tile_data, 4u);
@@ -88857,6 +88861,7 @@ static wuffs_base__empty_struct
 wuffs_webp__decoder__apply_transform_cross_color(
     wuffs_webp__decoder* self,
     wuffs_base__slice_u8 a_pix,
+    uint32_t a_width,
     wuffs_base__slice_u8 a_tile_data) {
   uint32_t v_tile_size_log2 = 0;
   uint32_t v_tiles_per_row = 0;
@@ -88873,7 +88878,7 @@ wuffs_webp__decoder__apply_transform_cross_color(
   uint8_t v_r = 0;
 
   v_tile_size_log2 = ((uint32_t)(self->private_impl.f_transform_tile_size_log2[1u]));
-  v_tiles_per_row = ((self->private_impl.f_width + ((((uint32_t)(1u)) << v_tile_size_log2) - 1u)) >> v_tile_size_log2);
+  v_tiles_per_row = ((a_width + ((((uint32_t)(1u)) << v_tile_size_log2) - 1u)) >> v_tile_size_log2);
   v_mask = ((((uint32_t)(1u)) << v_tile_size_log2) - 1u);
   v_y = 0u;
   while (v_y < self->private_impl.f_height) {
@@ -88883,7 +88888,7 @@ wuffs_webp__decoder__apply_transform_cross_color(
       v_tile_data = wuffs_base__slice_u8__subslice_i(a_tile_data, v_t);
     }
     v_x = 0u;
-    while (v_x < self->private_impl.f_width) {
+    while (v_x < a_width) {
       if (((v_x & v_mask) == 0u) && (((uint64_t)(v_tile_data.len)) >= 4u)) {
         v_g2r = wuffs_base__utility__sign_extend_convert_u8_u32(v_tile_data.ptr[0u]);
         v_g2b = wuffs_base__utility__sign_extend_convert_u8_u32(v_tile_data.ptr[1u]);
@@ -88954,7 +88959,8 @@ WUFFS_BASE__GENERATED_C_CODE
 static wuffs_base__empty_struct
 wuffs_webp__decoder__apply_transform_color_indexing(
     wuffs_webp__decoder* self,
-    wuffs_base__slice_u8 a_pix) {
+    wuffs_base__slice_u8 a_pix,
+    uint32_t a_width) {
   uint32_t v_tile_size_log2 = 0;
   uint32_t v_bits_per_pixel = 0;
   uint32_t v_x_mask = 0;
@@ -89001,8 +89007,8 @@ wuffs_webp__decoder__apply_transform_color_indexing(
   v_src_index = ((uint64_t)((self->private_impl.f_workbuf_offset_for_color_indexing + 1u)));
   v_y = 0u;
   while (v_y < self->private_impl.f_height) {
-    v_di = ((uint64_t)((4u * v_y * self->private_impl.f_width)));
-    v_dj = ((uint64_t)((4u * (v_y + 1u) * self->private_impl.f_width)));
+    v_di = ((uint64_t)((4u * v_y * a_width)));
+    v_dj = ((uint64_t)((4u * (v_y + 1u) * a_width)));
     if ((v_di > v_dj) || (v_dj > ((uint64_t)(a_pix.len)))) {
       break;
     }
@@ -89902,7 +89908,6 @@ wuffs_webp__decoder__do_decode_frame(
   uint8_t v_c8 = 0;
   uint32_t v_has_more = 0;
   uint32_t v_width = 0;
-  uint32_t v_saved_width = 0;
   wuffs_base__slice_u8 v_dst = {0};
   wuffs_base__slice_u8 v_tile_data = {0};
   wuffs_base__status v_status = wuffs_base__make_status(NULL);
@@ -90061,10 +90066,10 @@ wuffs_webp__decoder__do_decode_frame(
       goto exit;
     }
     v_pix = wuffs_base__slice_u8__subslice_j(a_workbuf, ((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[0u])));
-    v_saved_width = self->private_impl.f_width;
+    v_width = self->private_impl.f_width;
     if (self->private_impl.f_seen_transform[3u] && (((uint64_t)(self->private_impl.f_workbuf_offset_for_color_indexing)) <= ((uint64_t)(v_pix.len)))) {
       v_pix = wuffs_base__slice_u8__subslice_i(v_pix, ((uint64_t)(self->private_impl.f_workbuf_offset_for_color_indexing)));
-      self->private_impl.f_width = self->private_impl.f_color_indexing_width;
+      v_width = self->private_impl.f_color_indexing_width;
     }
     v_which = self->private_impl.f_n_transforms;
     while (v_which > 0u) {
@@ -90079,18 +90084,15 @@ wuffs_webp__decoder__do_decode_frame(
         }
       }
       if (v_transform_type == 0u) {
-        wuffs_webp__decoder__apply_transform_predictor(self, v_pix, v_tile_data);
+        wuffs_webp__decoder__apply_transform_predictor(self, v_pix, v_width, v_tile_data);
       } else if (v_transform_type == 1u) {
-        wuffs_webp__decoder__apply_transform_cross_color(self, v_pix, v_tile_data);
+        wuffs_webp__decoder__apply_transform_cross_color(self, v_pix, v_width, v_tile_data);
       } else if (v_transform_type == 2u) {
         wuffs_webp__decoder__apply_transform_subtract_green(self, v_pix);
-      } else {
-        self->private_impl.f_width = v_saved_width;
-        if (((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[0u])) <= ((uint64_t)(a_workbuf.len))) {
-          v_pix = wuffs_base__slice_u8__subslice_j(a_workbuf, ((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[0u])));
-        }
-        wuffs_webp__decoder__apply_transform_color_indexing(self, v_pix);
+      } else if (((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[0u])) <= ((uint64_t)(a_workbuf.len))) {
+        v_pix = wuffs_base__slice_u8__subslice_j(a_workbuf, ((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[0u])));
         v_width = self->private_impl.f_width;
+        wuffs_webp__decoder__apply_transform_color_indexing(self, v_pix, v_width);
       }
     }
     v_status = wuffs_webp__decoder__swizzle(self, a_dst, v_pix, a_blend);

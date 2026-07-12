@@ -372,7 +372,6 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
     var c8             : base.u8
     var has_more       : base.u32[..= 1]
     var width          : base.u32[..= 0x4000]
-    var saved_width    : base.u32[..= 0x4000]
     var dst            : slice base.u8
     var tile_data      : roslice base.u8
     var status         : base.status
@@ -455,11 +454,11 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
         return base."#bad workbuf length"
     }
     pix = args.workbuf[.. (this.workbuf_offset_for_transform[0] as base.u64)]
-    saved_width = this.width
+    width = this.width
     if this.seen_transform[3] and
             ((this.workbuf_offset_for_color_indexing as base.u64) <= pix.length()) {
         pix = pix[this.workbuf_offset_for_color_indexing as base.u64 ..]
-        this.width = this.color_indexing_width
+        width = this.color_indexing_width
     }
 
     which = this.n_transforms
@@ -477,18 +476,15 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
         }
 
         if transform_type == 0 {
-            this.apply_transform_predictor!(pix: pix, tile_data: tile_data)
+            this.apply_transform_predictor!(pix: pix, width: width, tile_data: tile_data)
         } else if transform_type == 1 {
-            this.apply_transform_cross_color!(pix: pix, tile_data: tile_data)
+            this.apply_transform_cross_color!(pix: pix, width: width, tile_data: tile_data)
         } else if transform_type == 2 {
             this.apply_transform_subtract_green!(pix: pix)
-        } else {
-            this.width = saved_width
-            if (this.workbuf_offset_for_transform[0] as base.u64) <= args.workbuf.length() {
-                pix = args.workbuf[.. (this.workbuf_offset_for_transform[0] as base.u64)]
-            }
-            this.apply_transform_color_indexing!(pix: pix)
+        } else if (this.workbuf_offset_for_transform[0] as base.u64) <= args.workbuf.length() {
+            pix = args.workbuf[.. (this.workbuf_offset_for_transform[0] as base.u64)]
             width = this.width
+            this.apply_transform_color_indexing!(pix: pix, width: width)
         }
     }
 
