@@ -20,7 +20,6 @@ pub status "#bad transform"
 pub status "#short chunk"
 pub status "#truncated input"
 pub status "#unsupported number of Huffman groups"
-pub status "#unsupported transform after color indexing transform"
 pub status "#unsupported WebP file"
 
 pri status "#internal error: inconsistent Huffman code"
@@ -373,6 +372,7 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
     var c8             : base.u8
     var has_more       : base.u32[..= 1]
     var width          : base.u32[..= 0x4000]
+    var saved_width    : base.u32[..= 0x4000]
     var dst            : slice base.u8
     var tile_data      : roslice base.u8
     var status         : base.status
@@ -427,10 +427,11 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
     while true {
         if ((this.workbuf_offset_for_color_indexing as base.u64) > (this.workbuf_offset_for_transform[0] as base.u64)) or
                 ((this.workbuf_offset_for_transform[0] as base.u64) > (this.workbuf_offset_for_transform[1] as base.u64)) or
-                ((this.workbuf_offset_for_transform[1] as base.u64) > args.workbuf.length()) or
-                ((this.workbuf_offset_for_transform[0] as base.u64) > args.workbuf.length()) {
+                ((this.workbuf_offset_for_transform[1] as base.u64) > args.workbuf.length()) {
             return base."#bad workbuf length"
         }
+        assert (this.workbuf_offset_for_transform[0] as base.u64) <= args.workbuf.length() via "a <= b: a <= c; c <= b"(c: this.workbuf_offset_for_transform[1] as base.u64)
+
         dst = args.workbuf[
                 (this.workbuf_offset_for_color_indexing as base.u64) ..
                 (this.workbuf_offset_for_transform[0] as base.u64)]
@@ -454,6 +455,12 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
         return base."#bad workbuf length"
     }
     pix = args.workbuf[.. (this.workbuf_offset_for_transform[0] as base.u64)]
+    saved_width = this.width
+    if this.seen_transform[3] and
+            ((this.workbuf_offset_for_color_indexing as base.u64) <= pix.length()) {
+        pix = pix[this.workbuf_offset_for_color_indexing as base.u64 ..]
+        this.width = this.color_indexing_width
+    }
 
     which = this.n_transforms
     while which > 0 {
@@ -476,6 +483,10 @@ pri func decoder.do_decode_frame?(dst: ptr base.pixel_buffer, src: base.io_reade
         } else if transform_type == 2 {
             this.apply_transform_subtract_green!(pix: pix)
         } else {
+            this.width = saved_width
+            if (this.workbuf_offset_for_transform[0] as base.u64) <= args.workbuf.length() {
+                pix = args.workbuf[.. (this.workbuf_offset_for_transform[0] as base.u64)]
+            }
             this.apply_transform_color_indexing!(pix: pix)
             width = this.width
         }
@@ -497,6 +508,7 @@ pri func decoder.decode_transform?(src: base.io_reader, workbuf: slice base.u8) 
     var c8             : base.u8
     var transform_type : base.u32[..= 3]
     var tile_size_log2 : base.u32[..= 9]
+    var width          : base.u32[..= 0x4000]
     var p              : slice base.u8
 
     if this.n_bits < 2 {
@@ -514,8 +526,6 @@ pri func decoder.decode_transform?(src: base.io_reader, workbuf: slice base.u8) 
 
     if this.seen_transform[transform_type] or (this.n_transforms >= 4) {
         return "#bad transform"
-    } else if this.seen_transform[3] {
-        return "#unsupported transform after color indexing transform"
     }
     this.seen_transform[transform_type] = true
     this.transform_type[this.n_transforms] = transform_type as base.u8
@@ -543,6 +553,11 @@ pri func decoder.decode_transform?(src: base.io_reader, workbuf: slice base.u8) 
                 inv transform_type < 2,
                 inv tile_size_log2 >= 2,
         {
+            width = this.width
+            if this.seen_transform[3] {
+                width = this.color_indexing_width
+            }
+
             if ((this.workbuf_offset_for_transform[transform_type + 1] as base.u64) > (this.workbuf_offset_for_transform[transform_type + 2] as base.u64)) or
                     ((this.workbuf_offset_for_transform[transform_type + 2] as base.u64) > args.workbuf.length()) {
                 return base."#bad workbuf length"
@@ -552,7 +567,7 @@ pri func decoder.decode_transform?(src: base.io_reader, workbuf: slice base.u8) 
                     (this.workbuf_offset_for_transform[transform_type + 1] as base.u64) ..
                     (this.workbuf_offset_for_transform[transform_type + 2] as base.u64)],
                     src: args.src,
-                    width: (this.width + (((1 as base.u32) << tile_size_log2) - 1)) >> tile_size_log2,
+                    width: (width + (((1 as base.u32) << tile_size_log2) - 1)) >> tile_size_log2,
                     height: (this.height + (((1 as base.u32) << tile_size_log2) - 1)) >> tile_size_log2,
                     tile_data: this.util.empty_slice_u8(),
                     tile_size_log2: 0)

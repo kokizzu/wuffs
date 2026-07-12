@@ -16224,7 +16224,6 @@ extern const char wuffs_webp__error__bad_transform[];
 extern const char wuffs_webp__error__short_chunk[];
 extern const char wuffs_webp__error__truncated_input[];
 extern const char wuffs_webp__error__unsupported_number_of_huffman_groups[];
-extern const char wuffs_webp__error__unsupported_transform_after_color_indexing_transform[];
 extern const char wuffs_webp__error__unsupported_webp_file[];
 
 // ---------------- Public Consts
@@ -86934,7 +86933,6 @@ const char wuffs_webp__error__bad_transform[] = "#webp: bad transform";
 const char wuffs_webp__error__short_chunk[] = "#webp: short chunk";
 const char wuffs_webp__error__truncated_input[] = "#webp: truncated input";
 const char wuffs_webp__error__unsupported_number_of_huffman_groups[] = "#webp: unsupported number of Huffman groups";
-const char wuffs_webp__error__unsupported_transform_after_color_indexing_transform[] = "#webp: unsupported transform after color indexing transform";
 const char wuffs_webp__error__unsupported_webp_file[] = "#webp: unsupported WebP file";
 const char wuffs_webp__error__internal_error_inconsistent_huffman_code[] = "#webp: internal error: inconsistent Huffman code";
 const char wuffs_webp__error__internal_error_inconsistent_dst_buffer[] = "#webp: internal error: inconsistent dst buffer";
@@ -89904,6 +89902,7 @@ wuffs_webp__decoder__do_decode_frame(
   uint8_t v_c8 = 0;
   uint32_t v_has_more = 0;
   uint32_t v_width = 0;
+  uint32_t v_saved_width = 0;
   wuffs_base__slice_u8 v_dst = {0};
   wuffs_base__slice_u8 v_tile_data = {0};
   wuffs_base__status v_status = wuffs_base__make_status(NULL);
@@ -90025,10 +90024,7 @@ wuffs_webp__decoder__do_decode_frame(
       goto suspend;
     }
     while (true) {
-      if ((((uint64_t)(self->private_impl.f_workbuf_offset_for_color_indexing)) > ((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[0u]))) ||
-          (((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[0u])) > ((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[1u]))) ||
-          (((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[1u])) > ((uint64_t)(a_workbuf.len))) ||
-          (((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[0u])) > ((uint64_t)(a_workbuf.len)))) {
+      if ((((uint64_t)(self->private_impl.f_workbuf_offset_for_color_indexing)) > ((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[0u]))) || (((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[0u])) > ((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[1u]))) || (((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[1u])) > ((uint64_t)(a_workbuf.len)))) {
         status = wuffs_base__make_status(wuffs_base__error__bad_workbuf_length);
         goto exit;
       }
@@ -90065,6 +90061,11 @@ wuffs_webp__decoder__do_decode_frame(
       goto exit;
     }
     v_pix = wuffs_base__slice_u8__subslice_j(a_workbuf, ((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[0u])));
+    v_saved_width = self->private_impl.f_width;
+    if (self->private_impl.f_seen_transform[3u] && (((uint64_t)(self->private_impl.f_workbuf_offset_for_color_indexing)) <= ((uint64_t)(v_pix.len)))) {
+      v_pix = wuffs_base__slice_u8__subslice_i(v_pix, ((uint64_t)(self->private_impl.f_workbuf_offset_for_color_indexing)));
+      self->private_impl.f_width = self->private_impl.f_color_indexing_width;
+    }
     v_which = self->private_impl.f_n_transforms;
     while (v_which > 0u) {
       v_which -= 1u;
@@ -90084,6 +90085,10 @@ wuffs_webp__decoder__do_decode_frame(
       } else if (v_transform_type == 2u) {
         wuffs_webp__decoder__apply_transform_subtract_green(self, v_pix);
       } else {
+        self->private_impl.f_width = v_saved_width;
+        if (((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[0u])) <= ((uint64_t)(a_workbuf.len))) {
+          v_pix = wuffs_base__slice_u8__subslice_j(a_workbuf, ((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[0u])));
+        }
         wuffs_webp__decoder__apply_transform_color_indexing(self, v_pix);
         v_width = self->private_impl.f_width;
       }
@@ -90134,6 +90139,7 @@ wuffs_webp__decoder__decode_transform(
   uint8_t v_c8 = 0;
   uint32_t v_transform_type = 0;
   uint32_t v_tile_size_log2 = 0;
+  uint32_t v_width = 0;
   wuffs_base__slice_u8 v_p = {0};
 
   const uint8_t* iop_a_src = NULL;
@@ -90177,9 +90183,6 @@ wuffs_webp__decoder__decode_transform(
     self->private_impl.f_n_bits -= 2u;
     if (self->private_impl.f_seen_transform[v_transform_type] || (self->private_impl.f_n_transforms >= 4u)) {
       status = wuffs_base__make_status(wuffs_webp__error__bad_transform);
-      goto exit;
-    } else if (self->private_impl.f_seen_transform[3u]) {
-      status = wuffs_base__make_status(wuffs_webp__error__unsupported_transform_after_color_indexing_transform);
       goto exit;
     }
     self->private_impl.f_seen_transform[v_transform_type] = true;
@@ -90230,6 +90233,10 @@ wuffs_webp__decoder__decode_transform(
         goto suspend;
       }
       while (true) {
+        v_width = self->private_impl.f_width;
+        if (self->private_impl.f_seen_transform[3u]) {
+          v_width = self->private_impl.f_color_indexing_width;
+        }
         if ((((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[(v_transform_type + 1u)])) > ((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[(v_transform_type + 2u)]))) || (((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[(v_transform_type + 2u)])) > ((uint64_t)(a_workbuf.len)))) {
           status = wuffs_base__make_status(wuffs_base__error__bad_workbuf_length);
           goto exit;
@@ -90243,7 +90250,7 @@ wuffs_webp__decoder__decode_transform(
               ((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[(v_transform_type + 1u)])),
               ((uint64_t)(self->private_impl.f_workbuf_offset_for_transform[(v_transform_type + 2u)]))),
               a_src,
-              ((self->private_impl.f_width + ((((uint32_t)(1u)) << v_tile_size_log2) - 1u)) >> v_tile_size_log2),
+              ((v_width + ((((uint32_t)(1u)) << v_tile_size_log2) - 1u)) >> v_tile_size_log2),
               ((self->private_impl.f_height + ((((uint32_t)(1u)) << v_tile_size_log2) - 1u)) >> v_tile_size_log2),
               wuffs_base__utility__empty_slice_u8(),
               0u);
