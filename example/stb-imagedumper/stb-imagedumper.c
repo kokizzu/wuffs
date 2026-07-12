@@ -961,7 +961,7 @@ apply_background_color(uint32_t bg_color_premul,
 
 // ----------------
 
-#define MAX_INCL_DIMENSION 10000
+#define MAX_INCL_DIMENSION 16384
 
 // BYTES_PER_COLOR_OUTPUT_CHARACTER is long enough to contain
 // "\x1B[38;2;255;255;255m\x1B[48;2;255;255;255mABC" plus a trailing NUL byte.
