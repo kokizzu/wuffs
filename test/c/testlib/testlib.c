@@ -1237,6 +1237,17 @@ do_test__wuffs_base__image_decoder(
   CHECK_STATUS("decode_image_config",
                wuffs_base__image_decoder__decode_image_config(b, &ic, &src));
 
+  wuffs_base__slice_u8 workbuf = g_work_slice_u8;
+  wuffs_base__range_ii_u64 workbuf_len =
+      wuffs_base__image_decoder__workbuf_len(b);
+  if (workbuf_len.min_incl > workbuf_len.max_incl) {
+    return "inconsistent workbuf_len";
+  }
+  if (workbuf_len.max_incl > workbuf.len) {
+    return "workbuf_len is too large";
+  }
+  workbuf.len = workbuf_len.max_incl;
+
   uint32_t have_width = wuffs_base__pixel_config__width(&ic.pixcfg);
   if (have_width != want_width) {
     RETURN_FAIL("width: have %" PRIu32 ", want %" PRIu32, have_width,
@@ -1254,9 +1265,9 @@ do_test__wuffs_base__image_decoder(
   wuffs_base__pixel_buffer pb = ((wuffs_base__pixel_buffer){});
   CHECK_STATUS("set_from_slice", wuffs_base__pixel_buffer__set_from_slice(
                                      &pb, &ic.pixcfg, g_pixel_slice_u8));
-  CHECK_STATUS("decode_frame", wuffs_base__image_decoder__decode_frame(
-                                   b, &pb, &src, WUFFS_BASE__PIXEL_BLEND__SRC,
-                                   g_work_slice_u8, NULL));
+  CHECK_STATUS("decode_frame",
+               wuffs_base__image_decoder__decode_frame(
+                   b, &pb, &src, WUFFS_BASE__PIXEL_BLEND__SRC, workbuf, NULL));
 
   uint64_t n = wuffs_base__pixel_config__pixbuf_len(&ic.pixcfg);
   if (n < 4) {
