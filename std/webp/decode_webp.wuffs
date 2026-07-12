@@ -31,7 +31,6 @@ pri status "#internal error: inconsistent n_bits"
 pub const DECODER_WORKBUF_LEN_MAX_INCL_WORST_CASE : base.u64 = 0x4C00_0000
 
 pub struct decoder? implements base.image_decoder(
-        pixfmt : base.u32,
         width  : base.u32[..= 0x4000],
         height : base.u32[..= 0x4000],
 
@@ -202,7 +201,7 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
 
     if (not this.is_vp8_lossy) and (args.dst <> nullptr) {
         args.dst.set!(
-                pixfmt: this.pixfmt,
+                pixfmt: base.PIXEL_FORMAT__BGRA_NONPREMUL,
                 pixsub: 0,
                 width: this.width,
                 height: this.height,
@@ -283,10 +282,10 @@ pri func decoder.do_decode_image_config_limited_vp8l?(src: base.io_reader) {
     c32 >>= 14
     this.height = (c32 & 0x3FFF) + 1
     c32 >>= 14
-    this.pixfmt = base.PIXEL_FORMAT__BGRX
-    if (c32 & 1) <> 0 {
-        this.pixfmt = base.PIXEL_FORMAT__BGRA_NONPREMUL
-    }
+    // In theory, (c32 & 1) would let us discriminate between
+    // base.PIXEL_FORMAT__BGRX and base.PIXEL_FORMAT__BGRA_NONPREMUL, but the
+    // VP8 Lossless spec says that this bit "is a hint only, and *should not
+    // impact decoding* [emphasis added]".
     c32 >>= 1
     if c32 <> 0 {
         return "#bad header"
@@ -316,8 +315,6 @@ pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_
 }
 
 pri func decoder.do_decode_frame_config?(dst: nptr base.frame_config, src: base.io_reader) {
-    var pixfmt : base.pixel_format
-
     if this.call_sequence == 0x20 {
         // No-op.
     } else if this.call_sequence < 0x20 {
@@ -334,7 +331,6 @@ pri func decoder.do_decode_frame_config?(dst: nptr base.frame_config, src: base.
     }
 
     if args.dst <> nullptr {
-        pixfmt = this.util.make_pixel_format(repr: this.pixfmt)
         args.dst.set!(bounds: this.util.make_rect_ie_u32(
                 min_incl_x: 0,
                 min_incl_y: 0,
@@ -346,7 +342,7 @@ pri func decoder.do_decode_frame_config?(dst: nptr base.frame_config, src: base.
                 disposal: 0,
                 opaque_within_bounds: false,
                 overwrite_instead_of_blend: false,
-                background_color: pixfmt.default_background_color())
+                background_color: 0x0000_0000)
     }
 
     this.call_sequence = 0x40
@@ -809,7 +805,7 @@ pri func decoder.swizzle!(dst: ptr base.pixel_buffer, src: roslice base.u8, blen
     status = this.swizzler.prepare!(
             dst_pixfmt: args.dst.pixel_format(),
             dst_palette: args.dst.palette_or_else(fallback: this.palette[..]),
-            src_pixfmt: this.util.make_pixel_format(repr: this.pixfmt),
+            src_pixfmt: this.util.make_pixel_format(repr: base.PIXEL_FORMAT__BGRA_NONPREMUL),
             src_palette: this.util.empty_slice_u8(),
             blend: args.blend)
     if not status.is_ok() {

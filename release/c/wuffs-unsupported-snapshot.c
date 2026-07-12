@@ -16393,7 +16393,6 @@ struct wuffs_webp__decoder__struct {
     wuffs_base__vtable vtable_for__wuffs_base__image_decoder;
     wuffs_base__vtable null_vtable;
 
-    uint32_t f_pixfmt;
     uint32_t f_width;
     uint32_t f_height;
     uint8_t f_call_sequence;
@@ -89292,7 +89291,7 @@ wuffs_webp__decoder__do_decode_image_config(
     if ( ! self->private_impl.f_is_vp8_lossy && (a_dst != NULL)) {
       wuffs_base__image_config__set(
           a_dst,
-          self->private_impl.f_pixfmt,
+          2164295816u,
           0u,
           self->private_impl.f_width,
           self->private_impl.f_height,
@@ -89609,10 +89608,6 @@ wuffs_webp__decoder__do_decode_image_config_limited_vp8l(
     v_c32 >>= 14u;
     self->private_impl.f_height = ((v_c32 & 16383u) + 1u);
     v_c32 >>= 14u;
-    self->private_impl.f_pixfmt = 2415954056u;
-    if ((v_c32 & 1u) != 0u) {
-      self->private_impl.f_pixfmt = 2164295816u;
-    }
     v_c32 >>= 1u;
     if (v_c32 != 0u) {
       status = wuffs_base__make_status(wuffs_webp__error__bad_header);
@@ -89726,8 +89721,6 @@ wuffs_webp__decoder__do_decode_frame_config(
     wuffs_base__io_buffer* a_src) {
   wuffs_base__status status = wuffs_base__make_status(NULL);
 
-  wuffs_base__pixel_format v_pixfmt = {0};
-
   const uint8_t* iop_a_src = NULL;
   const uint8_t* io0_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
   const uint8_t* io1_a_src WUFFS_BASE__POTENTIALLY_UNUSED = NULL;
@@ -89770,7 +89763,6 @@ wuffs_webp__decoder__do_decode_frame_config(
       goto ok;
     }
     if (a_dst != NULL) {
-      v_pixfmt = wuffs_base__utility__make_pixel_format(self->private_impl.f_pixfmt);
       wuffs_base__frame_config__set(
           a_dst,
           wuffs_base__utility__make_rect_ie_u32(
@@ -89784,7 +89776,7 @@ wuffs_webp__decoder__do_decode_frame_config(
           0u,
           false,
           false,
-          wuffs_base__pixel_format__default_background_color(&v_pixfmt));
+          0u);
     }
     self->private_impl.f_call_sequence = 64u;
 
@@ -90741,7 +90733,7 @@ wuffs_webp__decoder__swizzle(
   v_status = wuffs_base__pixel_swizzler__prepare(&self->private_impl.f_swizzler,
       wuffs_base__pixel_buffer__pixel_format(a_dst),
       wuffs_base__pixel_buffer__palette_or_else(a_dst, wuffs_base__make_slice_u8(self->private_data.f_palette, 1024)),
-      wuffs_base__utility__make_pixel_format(self->private_impl.f_pixfmt),
+      wuffs_base__utility__make_pixel_format(2164295816u),
       wuffs_base__utility__empty_slice_u8(),
       a_blend);
   if ( ! wuffs_base__status__is_ok(&v_status)) {

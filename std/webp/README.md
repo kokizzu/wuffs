@@ -2,6 +2,8 @@
 
 WebP is a still image format, described in the [WebP Container
 Specification](https://developers.google.com/speed/webp/docs/riff_container).
+It is a container for [VP8 Lossy](https://www.ietf.org/rfc/rfc6386.txt) or [VP8
+Lossless](https://developers.google.com/speed/webp/docs/webp_lossless_bitstream_specification).
 
 The ["Making Software - Image
 Compression"](https://www.makingsoftware.com/chapters/image-compression) book
