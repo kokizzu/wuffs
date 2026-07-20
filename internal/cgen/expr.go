@@ -551,8 +551,16 @@ func (g *gen) writeExprUserDefinedCall(b *buffer, n *a.Expr, depth uint32) error
 		return fmt.Errorf("cannot generate user-defined method call %q for receiver type %q",
 			n.Str(g.tm), recv.MType().Str(g.tm))
 	}
+
 	qid := recvTyp.QID()
-	b.printf("%s%s__%s(", g.packagePrefix(qid), qid[1].Str(g.tm), method.Ident().Str(g.tm))
+	pkgStr := g.packagePrefix(qid)
+	typStr := qid[1].Str(g.tm)
+	methodStr := method.Ident().Str(g.tm)
+	if (qid[0] == t.IDBase) && qid[1].IsRangeType() && strings.HasPrefix(methodStr, "get_") {
+		pkgStr = "wuffs_private_impl__"
+	}
+	b.printf("%s%s__%s(", pkgStr, typStr, methodStr)
+
 	if !recvTyp.IsEtcUtilityType() {
 		b.writes(addr)
 		if err := g.writeExpr(b, recv, false, depth); err != nil {

@@ -115,6 +115,20 @@ test_wuffs_webp_decode_interface_lossy() {
 }
 
 const char*  //
+test_wuffs_webp_decode_interface_vp8x_alpha_lossy() {
+  CHECK_FOCUS(__func__);
+  wuffs_webp__decoder* dec = &g_webp_decoder;
+  CHECK_STATUS("initialize",
+               wuffs_webp__decoder__initialize(
+                   dec, sizeof *dec, WUFFS_VERSION,
+                   WUFFS_INITIALIZE__LEAVE_INTERNAL_BUFFERS_UNINITIALIZED));
+  return do_test__wuffs_base__image_decoder(
+      wuffs_webp__decoder__upcast_as__wuffs_base__image_decoder(dec),
+      "test/data/hippopotamus.masked-with-muybridge.lossy.webp", 0, SIZE_MAX,
+      36, 28, 0xFFF5F5F5);  // TODO: apply the alpha channel.
+}
+
+const char*  //
 test_wuffs_webp_decode_many_small_reads() {
   CHECK_FOCUS(__func__);
   wuffs_webp__decoder* dec = &g_webp_decoder;
@@ -520,6 +534,7 @@ proc g_tests[] = {
 
     test_wuffs_webp_decode_interface_lossless,
     test_wuffs_webp_decode_interface_lossy,
+    test_wuffs_webp_decode_interface_vp8x_alpha_lossy,
     test_wuffs_webp_decode_many_small_reads,
 
 #ifdef WUFFS_MIMIC

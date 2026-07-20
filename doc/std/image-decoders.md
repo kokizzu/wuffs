@@ -132,8 +132,9 @@ In Wuffs syntax, the `base.image_decoder` methods are:
 - [std/nie](/std/nie)
 - [std/png](/std/png)
 - [std/qoi](/std/qoi)
-- [std/tga](/std/tga)
+- [std/targa](/std/targa)
 - [std/thumbhash](/std/thumbhash)
+- [std/vp8](/std/vp8)
 - [std/wbmp](/std/wbmp)
 - [std/webp](/std/webp)
 
@@ -160,7 +161,8 @@ Examples in other repositories:
 
 - [GIF decoder quirks](/std/gif/decode_quirks.wuffs)
 - [JPEG decoder quirks](/std/jpeg/decode_quirks.wuffs)
-- [TH decoder quirks](/std/thumbhash/decode_quirks.wuffs)
+- [THUMBHASH decoder quirks](/std/thumbhash/decode_quirks.wuffs)
+- [VP8 decoder quirks](/std/vp8/decode_quirks.wuffs)
 
 
 ## Related Documentation

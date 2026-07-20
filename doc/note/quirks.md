@@ -76,11 +76,12 @@ Common quirks:
 
 Package-specific quirks:
 
-- [GIF image decoder quirks](/std/gif/decode_quirks.wuffs)
+- [GIF decoder quirks](/std/gif/decode_quirks.wuffs)
 - [JPEG decoder quirks](/std/jpeg/decode_quirks.wuffs)
 - [JSON decoder quirks](/std/json/decode_quirks.wuffs)
 - [LZMA decoder quirks](/std/lzma/decode_quirks.wuffs)
 - [LZW decoder quirks](/std/lzw/decode_quirks.wuffs)
-- [TH decoder quirks](/std/thumbhash/decode_quirks.wuffs)
+- [THUMBHASH decoder quirks](/std/thumbhash/decode_quirks.wuffs)
+- [VP8 decoder quirks](/std/vp8/decode_quirks.wuffs)
 - [XZ decoder quirks](/std/xz/decode_quirks.wuffs)
 - [ZLIB decoder quirks](/std/zlib/decode_quirks.wuffs)

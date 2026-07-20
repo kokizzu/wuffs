@@ -9,7 +9,9 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 pub status "#bad QUIRK_SOURCE_LENGTH"
+pub status "#bad QUIRK_WIDTH_AND_HEIGHT"
 pub status "#bad header"
+pub status "#inconsistent width and height"
 pub status "#missing QUIRK_SOURCE_LENGTH"
 pub status "#truncated input"
 pub status "#unsupported QUIRK_SOURCE_LENGTH"
@@ -36,6 +38,8 @@ pub struct decoder? implements base.image_decoder(
         // This uses the same representation as an wuffs_base__optional_u63:
         // ((value_as_u63 << 1) | has_value_as_u1).
         quirk_source_length : base.u64,
+
+        quirk_width_and_height : base.u64,
 
         // Just under 144 MiB, for 9 partitions each up to 0xFF_FFFF bytes.
         partitioned_data_length : base.u32[..= 0x08FF_FFF7],
@@ -205,15 +209,46 @@ pub struct decoder? implements base.image_decoder(
 pub func decoder.get_quirk(key: base.u32) base.u64 {
     if args.key == base.QUIRK_SOURCE_LENGTH {
         return this.quirk_source_length
+    } else if args.key == QUIRK_WIDTH_AND_HEIGHT {
+        return this.quirk_width_and_height
     }
     return 0
 }
 
 pub func decoder.set_quirk!(key: base.u32, value: base.u64) base.status {
+    var w : base.u32
+    var h : base.u32
+
     if args.key == base.QUIRK_SOURCE_LENGTH {
-        this.quirk_source_length = args.value
+        if (args.value & 1) == 0 {
+            if args.value <> 0 {
+                return "#bad QUIRK_SOURCE_LENGTH"
+            }
+            this.quirk_source_length = 0
+            this.partitioned_data_length = 0
+        } else if (args.value >> 1) < 10 {
+            return "#bad QUIRK_SOURCE_LENGTH"
+        } else if (args.value >> 1) > (0x08FF_FFF7 + 10) {
+            return "#unsupported QUIRK_SOURCE_LENGTH"
+        } else {
+            this.quirk_source_length = args.value
+            this.partitioned_data_length = ((args.value >> 1) as base.u32) - 10
+        }
+        return ok
+
+    } else if args.key == QUIRK_WIDTH_AND_HEIGHT {
+        w = (args.value & 0xFFFF_FFFF) as base.u32
+        h = (args.value & 0xFFFF_FFFF) as base.u32
+        if (w < 1) or (0x3FFF < w) or (h < 1) or (0x3FFF < h) {
+            return "#bad QUIRK_WIDTH_AND_HEIGHT"
+        }
+        this.quirk_width_and_height = args.value
+        this.width = w
+        this.height = h
+        this.calculate_mbw_mbh!()
         return ok
     }
+
     return base."#unsupported option"
 }
 
@@ -236,14 +271,9 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
         return base."#bad call sequence"
     }
 
-    if (this.quirk_source_length & 1) == 0 {
+    if this.quirk_source_length == 0 {
         return "#missing QUIRK_SOURCE_LENGTH"
-    } else if (this.quirk_source_length >> 1) < 10 {
-        return "#bad QUIRK_SOURCE_LENGTH"
-    } else if (this.quirk_source_length >> 1) > (0x08FF_FFF7 + 10) {
-        return "#unsupported QUIRK_SOURCE_LENGTH"
     }
-    this.partitioned_data_length = ((this.quirk_source_length >> 1) as base.u32) - 10
 
     // RFC 6386 Section 9. Frame Header, up to and including 9.1. Uncompressed
     // Data Chunk. decode_header_partition handles the rest of section 9.
@@ -267,17 +297,13 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
     c32 = args.src.read_u32le?()
     this.width = 0x3FFF & (c32 >> 0)
     this.height = 0x3FFF & (c32 >> 16)
-    this.mbw = (this.width + 15) / 16
-    this.mbh = (this.height + 15) / 16
-
-    this.workbuf_yuv_y_stride = this.mbw * 16
-    this.workbuf_yuv_uv_stride = this.mbw * 8
-    this.workbuf_yuv_y_end =
-            ((this.workbuf_yuv_y_stride as base.u64) * ((this.mbh * 16) as base.u64))
-    this.workbuf_yuv_u_end = this.workbuf_yuv_y_end +
-            ((this.workbuf_yuv_uv_stride as base.u64) * ((this.mbh * 8) as base.u64))
-    this.workbuf_yuv_v_end = this.workbuf_yuv_u_end +
-            ((this.workbuf_yuv_uv_stride as base.u64) * ((this.mbh * 8) as base.u64))
+    if (this.width == 0) or (this.height == 0) {
+        return "#bad header"
+    } else if (this.quirk_width_and_height <> 0) and
+            (this.quirk_width_and_height <> ((this.width as base.u64) | ((this.height as base.u64) << 32))) {
+        return "#inconsistent width and height"
+    }
+    this.calculate_mbw_mbh!()
 
     this.frame_config_io_position = args.src.position()
 
@@ -292,6 +318,20 @@ pri func decoder.do_decode_image_config?(dst: nptr base.image_config, src: base.
     }
 
     this.call_sequence = 0x20
+}
+
+pri func decoder.calculate_mbw_mbh!() {
+    this.mbw = (this.width + 15) / 16
+    this.mbh = (this.height + 15) / 16
+
+    this.workbuf_yuv_y_stride = this.mbw * 16
+    this.workbuf_yuv_uv_stride = this.mbw * 8
+    this.workbuf_yuv_y_end =
+            ((this.workbuf_yuv_y_stride as base.u64) * ((this.mbh * 16) as base.u64))
+    this.workbuf_yuv_u_end = this.workbuf_yuv_y_end +
+            ((this.workbuf_yuv_uv_stride as base.u64) * ((this.mbh * 8) as base.u64))
+    this.workbuf_yuv_v_end = this.workbuf_yuv_u_end +
+            ((this.workbuf_yuv_uv_stride as base.u64) * ((this.mbh * 8) as base.u64))
 }
 
 pub func decoder.decode_frame_config?(dst: nptr base.frame_config, src: base.io_reader) {
