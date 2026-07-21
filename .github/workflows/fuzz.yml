@@ -1,6 +1,6 @@
 name: CIFuzz
 on: [pull_request]
-permissions: read
+permissions: read-all
 
 jobs:
   Fuzzing:
